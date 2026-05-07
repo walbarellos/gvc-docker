@@ -59,11 +59,13 @@ docker compose down
 
 ## 🔧 Variáveis .env
 
+Crie um arquivo `.env` com os seguintes valores (use senhas fortes):
+
 ```env
 DB_NAME=gvc
 DB_USER=gvc_admin
-DB_PASSWORD=Admin@fem2026
-JWT_SECRET=sua-chave-secreta
+DB_PASSWORD=SUA_SENHA_FORTE_AQUI
+JWT_SECRET=SUA_CHAVE_JWT_SECRETA
 API_PORT=3001
 FRONTEND_PORT=3000
 ```
