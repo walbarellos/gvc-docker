@@ -1,0 +1,200 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model Visitor {
+  id          String    @id @default(uuid())
+  fullName    String
+  cpf         String?   @unique
+  passport    String?
+  isForeigner Boolean  @default(false)
+  gender     String?
+  birthDate  DateTime?
+  email      String?
+  phone      String?
+  address    String?
+  category   String?
+  photoUrl   String?
+  createdAt  DateTime  @default(now())
+  updatedAt  DateTime  @default(now())
+
+  visits     Visit[]
+  lockers    Locker[]
+  computers Computer[]
+}
+
+model Usuario {
+  id         String    @id @default(uuid())
+  authUid    String?   @unique
+  nome       String
+  email      String    @unique
+  perfil     String
+  espacoId   String?
+  espacoNome String?
+  ativo      Boolean   @default(true)
+  createdAt  DateTime  @default(now())
+  updatedAt  DateTime  @default(now())
+
+  espaco     Espaco?    @relation(fields: [espacoId], references: [id])
+  visits     Visit[]
+}
+
+model Espaco {
+  id                    String   @id @default(uuid())
+  nome                  String
+  email                 String?
+  endereco              String?
+  municipio             String?
+  horario_funcionamento  String?
+  capacidade_visitantes Int?
+  mensagem_boas_vindas String?
+  tempo_limite_excedido Int?
+  ativo                 Boolean  @default(true)
+  perfil_armarios       Boolean  @default(true)
+  perfil_telecentro    Boolean  @default(false)
+  perfil_agendamento  Boolean  @default(false)
+  total_armarios       Int?
+  total_computadores   Int?
+  tempo_limite_computador Int?
+  capacidade_agendamento Int?
+  createdAt            DateTime @default(now())
+  updatedAt            DateTime @default(now())
+  has_auditorio        Boolean @default(false)
+  qtd_auditorio       Int?
+  has_sala_estudos    Boolean @default(false)
+  qtd_sala_estudos   Int?
+  has_teatro          Boolean @default(false)
+  qtd_teatro         Int?
+  has_filmoteca       Boolean @default(false)
+  qtd_filmoteca      Int?
+  has_espaco_aberto  Boolean @default(false)
+  qtd_espaco_aberto  Int?
+  has_visita_guiada  Boolean @default(false)
+  qtd_visita_guiada  Int?
+
+  usuarios    Usuario[]
+  visits      Visit[]
+  lockers     Locker[]
+  computers  Computer[]
+}
+
+model Visit {
+  id         String    @id @default(uuid())
+  visitorId  String?
+  nome       String
+  perfil    String?
+  local     String?
+  espacoId  String?
+  checkin   DateTime  @default(now())
+  checkout  DateTime?
+  status   String?
+  armario  String?
+  createdAt DateTime @default(now())
+
+  visitor Visitor? @relation(fields: [visitorId], references: [id])
+  espaco  Espaco?  @relation(fields: [espacoId], references: [id])
+}
+
+model Locker {
+  id           String   @id @default(uuid())
+  number       Int
+  status       String?
+  visitorId    String?
+  visitorName String?
+  espacoId    String?
+  updatedAt   DateTime @default(now())
+
+  visitor Visitor? @relation(fields: [visitorId], references: [id])
+  espaco Espaco?  @relation(fields: [espacoId], references: [id])
+}
+
+model Computer {
+  id           String   @id @default(uuid())
+  numero       Int
+  status      String?
+  usuarioId   String?
+  usuarioNome String?
+  espacoId    String?
+  espacoNome String?
+
+  visitor Visitor? @relation(fields: [usuarioId], references: [id])
+  espaco  Espaco?  @relation(fields: [espacoId], references: [id])
+}
+
+model Agendamento {
+  id                       String    @id @default(uuid())
+  espacoId                  String
+  solicitante_nome           String
+  solicitante_email          String
+  solicitante_telefone      String
+  solicitante_documento       String?
+  tipo_solicitante         String
+  tipo_espaco            String
+  espaco_solicitado        String
+  data_pretendida        DateTime
+  horario_inicio           DateTime
+  horario_fim             DateTime
+  numero_participantes    Int
+  descricao_evento        String
+  natureza_evento       String
+  gratuito              Boolean?
+  valor_ingresso       Float?
+  necessita_equipamentos String?
+  observacoes          String?
+  status               String    @default("pendente")
+  termo_aceito         Boolean?
+  termo_aceito_em      DateTime?
+  responsabhilidade_evento Boolean?
+  danos_patrimonio    Boolean?
+  respeito_lotacao    Boolean?
+  autorizo_divulgacao   Boolean?
+  documento_anexo_url String?
+  resposta_coordenador String?
+  coordenador_id        String?
+  respondido_em       DateTime?
+  created_at           DateTime  @default(now())
+  updated_at           DateTime  @default(now())
+}
+
+model AssinaturaDigital {
+  id                  String   @id @default(uuid())
+  visitorId            String?
+  nomeAssinante        String
+  cpfAssinante       String
+  tipoDocumento       String
+  documentoId        String?
+  documentoHash     String
+  dataHora          DateTime  @default(now())
+  dataHoraBrasilia   String?
+  ipPublico         String
+  userAgent         String?
+  browserFingerprint Json?
+  cpfValidado       Boolean?
+  cpfStatus        String?
+  termoConteudo     String?
+  termoHash        String?
+  createdAt        DateTime  @default(now())
+  updatedAt        DateTime  @default(now())
+}
+
+model Auditoria {
+  id          String   @id @default(uuid())
+  usuario     String
+  perfil      String?
+  acao        String
+  detalhes    String?
+  entidadeId  String?
+  createdAt   DateTime @default(now())
+}
+
+model Configuracao {
+  id               String  @id @default("sistema")
+  institutionName   String?
+  data            Json?
+  updatedAt       DateTime @default(now())
+}
