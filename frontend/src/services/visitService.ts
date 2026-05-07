@@ -40,5 +40,20 @@ export const visitService = {
             `/visits/count?espaco_id=${espacoId}&date=${today}`
         );
         return { count: data?.[0]?.count || 0, error };
+    },
+
+    async checkin(payload: { visitorId: string, espacoId: string | null, perfil: string, nome?: string, local?: string }) {
+        const { data, error } = await api.post<VisitWithVisitor>('/visits/checkin', payload);
+        return { data, error };
+    },
+
+    async checkout(id: string) {
+        const { data, error } = await api.post<VisitWithVisitor>(`/visits/checkout/${id}`);
+        return { data, error };
+    },
+
+    async undoCheckin(id: string) {
+        const { error } = await api.delete(`/visits/${id}`);
+        return { error };
     }
 };

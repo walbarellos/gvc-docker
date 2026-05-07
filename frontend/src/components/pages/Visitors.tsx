@@ -1,5 +1,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import { supabase } from '../../lib/supabase';
+import { visitService } from '../../services/visitService';
+import { visitorService } from '../../services/visitorService';
 import { Visitor, OperationType } from '../../types';
 import { 
   Search, 
@@ -43,7 +45,7 @@ export default function Visitors() {
   const fetchVisitors = useCallback(async () => {
     try {
       setLoading(true);
-      const { data, error } = await supabase.from('visitors').select('*').order('created_at', { ascending: false });
+      const { data, error } = await visitorService.listAll();
       
       if (error) {
         console.error('Erro ao buscar visitantes:', error);
@@ -52,19 +54,19 @@ export default function Visitors() {
         return;
       }
       
-const mapped = (data || []).map(d => ({
+const mapped = (data || []).map((d: any) => ({
          id: d.id,
-         fullName: d.full_name,
+         fullName: d.fullName || d.full_name,
          cpf: d.cpf,
          passport: d.passport,
-         isForeigner: d.is_foreigner,
+         isForeigner: d.isForeigner || d.is_foreigner,
          gender: d.gender,
          category: d.category,
-         photoUrl: d.photo_url,
-         createdAt: d.created_at,
+         photoUrl: d.photoUrl || d.photo_url,
+         createdAt: d.createdAt || d.created_at,
          email: d.email,
          phone: d.phone,
-         birthDate: d.birth_date,
+         birthDate: d.birthDate || d.birth_date,
          address: d.address
        })) as Visitor[];
        setVisitors(mapped);
@@ -135,13 +137,12 @@ const mapped = (data || []).map(d => ({
       const now = new Date();
 
       // Apenas inserir - o banco que bloqueia duplicados via trigger
-      const { error } = await supabase.from('visits').insert({
-        visitor_id: visitor.id,
-        nome: visitor.fullName,
+      const { error } = await visitService.checkin({
+        visitorId: visitor.id || '',
         perfil: visitor.category || 'general',
-        local: espacoNome || 'Entrada Principal',
-        espaco_id: espacoId === 'todos' ? null : espacoId,
-        status: 'Ativo'
+        espacoId: espacoId === 'todos' ? null : (espacoId || null),
+        nome: visitor.fullName,
+        local: espacoNome || 'Entrada Principal'
       });
 
       if (error) {
@@ -200,11 +201,7 @@ const mapped = (data || []).map(d => ({
 
     setSaving(true);
     try {
-      const checkoutTime = new Date().toISOString();
-      const { error } = await supabase.from('visits').update({
-        checkout: checkoutTime,
-        status: 'Concluído'
-      }).eq('id', visit.id);
+      const { error } = await visitService.checkout(visit.id);
 
       if (error) throw error;
 
@@ -229,7 +226,7 @@ const mapped = (data || []).map(d => ({
 
     setSaving(true);
     try {
-      const { error } = await supabase.from('visits').delete().eq('id', visit.id);
+      const { error } = await visitService.undoCheckin(visit.id);
 
       if (error) throw error;
 
@@ -414,14 +411,15 @@ const mapped = (data || []).map(d => ({
 
         <div className="overflow-x-auto">
           <table className="w-full text-left border-collapse">
-            <thead className="bg-gray-50/50 border-b border-gray-100">
-              <tr>
-                <th className="px-6 py-3 text-[10px] font-bold text-gray-400 uppercase tracking-widest">Identificação do Visitante</th>
-                <th className="px-6 py-3 text-[10px] font-bold text-gray-400 uppercase tracking-widest">Status</th>
-                <th className="px-6 py-3 text-[10px] font-bold text-gray-400 uppercase tracking-widest">Último Acesso</th>
-                <th className="px-6 py-3 text-[10px] font-bold text-gray-400 uppercase tracking-widest text-right">Ações</th>
-              </tr>
-            </thead>
+              <thead className="bg-gray-50/50 border-b border-gray-100">
+                <tr>
+                  <th className="px-6 py-3 text-[10px] font-bold text-gray-400 uppercase tracking-widest">Identificação do Visitante</th>
+                  <th className="px-6 py-3 text-[10px] font-bold text-gray-400 uppercase tracking-widest">Data de Nascimento</th>
+                  <th className="px-6 py-3 text-[10px] font-bold text-gray-400 uppercase tracking-widest">Status</th>
+                  <th className="px-6 py-3 text-[10px] font-bold text-gray-400 uppercase tracking-widest">Último Acesso</th>
+                  <th className="px-6 py-3 text-[10px] font-bold text-gray-400 uppercase tracking-widest text-right">Ações</th>
+                </tr>
+              </thead>
             <tbody className="divide-y divide-gray-100">
               {(filteredVisitors || []).length > 0 ? (filteredVisitors || []).map((visitor) => (
                 <tr key={visitor.id} className="hover:bg-gray-50/50 transition-colors">
@@ -446,6 +444,15 @@ const mapped = (data || []).map(d => ({
                         </div>
                       </div>
                     </div>
+                  </td>
+                  <td className="px-6 py-4">
+                    <p className="text-sm text-gray-900">
+                      {visitor.birthDate ? (() => {
+                        const d = new Date(visitor.birthDate);
+                        if (isNaN(d.getTime())) return '-';
+                        return d.toLocaleDateString('pt-BR');
+                      })() : '-'}
+                    </p>
                   </td>
                   <td className="px-6 py-4">
                     <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded bg-green-50 text-green-700 border border-green-100 text-[10px] font-bold uppercase">
@@ -504,6 +511,7 @@ const mapped = (data || []).map(d => ({
         isOpen={isModalOpen} 
         onClose={() => setIsModalOpen(false)} 
         visitorToEdit={visitorToEdit} 
+        onSuccess={fetchVisitors}
       />
 
       {showBlockedPopup && blockedInfo && (

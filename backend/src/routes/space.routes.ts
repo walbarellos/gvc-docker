@@ -8,6 +8,8 @@ function mapSpaceFields(data: any): any {
   const mapped: any = {};
   
   if (data.nome !== undefined) mapped.nome = data.nome || '';
+  if (data.name !== undefined) mapped.nome = data.name || '';
+  if (mapped.nome === '') mapped.nome = 'Espaço sem nome';
   if (data.email !== undefined) mapped.email = data.email || null;
   if (data.endereco !== undefined) mapped.endereco = data.endereco || null;
   if (data.municipio !== undefined) mapped.municipio = data.municipio || null;
@@ -86,7 +88,10 @@ export async function spaceRoutes(app: FastifyInstance) {
     if (request.user.perfil !== 'administrador') {
       return reply.status(403).send({ error: 'Apenas administrador pode criar espaço' });
     }
-    const data = mapSpaceFields(request.body);
+    console.log('POST /spaces - body:', JSON.stringify(request.body));
+    const body = Array.isArray(request.body) ? request.body[0] : request.body;
+    const data = mapSpaceFields(body);
+    console.log('POST /spaces - mapped:', JSON.stringify(data));
     return prisma.espaco.create({ data });
   });
 

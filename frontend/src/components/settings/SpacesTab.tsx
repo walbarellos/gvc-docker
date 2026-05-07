@@ -1,9 +1,9 @@
 import React, { useState, useEffect } from 'react';
-import { supabase } from '../../lib/supabase';
 import { Plus, Edit2, Trash2, MapPin, Warehouse, AlertCircle, Info, Lock, Monitor, CalendarDays } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import SpaceModal from '../modals/SpaceModal';
 import ConfirmModal from '../modals/ConfirmModal';
+import { spaceService, Space } from '../../services/spaceService';
 import { auditService } from '../../services/auditService';
 import { useAuth } from '../../contexts/AuthContext';
 
@@ -19,17 +19,16 @@ const SpacesTab: React.FC = () => {
 
   useEffect(() => {
     const fetchSpaces = async () => {
-      const { data, error } = await supabase.from('espacos').select('*').order('nome');
+      const { data, error } = await spaceService.listAll();
       if (data) {
-        // Map snake_case back to camelCase for the UI if needed, or just adjust properties here
         setSpaces(data.map(d => ({
           ...d,
-          totalArmarios: d.total_armarios,
-          perfilArmarios: d.perfil_armarios,
-          perfilTelecentro: d.perfil_telecentro,
-          totalComputadores: d.total_computadores,
-          perfilAgendamento: d.perfil_agendamento,
-          capacidadeAgendamento: d.capacidade_agendamento,
+          totalArmarios: d.total_armarios || d.totalArmarios,
+          perfilArmarios: d.perfil_armarios || d.perfilArmarios,
+          perfilTelecentro: d.perfil_telecentro || d.perfilTelecentro,
+          totalComputadores: d.total_computadores || d.totalComputadores,
+          perfilAgendamento: d.perfil_agendamento || d.perfilAgendamento,
+          capacidadeAgendamento: d.capacidade_agendamento || d.capacidadeAgendamento,
         })));
       }
       setLoading(false);
@@ -37,13 +36,7 @@ const SpacesTab: React.FC = () => {
 
     fetchSpaces();
 
-    const channel = supabase.channel('espacos-updates-tab').on('postgres_changes', { event: '*', schema: 'public', table: 'espacos' }, () => {
-      fetchSpaces();
-    }).subscribe();
-
-    return () => {
-      supabase.removeChannel(channel);
-    };
+    return () => {};
   }, []);
 
   const handleConfirmAction = async () => {
@@ -51,10 +44,10 @@ const SpacesTab: React.FC = () => {
 
     try {
       if (confirmMode === 'disable') {
-        await supabase.from('espacos').update({ ativo: false }).eq('id', targetSpace.id);
+        await spaceService.update(targetSpace.id, { ativo: false });
         await auditService.log({ acao: "editou_espaco", detalhes: `Desativou espaço ${targetSpace.nome}`, entidadeId: targetSpace.id, userProfile: currentAdmin });
       } else {
-        await supabase.from('espacos').delete().eq('id', targetSpace.id);
+        await spaceService.delete(targetSpace.id);
         await auditService.log({ acao: "excluiu_espaco", detalhes: `Excluiu espaço ${targetSpace.nome}`, entidadeId: targetSpace.id, userProfile: currentAdmin });
       }
     } catch (error) {
@@ -66,9 +59,10 @@ const SpacesTab: React.FC = () => {
 
   const handleDelete = async (space: any) => {
     setTargetSpace(space);
-    const { count } = await supabase.from('usuarios').select('*', { count: 'exact', head: true }).eq('espaco_id', space.id);
-
-    if (count && count > 0) {
+    const { data: users, error } = await spaceService.getUsers(space.id);
+    const count = users?.length || 0;
+    
+    if (count > 0) {
       setConfirmMode('disable');
       setIsConfirmModalOpen(true);
     } else {

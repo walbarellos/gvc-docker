@@ -133,4 +133,11 @@ export async function visitRoutes(app: FastifyInstance) {
     });
     return visits;
   });
+
+  // Excluir visita (Undo Check-in)
+  app.delete('/:id', { preHandler: [app.authenticate] }, async (request: any, reply: any) => {
+    const { id } = request.params;
+    await prisma.visit.delete({ where: { id } });
+    return { success: true };
+  });
 }

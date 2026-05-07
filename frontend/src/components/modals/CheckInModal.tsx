@@ -10,9 +10,10 @@ interface CheckInModalProps {
   isOpen: boolean;
   onClose: () => void;
   visitorToEdit?: Visitor | null;
+  onSuccess?: () => void;
 }
 
-export default function CheckInModal({ isOpen, onClose, visitorToEdit }: CheckInModalProps) {
+export default function CheckInModal({ isOpen, onClose, visitorToEdit, onSuccess }: CheckInModalProps) {
   const [formData, setFormData] = useState({
     fullName: '',
     cpf: '',
@@ -37,7 +38,25 @@ export default function CheckInModal({ isOpen, onClose, visitorToEdit }: CheckIn
         passport: visitorToEdit.passport || '',
         isForeigner: visitorToEdit.isForeigner || false,
         gender: visitorToEdit.gender || Gender.MALE,
-        birthDate: (visitorToEdit as any).birthDate || '',
+        birthDate: (() => {
+          const bd = (visitorToEdit as any).birthDate;
+          if (!bd) return '';
+          let dateStr = '';
+          if (typeof bd === 'string') dateStr = bd.split('T')[0];
+          else if (bd instanceof Date) {
+            const y = bd.getFullYear();
+            const m = String(bd.getMonth() + 1).padStart(2, '0');
+            const d = String(bd.getDate()).padStart(2, '0');
+            dateStr = `${y}-${m}-${d}`;
+          }
+          if (dateStr) {
+            const parts = dateStr.split('-');
+            const year = parts[0];
+            if (year.length > 4) return '';
+            return `${parts[2]}/${parts[1]}/${parts[0]}`;
+          }
+          return '';
+        })(),
         email: visitorToEdit.email || '',
         phone: visitorToEdit.phone || '',
         address: (visitorToEdit as any).address || '',
@@ -82,6 +101,36 @@ export default function CheckInModal({ isOpen, onClose, visitorToEdit }: CheckIn
       newErrors.phone = 'Telefone inválido';
     }
 
+    if (formData.birthDate) {
+      const parts = formData.birthDate.split('/');
+      if (parts.length !== 3) {
+        newErrors.birthDate = 'Data inválida';
+      } else {
+        const day = parseInt(parts[0], 10);
+        const month = parseInt(parts[1], 10);
+        const year = parseInt(parts[2], 10);
+        
+        if (year < 1900 || year > 2100) {
+          newErrors.birthDate = 'Ano inválido';
+        } else if (month < 1 || month > 12) {
+          newErrors.birthDate = 'Mês inválido';
+        } else if (day < 1 || day > 31) {
+          newErrors.birthDate = 'Dia inválido';
+        } else {
+          const birth = new Date(year, month - 1, day);
+          const now = new Date();
+          const minDate = new Date();
+          minDate.setFullYear(minDate.getFullYear() - 110);
+          
+          if (birth > now) {
+            newErrors.birthDate = 'Data de nascimento não pode ser no futuro';
+          } else if (birth < minDate) {
+            newErrors.birthDate = 'Data de nascimento inválida (mais de 110 anos)';
+          }
+        }
+      }
+    }
+
     if (Object.keys(newErrors).length > 0) {
       setErrors(newErrors);
       return;
@@ -111,7 +160,16 @@ export default function CheckInModal({ isOpen, onClose, visitorToEdit }: CheckIn
         passport: formData.passport,
         is_foreigner: formData.isForeigner,
         gender: formData.gender,
-        birth_date: formData.birthDate,
+        birth_date: (() => {
+          if (!formData.birthDate) return '';
+          const parts = formData.birthDate.split('/');
+          if (parts.length === 3) {
+            const year = parts[2];
+            if (year.length > 4) return '';
+            return `${parts[2]}-${parts[1]}-${parts[0]}`;
+          }
+          return formData.birthDate;
+        })(),
         email: formData.email,
         phone: cleanPhone,
         address: formData.address,
@@ -119,18 +177,28 @@ export default function CheckInModal({ isOpen, onClose, visitorToEdit }: CheckIn
       };
 
       // Usa visitorService para criar ou atualizar
+      let successMsg = visitorToEdit ? 'Visitante atualizado com sucesso!' : 'Visitante criado com sucesso!';
+      
       if (visitorToEdit) {
-        await visitorService.update(visitorToEdit.id as string, dataToSave);
+        const res = await visitorService.update(visitorToEdit.id as string, dataToSave);
+        if (res.error) {
+          console.error('Update error:', res.error);
+          throw new Error(res.error.message || 'Erro ao atualizar visitante');
+        }
       } else {
-        await visitorService.create(dataToSave);
+        const res = await visitorService.create(dataToSave);
+        if (res.error) {
+          console.error('Create error:', res.error);
+          throw new Error(res.error.message || 'Erro ao criar visitante');
+        }
       }
 
+      if (onSuccess) onSuccess();
       setSuccess(true);
       setTimeout(() => {
         setSuccess(false);
         onClose();
-        setFormData({ fullName: '', cpf: '', passport: '', isForeigner: false, gender: Gender.MALE, birthDate: '', email: '', phone: '', address: '', category: VisitorCategory.GENERAL });
-      }, 2000);
+      }, 1500);
     } catch (error) {
       handleFirestoreError(error, OperationType.WRITE, 'visitors');
     } finally {
@@ -236,11 +304,38 @@ export default function CheckInModal({ isOpen, onClose, visitorToEdit }: CheckIn
                     <div>
                       <label className="block text-xs font-bold text-slate-400 uppercase tracking-widest mb-1.5">Data de Nascimento</label>
                       <input
-                        type="date"
+                        type="text"
                         value={formData.birthDate}
-                        onChange={e => setFormData({ ...formData, birthDate: e.target.value })}
-                        className="w-full bg-slate-50 border border-slate-200 rounded-lg px-4 py-2.5 text-sm focus:ring-2 focus:ring-primary/20 outline-none"
+                        onChange={e => {
+                          let val = e.target.value.replace(/[^\d]/g, '');
+                          if (val.length > 8) val = val.slice(0, 8);
+                          if (val.length >= 5) {
+                            val = val.slice(0, 2) + '/' + val.slice(2, 4) + '/' + val.slice(4);
+                          } else if (val.length >= 3) {
+                            val = val.slice(0, 2) + '/' + val.slice(2);
+                          }
+                          if (val.length === 10) {
+                            const parts = val.split('/');
+                            if (parts[2].length > 4) parts[2] = parts[2].slice(0, 4);
+                            val = parts[0] + '/' + parts[1] + '/' + parts[2];
+                          }
+                          setFormData({ ...formData, birthDate: val });
+                        }}
+                        onPaste={e => {
+                          e.preventDefault();
+                          let val = (e.clipboardData.getData('text') || '').replace(/[^\d]/g, '');
+                          if (val.length > 8) val = val.slice(0, 8);
+                          if (val.length >= 5) {
+                            val = val.slice(0, 2) + '/' + val.slice(2, 4) + '/' + val.slice(4);
+                          } else if (val.length >= 3) {
+                            val = val.slice(0, 2) + '/' + val.slice(2);
+                          }
+                          setFormData({ ...formData, birthDate: val });
+                        }}
+                        placeholder="DD/MM/AAAA"
+                        className={`w-full bg-slate-50 border rounded-lg px-4 py-2.5 text-sm focus:ring-2 focus:ring-primary/20 outline-none ${errors.birthDate ? 'border-red-500 focus:ring-red-500/20' : 'border-slate-200'}`}
                       />
+                      {errors.birthDate && <p className="text-red-500 text-xs mt-1">{errors.birthDate}</p>}
                     </div>
                   </div>
                 </div>

@@ -4,19 +4,26 @@ import { PrismaClient } from '@prisma/client';
 const prisma = new PrismaClient();
 
 function parseDate(value: any): Date | null {
-  if (!value) return null;
-  if (value instanceof Date) return value;
-  if (typeof value === 'string') {
-    const d = new Date(value);
-    if (!isNaN(d.getTime())) return d;
-    const parts = value.split('-');
-    if (parts.length === 3) {
-      const year = parseInt(parts[0], 10);
-      const month = parseInt(parts[1], 10) - 1;
-      const day = parseInt(parts[2], 10);
-      const d2 = new Date(year, month, day);
-      if (!isNaN(d2.getTime())) return d2;
-    }
+  if (!value || typeof value !== 'string') return null;
+  const trimmed = value.trim();
+  if (!trimmed) return null;
+  if (trimmed === '') return null;
+  
+  const d = new Date(trimmed);
+  if (!isNaN(d.getTime())) {
+    const year = d.getFullYear();
+    if (year < 1900 || year > 2100) return null;
+    return d;
+  }
+  
+  const parts = trimmed.split('-');
+  if (parts.length === 3) {
+    const year = parseInt(parts[0], 10);
+    const month = parseInt(parts[1], 10) - 1;
+    const day = parseInt(parts[2], 10);
+    if (year < 1900 || year > 2100) return null;
+    const d2 = new Date(year, month, day);
+    if (!isNaN(d2.getTime())) return d2;
   }
   return null;
 }
@@ -80,7 +87,9 @@ export async function visitorRoutes(app: FastifyInstance) {
   // Atualizar
   app.put('/:id', { preHandler: [app.authenticate] }, async (request: any) => {
     const { id } = request.params;
+    console.log('PUT visitor - body:', JSON.stringify(request.body));
     const data = mapVisitorFields(request.body);
+    console.log('PUT visitor - mapped:', JSON.stringify(data));
     const visitor = await prisma.visitor.update({ where: { id }, data });
     return visitor;
   });

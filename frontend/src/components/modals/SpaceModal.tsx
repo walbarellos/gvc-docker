@@ -1,22 +1,9 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { 
-  X, 
-  MapPin, 
-  Mail, 
-  Clock, 
-  Users, 
-  Package, 
-  Bell, 
-  Info, 
-  Search, 
-  Monitor, 
-  CalendarDays, 
-  ClipboardList,
-  Save,
-  Settings as SettingsIcon
+  X, MapPin, Mail, Clock, Users, Package, Bell, Info, Search, Monitor, CalendarDays, ClipboardList, Save, Settings as SettingsIcon
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
-import { supabase } from '../../lib/supabase';
+import { spaceService, Space } from '../../services/spaceService';
 import { auditService } from '../../services/auditService';
 import { useAuth } from '../../contexts/AuthContext';
 
@@ -189,7 +176,7 @@ const SpaceModal: React.FC<SpaceModalProps> = ({ isOpen, onClose, spaceToEdit })
       };
 
       if (spaceToEdit) {
-        const { error: updateError } = await supabase.from('espacos').update(dataToSave).eq('id', spaceToEdit.id);
+        const { error: updateError } = await spaceService.update(spaceToEdit.id, dataToSave);
         if (updateError) {
           console.error('Erro ao atualizar:', updateError);
           alert('Erro ao salvar: ' + updateError.message);
@@ -198,10 +185,10 @@ const SpaceModal: React.FC<SpaceModalProps> = ({ isOpen, onClose, spaceToEdit })
         }
         await auditService.log({ acao: "editou_espaco", detalhes: `Editou espaço cultural ${formData.nome}`, entidadeId: spaceToEdit.id, userProfile: currentAdmin });
       } else {
-        const { data, error } = await supabase.from('espacos').insert([dataToSave]).select().single();
+        const { data, error } = await spaceService.create(dataToSave);
         if (error) throw error;
         if (data) {
-          await auditService.log({ acao: "criou_espaco", detalhes: `Criou novo espaço cultural ${formData.nome}`, entidadeId: data.id, userProfile: currentAdmin });
+          await auditService.log({ acao: "criou_espaco", detalhes: `Criou novo espaço cultural ${formData.nome}`, entidadeId: (data as any)?.id, userProfile: currentAdmin });
         }
       }
       onClose();
