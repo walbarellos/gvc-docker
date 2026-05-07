@@ -1,10 +1,11 @@
 import React, { useState, useEffect } from 'react';
 import { useAuth } from '../../contexts/AuthContext';
-import { visitorService } from '../../services/visitorService';
+import { visitorService, Visitor } from '../../services/visitorService';
 import { visitService } from '../../services/visitService';
 import { api } from '../../lib/api';
-import {
-  Monitor,
+import { 
+  Monitor, 
+  MonitorOff,
   CheckCircle2,
   AlertCircle,
   Search,
@@ -69,7 +70,20 @@ export default function Telecentro() {
 
       const fullList: Computador[] = [];
       for (let i = 1; i <= totalComputadoresCount; i++) {
-        const existing = (data || []).find(c => c.numero === i);
+        let existing = (data || []).find(c => c.numero === i);
+        if (!existing) {
+          // Criar computador automaticamente se não existir
+          try {
+            const { data: newComp } = await api.post<any>('/computadores', {
+              numero: i,
+              status: 'Livre',
+              espacoId: espacoId
+            });
+            existing = newComp;
+          } catch (e) {
+            console.error('Erro ao criar computador', e);
+          }
+        }
         fullList.push(existing ? {
           id: existing.id,
           numero: existing.numero,
