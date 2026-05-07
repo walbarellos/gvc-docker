@@ -25,6 +25,7 @@ export interface Space {
   has_espaco_aberto?: boolean;
   qtd_espaco_aberto?: number;
   has_visita_guiada?: boolean;
+  qtd_visita_guiada?: number;
 }
 
 export const spaceService = {
@@ -41,6 +42,11 @@ export const spaceService = {
   async getById(id: string) {
     const { data, error } = await api.get<Space>(`/spaces/${id}`);
     return { data, error };
+  },
+
+  async getUsers(spaceId: string) {
+    const { data, error } = await api.get<any[]>(`/users?espaco_id=${spaceId}`);
+    return { data: data || [], error };
   },
 
   async create(space: Omit<Space, 'id'>) {
