@@ -1,4 +1,4 @@
-import { supabase } from '../lib/supabase';
+import { api } from '../lib/api';
 import { getPublicIP } from '../utils/network';
 import { generateDocumentHash } from '../utils/crypto';
 import { getBrowserFingerprint } from '../utils/browser';
@@ -53,11 +53,7 @@ export const registrarAssinaturaDigital = async (dados: AssinaturaData): Promise
       termo_hash: dados.termosConteudo ? await generateDocumentHash(dados.termosConteudo) : null,
     };
     
-    const { data, error } = await supabase
-      .from('assinaturas_digitais')
-      .insert(assinaturaData)
-      .select()
-      .single();
+    const { data, error } = await api.post<any>('/assinaturas', assinaturaData);
     
     if (error) {
       console.error('Erro ao salvar assinatura:', error);

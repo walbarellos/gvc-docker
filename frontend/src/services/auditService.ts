@@ -1,4 +1,4 @@
-import { supabase } from '../lib/supabase';
+import { api, getTokenStored } from '../lib/api';
 
 export type AuditoriaAcao = 
   | "criou_usuario" 
@@ -44,20 +44,17 @@ export const auditService = {
     try {
       const maskedDetalhes = maskSensitiveData(params.detalhes);
       
-      const { data: { user } } = await supabase.auth.getUser();
+      const token = getTokenStored();
       
       const payload = {
         acao: params.acao,
         detalhes: maskedDetalhes,
         entidade_id: params.entidadeId || null,
-        usuario: user?.email || "sistema",
+        usuario: params.userProfile?.email || "sistema",
         perfil: params.userProfile?.perfil || "desconhecido",
-        usuario_id: user?.id || null
       };
 
-      const { data, error } = await supabase.functions.invoke('register-audit', {
-        body: payload
-      });
+      const { data, error } = await api.post('/auditoria', payload);
 
       if (error) {
         console.error("Erro ao registrar auditoria:", error);
@@ -72,12 +69,7 @@ export const auditService = {
   },
 
   async getRecent(limit = 50) {
-    const { data, error } = await supabase
-      .from('auditoria')
-      .select('*')
-      .order('created_at', { ascending: false })
-      .limit(limit);
-
-    return { data, error };
+    const { data, error } = await api.get<any[]>(`/auditoria?limit=${limit}`);
+    return { data: data || [], error };
   }
 };

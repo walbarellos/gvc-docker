@@ -1,34 +1,44 @@
-import { supabase } from '../lib/supabase';
+import { api } from '../lib/api';
+
+export interface VisitWithVisitor {
+    id: string;
+    visitor_id: string;
+    nome: string;
+    perfil: string;
+    local: string;
+    espaco_id: string;
+    checkin: string;
+    checkout: string | null;
+    status: string;
+    armario: string | null;
+    visitors?: {
+        full_name: string;
+        cpf: string | null;
+        passport: string | null;
+        is_foreigner: boolean;
+    };
+}
 
 export const visitService = {
     async listActive(espacoId: string) {
-        const { data, error } = await supabase
-            .from('visits')
-            .select('*, visitors(full_name, cpf, passport, is_foreigner)')
-            .eq('espaco_id', espacoId)
-            .in('status', ['Ativo', 'Excedido'])
-            .order('checkin', { ascending: false });
-        return { data, error };
+        const { data, error } = await api.get<VisitWithVisitor[]>(
+            `/visits?espaco_id=${espacoId}&status=Ativo,Excedido&order=checkin`
+        );
+        return { data: data || [], error };
     },
 
     async listHistory(espacoId: string, limit = 50) {
-        const { data, error } = await supabase
-            .from('visits')
-            .select('*, visitors(full_name, cpf, passport, is_foreigner)')
-            .eq('espaco_id', espacoId)
-            .order('checkin', { ascending: false })
-            .limit(limit);
-        return { data, error };
+        const { data, error } = await api.get<VisitWithVisitor[]>(
+            `/visits?espaco_id=${espacoId}&limit=${limit}&order=checkin`
+        );
+        return { data: data || [], error };
     },
 
     async countToday(espacoId: string) {
         const today = new Date().toISOString().split('T')[0];
-        const { count, error } = await supabase
-            .from('visits')
-            .select('*', { count: 'exact', head: true })
-            .eq('espaco_id', espacoId)
-            .gte('checkin', `${today}T00:00:00`)
-            .lte('checkin', `${today}T23:59:59`);
-        return { count, error };
+        const { data, error } = await api.get<{ count: number }[]>(
+            `/visits/count?espaco_id=${espacoId}&date=${today}`
+        );
+        return { count: data?.[0]?.count || 0, error };
     }
 };

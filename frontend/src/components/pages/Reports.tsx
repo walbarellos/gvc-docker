@@ -198,7 +198,7 @@ export default function Reports() {
       }
 
       // Obter IDs únicos de visitantes no período
-      const visitorIds = [...new Set(visitsData.map(v => v.visitor_id))];
+      const visitorIds = [...new Set((visitsData || []).map(v => v.visitor_id))];
 
       // Buscar dados dos visitantes
       const { data: visitorsData } = await supabase
@@ -322,13 +322,13 @@ export default function Reports() {
         const startDatetime = new Date(startDate + 'T00:00:00').toISOString();
         const endDatetime = new Date(endDate + 'T23:59:59').toISOString();
 
-        const acessosPeriodo = comps.filter(c => c.horario_inicio && new Date(c.horario_inicio) >= new Date(startDatetime) && new Date(c.horario_inicio) <= new Date(endDatetime));
-        const ativos = comps.filter(c => c.status === 'Em Uso');
-        const livres = comps.filter(c => c.status === 'Livre' || !c.status).length;
+        const acessosPeriodo = (comps || []).filter(c => c.horario_inicio && new Date(c.horario_inicio) >= new Date(startDatetime) && new Date(c.horario_inicio) <= new Date(endDatetime));
+        const ativos = (comps || []).filter(c => c.status === 'Em Uso');
+        const livres = (comps || []).filter(c => c.status === 'Livre' || !c.status).length;
         const emUso = ativos.length;
-        const excedidos = comps.filter(c => c.status === 'Excedido').length;
+        const excedidos = (comps || []).filter(c => c.status === 'Excedido').length;
 
-        const usedWithTime = comps.filter(c => c.horario_inicio && c.horario_limite);
+        const usedWithTime = (comps || []).filter(c => c.horario_inicio && c.horario_limite);
         let tempoMedio = 0;
         if (usedWithTime.length > 0) {
           const totalMinutes = usedWithTime.reduce((acc, c) => acc + (new Date(c.horario_limite).getTime() - new Date(c.horario_inicio).getTime()) / 60000, 0);
@@ -352,7 +352,7 @@ export default function Reports() {
 
   const handleExportExcel = async () => {
     // Dados de Visitantes
-    const visitData = visits.map(v => {
+    const visitData = (visits || []).map(v => {
       const status = v.status as string;
       return {
         'ID Registro': `V-${v.id.slice(0, 4).toUpperCase()}`,
@@ -383,7 +383,7 @@ export default function Reports() {
         const startDatetime = new Date(startDate + 'T00:00:00').toISOString();
         const endDatetime = new Date(endDate + 'T23:59:59').toISOString();
 
-        telecentroData = comps
+        telecentroData = (comps || [])
           .filter(c => c.horario_inicio && new Date(c.horario_inicio) >= new Date(startDatetime) && new Date(c.horario_inicio) <= new Date(endDatetime))
           .map(c => ({
             'PC': c.numero,
@@ -429,7 +429,7 @@ export default function Reports() {
     if (!visitToDelete) return;
     try {
       await supabase.from('visits').delete().eq('id', visitToDelete.id);
-      setVisits(prev => prev.filter(v => v.id !== visitToDelete.id));
+      setVisits(prev => (prev || []).filter(v => v.id !== visitToDelete.id));
       await auditService.log({ acao: "excluiu_visita", detalhes: `Excluiu registro de visita de ${visitToDelete.nome} em ${visitToDelete.local}`, entidadeId: visitToDelete.id, userProfile: currentAdmin });
     } catch (error) {
       alert("Erro ao excluir registro.");
@@ -453,7 +453,7 @@ export default function Reports() {
 
   const peakHour = useMemo(() => {
     if (visits.length === 0) return 'N/A';
-    const hours = visits.map(v => {
+    const hours = (visits || []).map(v => {
       if (!v.checkin) return -1;
       const date = new Date(v.checkin);
       return date.getHours();
@@ -567,7 +567,7 @@ export default function Reports() {
               {isRestrictedCoord ? (
                 <option value={currentAdmin?.espacoId}>{currentAdmin?.espacoNome}</option>
               ) : (
-                locations.map(loc => (
+                (locations || []).map(loc => (
                   <option key={loc.id} value={loc.id}>{loc.nome}</option>
                 ))
               )}
@@ -684,8 +684,8 @@ export default function Reports() {
                       <td colSpan={7} className="px-6 py-4 bg-gray-50/50 h-16"></td>
                     </tr>
                   ))
-                ) : paginatedData.length > 0 ? (
-                  paginatedData.map((visit) => (
+                ) : paginatedData && paginatedData.length > 0 ? (
+                  (paginatedData || []).map((visit) => (
                     <motion.tr 
                       key={visit.id}
                       layout
@@ -804,7 +804,7 @@ export default function Reports() {
                 </tr>
               </thead>
               <tbody className="divide-y divide-gray-100">
-                {telecentroPrintData.map((c, i) => (
+                {(telecentroPrintData || []).map((c, i) => (
                   <tr key={i}>
                     <td className="px-4 py-2 text-sm">{c.numero}</td>
                     <td className="px-4 py-2 text-sm">{c.usuario_nome || c.usuarioNome || '-'}</td>
@@ -847,7 +847,7 @@ export default function Reports() {
                   outerRadius={100}
                   dataKey="value"
                 >
-                  {genderData.map((entry, index) => (
+                  {(genderData || []).map((entry, index) => (
                     <Cell key={`cell-${index}`} fill={entry.color} />
                   ))}
                 </Pie>

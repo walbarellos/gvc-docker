@@ -1,4 +1,4 @@
-import { supabase } from '../lib/supabase';
+import { api } from '../lib/api';
 
 export interface AgendamentoDraft {
   id?: string;
@@ -51,12 +51,9 @@ export const draftService = {
   async saveDraft(data: AgendamentoDraft): Promise<boolean> {
     try {
       const sessionId = getSessionId();
-      const { error } = await supabase.rpc('salvar_rascunho_agendamento', {
-        p_session_id: sessionId,
-        p_dados: JSON.stringify({
-          ...data,
-          currentStep: data.current_step
-        })
+      const { error } = await api.post('/agendamentos/rascunho', {
+        session_id: sessionId,
+        ...data
       });
 
       if (error) {
@@ -73,52 +70,49 @@ export const draftService = {
   async loadDraft(): Promise<AgendamentoDraft | null> {
     try {
       const sessionId = getSessionId();
-      const { data, error } = await supabase
-        .from('agendamentos_rascunho')
-        .select('*')
-        .eq('session_id', sessionId)
-        .order('updated_at', { ascending: false })
-        .limit(1)
-        .single();
+      const { data, error } = await api.get<AgendamentoDraft[]>(
+        `/agendamentos/rascunho?session_id=${sessionId}`
+      );
 
-      if (error || !data) {
+      if (error || !data || data.length === 0) {
         return null;
       }
 
+      const d = data[0];
       return {
-        id: data.id,
-        session_id: data.session_id,
-        solicitante_nome: data.solicitante_nome || '',
-        solicitante_email: data.solicitante_email || '',
-        solicitante_telefone: data.solicitante_telefone || '',
-        solicitante_documento: data.solicitante_documento || '',
-        tipo_solicitante: data.tipo_solicitante || 'pessoa_fisica',
-        razao_social: data.razao_social || '',
-        nome_instituicao: data.nome_instituicao || '',
-        secretaria_governo: data.secretaria_governo || '',
-        unidade_governo: data.unidade_governo || '',
-        espaco_id: data.espaco_id || '',
-        tipo_espaco: data.tipo_espaco || '',
-        espaco_solicitado: data.espaco_solicitado || '',
-        data_pretendida: data.data_pretendida || '',
-        horario_inicio: data.horario_inicio || '',
-        horario_fim: data.horario_fim || '',
-        numero_participantes: data.numero_participantes || 0,
-        descricao_evento: data.descricao_evento || '',
-        natureza_evento: data.natureza_evento || 'cultural',
-        gratuito: data.gratuito !== false,
-        valor_ingresso: data.valor_ingresso || '',
-        necessita_equipamentos: data.necessita_equipamentos || '',
-        observacoes: data.observacoes || '',
-        termo_aceito: data.termo_aceito || false,
-        responsabhilidade_evento: data.responsabhilidade_evento || false,
-        danos_patrimonio: data.danos_patrimonio || false,
-        respeito_lotacao: data.respeito_lotacao || false,
-        autorizo_divulgacao: data.autorizo_divulgacao || false,
-        termo_compromisso_assinado: data.termo_compromisso_assinado || false,
-        termo_compromisso_data: data.termo_compromisso_data || '',
-        termo_compromisso_ip: data.termo_compromisso_ip || '',
-        current_step: data.current_step || 1
+        id: d.id,
+        session_id: d.session_id,
+        solicitante_nome: d.solicitante_nome || '',
+        solicitante_email: d.solicitante_email || '',
+        solicitante_telefone: d.solicitante_telefone || '',
+        solicitante_documento: d.solicitante_documento || '',
+        tipo_solicitante: d.tipo_solicitante || 'pessoa_fisica',
+        razao_social: d.razao_social || '',
+        nome_instituicao: d.nome_instituicao || '',
+        secretaria_governo: d.secretaria_governo || '',
+        unidade_governo: d.unidade_governo || '',
+        espaco_id: d.espaco_id || '',
+        tipo_espaco: d.tipo_espaco || '',
+        espaco_solicitado: d.espaco_solicitado || '',
+        data_pretendida: d.data_pretendida || '',
+        horario_inicio: d.horario_inicio || '',
+        horario_fim: d.horario_fim || '',
+        numero_participantes: d.numero_participantes || 0,
+        descricao_evento: d.descricao_evento || '',
+        natureza_evento: d.natureza_evento || 'cultural',
+        gratuito: d.gratuito !== false,
+        valor_ingresso: d.valor_ingresso || '',
+        necessita_equipamentos: d.necessita_equipamentos || '',
+        observacoes: d.observacoes || '',
+        termo_aceito: d.termo_aceito || false,
+        responsabhilidade_evento: d.responsabhilidade_evento || false,
+        danos_patrimonio: d.danos_patrimonio || false,
+        respeito_lotacao: d.respeito_lotacao || false,
+        autorizo_divulgacao: d.autorizo_divulgacao || false,
+        termo_compromisso_assinado: d.termo_compromisso_assinado || false,
+        termo_compromisso_data: d.termo_compromisso_data || '',
+        termo_compromisso_ip: d.termo_compromisso_ip || '',
+        current_step: d.current_step || 1
       };
     } catch (e) {
       console.error('Erro ao carregar rascunho:', e);
@@ -129,9 +123,7 @@ export const draftService = {
   async clearDraft(): Promise<boolean> {
     try {
       const sessionId = getSessionId();
-      const { error } = await supabase.rpc('limpar_rascunho_agendamento', {
-        p_session_id: sessionId
-      });
+      const { error } = await api.delete(`/agendamentos/rascunho?session_id=${sessionId}`);
 
       if (error) {
         console.error('Erro ao limpar rascunho:', error);

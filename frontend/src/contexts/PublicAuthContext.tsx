@@ -1,6 +1,5 @@
 import React, { createContext, useContext, useEffect, useState } from 'react';
-import { supabase } from '../lib/supabase';
-import { User, Session } from '@supabase/supabase-js';
+import { api, setToken, getTokenStored, removeToken } from '../lib/api';
 
 export interface PublicUser {
   id: string;
@@ -26,51 +25,40 @@ export function PublicAuthProvider({ children }: { children: React.ReactNode }) 
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    supabase.auth.getSession().then(({ data: { session } }) => {
-      if (session?.user) {
-        setUser(mapSessionToPublicUser(session));
-      }
-      setLoading(false);
-    });
-
-    const { data: { subscription } } = supabase.auth.onAuthStateChange(
-      (event, session) => {
-        if (session?.user) {
-          setUser(mapSessionToPublicUser(session));
-        } else {
-          setUser(null);
+    const token = getTokenStored();
+    if (token) {
+      api.get<{ id: string; nome: string; email: string }>('/auth/me').then(({ data }) => {
+        if (data) {
+          setUser({
+            id: data.id,
+            email: data.email,
+            nome: data.nome,
+            tipo: 'cidadao'
+          });
         }
-      }
-    );
-
-    return () => subscription.unsubscribe();
+        setLoading(false);
+      });
+    } else {
+      setLoading(false);
+    }
   }, []);
 
-  const mapSessionToPublicUser = (session: Session): PublicUser => ({
-    id: session.user.id,
-    email: session.user.email || '',
-    nome: session.user.user_metadata?.nome || session.user.email?.split('@')[0] || '',
-    telefone: session.user.user_metadata?.telefone || '',
-    tipo: session.user.user_metadata?.tipo || 'cidadao',
-  });
-
   const login = async (email: string, password: string) => {
-    const { error } = await supabase.auth.signInWithPassword({ email, password });
+    const { data, error } = await api.post<{ token: string; user: PublicUser }>('/auth/login', { email, senha: password }, false);
+    if (data) {
+      setToken(data.token);
+      setUser(data.user);
+      return { error: null };
+    }
     return { error: error as Error | null };
   };
 
   const loginWithGoogle = async () => {
-    const { error } = await supabase.auth.signInWithOAuth({
-      provider: 'google',
-      options: {
-        redirectTo: `${window.location.origin}/agendamento-publico`,
-      },
-    });
-    return { error: error as Error | null };
+    return { error: new Error('Google OAuth não disponível') };
   };
 
   const logout = async () => {
-    await supabase.auth.signOut();
+    removeToken();
     setUser(null);
   };
 

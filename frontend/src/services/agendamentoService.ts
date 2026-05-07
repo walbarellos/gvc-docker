@@ -1,4 +1,4 @@
-import { supabase } from '../lib/supabase';
+import { api } from '../lib/api';
 
 export interface Agendamento {
   id?: string;
@@ -50,49 +50,33 @@ export interface DashboardAgendamentos {
   cancelados: number;
 }
 
+function buildQuery(filters?: AgendamentoFilter): string {
+  const params = new URLSearchParams();
+  if (filters?.espaco_id) params.append('espaco_id', filters.espaco_id);
+  if (filters?.status) params.append('status', filters.status);
+  if (filters?.data_inicio) params.append('data_inicio', filters.data_inicio);
+  if (filters?.data_fim) params.append('data_fim', filters.data_fim);
+  return params.toString();
+}
+
 export const agendamentoService = {
   async list(filters?: AgendamentoFilter) {
-    let query = supabase
-      .from('agendamentos')
-      .select('*, espacos(nome, municipio)')
-      .order('created_at', { ascending: false });
-
-    if (filters?.espaco_id) {
-      query = query.eq('espaco_id', filters.espaco_id);
-    }
-    if (filters?.status) {
-      query = query.eq('status', filters.status);
-    }
-    if (filters?.data_inicio) {
-      query = query.gte('data_pretendida', filters.data_inicio);
-    }
-    if (filters?.data_fim) {
-      query = query.lte('data_pretendida', filters.data_fim);
-    }
-
-    const { data, error } = await query;
-    return { data: data as unknown as (Agendamento & { espacos: { nome: string; municipio: string } })[], error };
+    const query = buildQuery(filters);
+    const { data, error } = await api.get<Agendamento[]>(`/agendamentos?${query}`);
+    return { data: data || [], error };
   },
 
   async getById(id: string) {
-    const { data, error } = await supabase
-      .from('agendamentos')
-      .select('*, espacos(nome, municipio)')
-      .eq('id', id)
-      .single();
-    return { data: data as unknown as Agendamento & { espacos: { nome: string; municipio: string } }, error };
+    const { data, error } = await api.get<Agendamento>(`/agendamentos/${id}`);
+    return { data, error };
   },
 
   async create(agendamento: Omit<Agendamento, 'id' | 'status' | 'created_at' | 'updated_at'>) {
-    const { data, error } = await supabase
-      .from('agendamentos')
-      .insert({
-        ...agendamento,
-        termo_aceito_em: agendamento.termo_aceito ? new Date().toISOString() : null,
-      })
-      .select()
-      .single();
-    return { data: data as Agendamento, error };
+    const { data, error } = await api.post<Agendamento>('/agendamentos', {
+      ...agendamento,
+      termo_aceito_em: agendamento.termo_aceito ? new Date().toISOString() : null,
+    });
+    return { data, error };
   },
 
   async updateStatus(
@@ -100,115 +84,39 @@ export const agendamentoService = {
     status: 'aprovado' | 'rejeitado' | 'cancelado',
     resposta?: string
   ) {
-    const { data, error } = await supabase
-      .from('agendamentos')
-      .update({
-        status,
-        resposta_coordenador: resposta,
-        respondido_em: new Date().toISOString(),
-      })
-      .eq('id', id)
-      .select()
-      .single();
-    return { data: data as Agendamento, error };
+    const { data, error } = await api.patch<Agendamento>(`/agendamentos/${id}`, {
+      status,
+      resposta_coordenador: resposta,
+      respondido_em: new Date().toISOString(),
+    });
+    return { data, error };
   },
 
   async getDashboardStats(espacoId?: string) {
-    let query = supabase
-      .from('agendamentos')
-      .select('status', { count: 'exact' });
-
-    if (espacoId) {
-      query = query.eq('espaco_id', espacoId);
-    }
-
-    const { data, error } = await query;
-    
-    if (error) return { data: null, error };
-
-    const stats: DashboardAgendamentos = {
-      total: 0,
-      pendentes: 0,
-      aprovados: 0,
-      rejeitados: 0,
-      cancelados: 0,
-    };
-
-    if (data) {
-      stats.total = data.length;
-      stats.pendentes = data.filter(d => d.status === 'pendente').length;
-      stats.aprovados = data.filter(d => d.status === 'aprovado').length;
-      stats.rejeitados = data.filter(d => d.status === 'rejeitado').length;
-      stats.cancelados = data.filter(d => d.status === 'cancelado').length;
-    }
-
-    return { data: stats, error: null };
+    const query = espacoId ? `?espaco_id=${espacoId}` : '';
+    const { data, error } = await api.get<DashboardAgendamentos>(`/agendamentos/dashboard${query}`);
+    return { data, error };
   },
 
   async getConflitos(espacoId: string, data: string, inicio: string, fim: string, excludeId?: string) {
-    const { data: conflitos, error } = await supabase
-      .from('agendamentos')
-      .select('id, data_pretendida, horario_inicio, horario_fim, espaco_solicitado')
-      .eq('espaco_id', espacoId)
-      .eq('data_pretendida', data)
-      .neq('status', 'rejeitado')
-      .neq('status', 'cancelado')
-      .or(`horario_inicio.lt.${fim},horario_fim.gt.${inicio}`)
-      .neq('id', excludeId || '00000000-0000-0000-0000-000000000000');
-
-    return { data: conflitos as Agendamento[], error };
+    const { data: conflitos, error } = await api.get<Agendamento[]>(
+      `/agendamentos/conflitos?espaco_id=${espacoId}&data=${data}&inicio=${inicio}&fim=${fim}&exclude_id=${excludeId || ''}`
+    );
+    return { data: conflitos || [], error };
   },
 
   async getAvailableDates(espacoId: string, year: number, month: number) {
     const startDate = `${year}-${String(month).padStart(2, '0')}-01`;
     const endDate = `${year}-${String(month).padStart(2, '0')}-31`;
 
-    const { data, error } = await supabase
-      .from('agendamentos')
-      .select('data_pretendida, horario_inicio, horario_fim')
-      .eq('espaco_id', espacoId)
-      .gte('data_pretendida', startDate)
-      .lte('data_pretendida', endDate)
-      .neq('status', 'rejeitado')
-      .neq('status', 'cancelado');
-
+    const { data, error } = await api.get<{ data_pretendida: string; horario_inicio: string; horario_fim: string }[]>(
+      `/agendamentos/disponiveis?espaco_id=${espacoId}&inicio=${startDate}&fim=${endDate}`
+    );
     return { data, error };
-  },
-
-  async uploadDocumento(agendamentoId: string, arquivo: File, tipo: 'termo_assinado' | 'comprovante' | 'outro') {
-    const fileName = `${agendamentoId}/${tipo}_${Date.now()}_${arquivo.name}`;
-    
-    const { data: uploadData, error: uploadError } = await supabase.storage
-      .from('documentos-agendamentos')
-      .upload(fileName, arquivo);
-
-    if (uploadError) return { data: null, error: uploadError };
-
-    const { data: urlData } = supabase.storage
-      .from('documentos-agendamentos')
-      .getPublicUrl(fileName);
-
-    const { data: docData, error: docError } = await supabase
-      .from('documentos_agendamento')
-      .insert({
-        agendamento_id: agendamentoId,
-        nome_arquivo: arquivo.name,
-        url_arquivo: urlData.publicUrl,
-        tipo_documento: tipo,
-      })
-      .select()
-      .single();
-
-    return { data: docData, error: docError };
   },
 
   async getDocumentos(agendamentoId: string) {
-    const { data, error } = await supabase
-      .from('documentos_agendamento')
-      .select('*')
-      .eq('agendamento_id', agendamentoId)
-      .order('uploaded_at', { ascending: false });
-
-    return { data, error };
+    const { data, error } = await api.get<any[]>(`/agendamentos/${agendamentoId}/documentos`);
+    return { data: data || [], error };
   },
 };

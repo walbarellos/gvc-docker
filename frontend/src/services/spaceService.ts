@@ -1,4 +1,4 @@
-import { supabase } from '../lib/supabase';
+import { api } from '../lib/api';
 
 export interface Space {
   id?: string;
@@ -29,63 +29,37 @@ export interface Space {
 
 export const spaceService = {
   async list() {
-    const { data, error } = await supabase
-      .from('espacos')
-      .select('*')
-      .eq('ativo', true)
-      .order('nome', { ascending: true });
-    return { data: data as Space[], error };
+    const { data, error } = await api.get<Space[]>('/spaces?ativo=true&order=nome');
+    return { data: data || [], error };
   },
 
   async listAll() {
-    const { data, error } = await supabase
-      .from('espacos')
-      .select('*')
-      .order('nome', { ascending: true });
-    return { data: data as Space[], error };
+    const { data, error } = await api.get<Space[]>('/spaces?order=nome');
+    return { data: data || [], error };
   },
 
   async getById(id: string) {
-    const { data, error } = await supabase
-      .from('espacos')
-      .select('*')
-      .eq('id', id)
-      .single();
-    return { data: data as Space, error };
+    const { data, error } = await api.get<Space>(`/spaces/${id}`);
+    return { data, error };
   },
 
   async create(space: Omit<Space, 'id'>) {
-    const { data, error } = await supabase
-      .from('espacos')
-      .insert(space)
-      .select()
-      .single();
-    return { data: data as Space, error };
+    const { data, error } = await api.post<Space>('/spaces', space);
+    return { data, error };
   },
 
   async update(id: string, updates: Partial<Space>) {
-    const { data, error } = await supabase
-      .from('espacos')
-      .update(updates)
-      .eq('id', id)
-      .select()
-      .single();
-    return { data: data as Space, error };
+    const { data, error } = await api.put<Space>(`/spaces/${id}`, updates);
+    return { data, error };
   },
 
   async deactivate(id: string) {
-    const { error } = await supabase
-      .from('espacos')
-      .update({ ativo: false })
-      .eq('id', id);
+    const { error } = await api.patch(`/spaces/${id}`, { ativo: false });
     return { error };
   },
 
   async delete(id: string) {
-    const { error } = await supabase
-      .from('espacos')
-      .delete()
-      .eq('id', id);
+    const { error } = await api.delete(`/spaces/${id}`);
     return { error };
   }
 };

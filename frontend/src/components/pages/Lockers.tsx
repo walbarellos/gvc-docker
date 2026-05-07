@@ -59,7 +59,7 @@ export default function Lockers() {
 
       const fullList: Locker[] = [];
       for (let i = 1; i <= totalLockersCount; i++) {
-        const existing = data.find(l => l.number === i);
+        const existing = (data || []).find(l => l.number === i);
         fullList.push(
           existing 
             ? { 
@@ -100,7 +100,7 @@ export default function Lockers() {
         const { data } = await supabase.from('visitors').select('*');
         if (!data) return;
 
-        const filtered = data.filter((v: any) => {
+        const filtered = (data || []).filter((v: any) => {
           const searchLower = debouncedSearchTerm.toLowerCase();
           const cleanTokenSearch = searchLower.replace(/[^\d]/g, '');
           const searchTokens = searchLower.split(/\s+/).filter(t => t.length > 0);
@@ -115,7 +115,7 @@ export default function Lockers() {
           return nameMatches || cpfMatches || passportMatches;
         });
 
-        setSearchResults(filtered.map(v => ({
+        setSearchResults((filtered || []).map(v => ({
            id: v.id,
            fullName: v.full_name,
            cpf: v.cpf,
@@ -258,11 +258,11 @@ export default function Lockers() {
         <div className="flex gap-4">
           <div className="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-emerald-50 border border-emerald-100 text-emerald-700 text-xs font-bold font-mono">
             <CheckCircle2 size={14} />
-            {lockers.filter(l => l.status === 'available').length} LIVRES
+            {(lockers || []).filter(l => l.status === 'available').length} LIVRES
           </div>
           <div className="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-amber-50 border border-amber-100 text-amber-700 text-xs font-bold font-mono">
             <Lock size={14} />
-            {lockers.filter(l => l.status === 'occupied').length} OCUPADOS
+            {(lockers || []).filter(l => l.status === 'occupied').length} OCUPADOS
           </div>
         </div>
       </div>
@@ -275,7 +275,7 @@ export default function Lockers() {
         </div>
       ) : (
         <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-5 gap-6">
-          {lockers.map((locker) => (
+          {(lockers || []).map((locker) => (
             <motion.div
               key={locker.id}
               whileHover={{ y: -4 }}
@@ -378,8 +378,8 @@ export default function Lockers() {
 
                 <div className="space-y-2">
                   <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest px-1">Resultados</p>
-                  {searchResults.length > 0 ? (
-                    searchResults.map((visitor) => (
+                  {(searchResults || []).length > 0 ? (
+                    (searchResults || []).map((visitor) => (
                       <button
                         key={visitor.id}
                         onClick={() => assignLocker(visitor)}

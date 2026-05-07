@@ -40,7 +40,7 @@ export default function Settings() {
       const { count: usersCount } = await supabase.from('usuarios').select('*', { count: 'exact', head: true });
 
       if (spacesData) {
-        const active = spacesData.filter(d => d.ativo !== false).length;
+        const active = (spacesData || []).filter(d => d.ativo !== false).length;
         const lockers = spacesData.reduce((acc, doc) => acc + (doc.total_armarios || 0), 0);
         setStats(prev => ({ ...prev, totalSpaces: active, totalLockers: lockers }));
       }

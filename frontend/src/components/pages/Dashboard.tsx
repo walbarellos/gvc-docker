@@ -74,7 +74,7 @@ export default function Dashboard() {
       
       const { data: recentData } = await historyQuery;
       if (recentData) {
-        setRecentVisits(recentData.map((doc: any) => normalizarVisita(doc)));
+        setRecentVisits((recentData || []).map((doc: any) => normalizarVisita(doc)));
       }
 
       // Total de armários - se admin global, soma de todos os espaços
@@ -204,7 +204,7 @@ export default function Dashboard() {
                 <YAxis axisLine={false} tickLine={false} tick={{ fontSize: 10, fontWeight: 700, fill: '#94a3b8' }} />
                 <Tooltip cursor={{ fill: '#f8fafc' }} contentStyle={{ borderRadius: '12px', border: 'none', boxShadow: '0 10px 15px -3px rgb(0 0 0 / 0.1)' }} labelStyle={{ fontWeight: 800, color: '#1e293b', marginBottom: '4px' }} />
                 <Bar dataKey="count" radius={[6, 6, 0, 0]} barSize={40}>
-                  {chartData.map((_, index) => (
+                  {(chartData || []).map((_, index) => (
                     <Cell key={`cell-${index}`} fill={index === chartData.length - 1 ? '#1e3a8a' : '#3b82f6'} />
                   ))}
                 </Bar>
@@ -225,11 +225,11 @@ export default function Dashboard() {
           <div className="flex-1 overflow-y-auto divide-y divide-gray-50">
             {loading ? (
               <div className="p-8 text-center animate-pulse text-gray-400">Carregando...</div>
-            ) : recentVisits.length > 0 ? recentVisits.map((visit) => (
+            ) : (recentVisits || []).length > 0 ? (recentVisits || []).map((visit) => (
               <motion.div initial={{ opacity: 0, x: -10 }} animate={{ opacity: 1, x: 0 }} key={visit.id} className="p-4 hover:bg-gray-50 transition-colors group">
                 <div className="flex items-center gap-4">
                   <div className="w-10 h-10 rounded-full bg-primary/10 text-primary flex items-center justify-center font-bold text-sm">
-                    {visit.nome.split(' ').map((n: string) => n[0]).join('').slice(0, 2)}
+                    {(visit.nome || '').split(' ').map((n: string) => n[0]).join('').slice(0, 2)}
                   </div>
                   <div className="flex-1 min-w-0">
                     <p className="font-bold text-gray-900 text-sm truncate">{visit.nome}</p>

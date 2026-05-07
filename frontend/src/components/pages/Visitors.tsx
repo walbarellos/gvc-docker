@@ -52,7 +52,7 @@ export default function Visitors() {
         return;
       }
       
-const mapped = data.map(d => ({
+const mapped = (data || []).map(d => ({
          id: d.id,
          fullName: d.full_name,
          cpf: d.cpf,
@@ -127,7 +127,7 @@ const mapped = data.map(d => ({
         return;
       }
       espacoId = selectedSpaceId;
-      espacoNome = spaces.find(s => s.id === selectedSpaceId)?.nome || "Entrada Principal";
+      espacoNome = (spaces || []).find(s => s.id === selectedSpaceId)?.nome || "Entrada Principal";
     }
     
     setSaving(true);
@@ -261,20 +261,20 @@ const mapped = data.map(d => ({
     }
   };
 
-  const filteredVisitors = visitors.filter(v => {
+  const filteredVisitors = (visitors || []).filter(v => {
     //     // console.log('Filtrando visitor:', v.fullName, 'searchTerm:', searchTerm);
       const searchLower = searchTerm.toLowerCase();
       const cleanSearch = searchTerm.replace(/[^\d]/g, '');
       const searchTokens = searchLower.split(/\s+/).filter(t => t.length > 0);
       
       const nameMatches = searchTokens.length > 0 && searchTokens.every(token => 
-        v.fullName.toLowerCase().includes(token)
+        (v.fullName || '').toLowerCase().includes(token)
       );
       
       return (
         (searchTokens.length === 0 || nameMatches) ||
-        (v.cpf && cleanSearch && v.cpf.includes(cleanSearch)) ||
-        (v.passport && searchLower && v.passport.toLowerCase().includes(searchLower))
+        ((v.cpf || '') && cleanSearch && (v.cpf || '').includes(cleanSearch)) ||
+        ((v.passport || '') && searchLower && (v.passport || '').toLowerCase().includes(searchLower))
       );
     });
   
@@ -312,7 +312,7 @@ const mapped = data.map(d => ({
           
           {activeVisits.length > 0 ? (
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
-              {activeVisits.map((visit) => (
+              {(activeVisits || []).map((visit) => (
                 <div key={visit.id} className="bg-white border border-purple-100 rounded-lg p-3 shadow-sm">
                   <div className="flex items-start justify-between">
                     <div>
@@ -356,7 +356,7 @@ const mapped = data.map(d => ({
                  className="bg-transparent font-bold text-primary outline-none"
                >
                  <option value="" disabled>Selecione um local</option>
-                 {spaces.map(s => <option key={s.id} value={s.id}>{s.nome}</option>)}
+                 {(spaces || []).map(s => <option key={s.id} value={s.id}>{s.nome}</option>)}
                </select>
             </div>
           )}
@@ -423,7 +423,7 @@ const mapped = data.map(d => ({
               </tr>
             </thead>
             <tbody className="divide-y divide-gray-100">
-              {filteredVisitors.length > 0 ? filteredVisitors.map((visitor) => (
+              {(filteredVisitors || []).length > 0 ? (filteredVisitors || []).map((visitor) => (
                 <tr key={visitor.id} className="hover:bg-gray-50/50 transition-colors">
                   <td className="px-6 py-4">
                     <div className="flex items-center gap-4">

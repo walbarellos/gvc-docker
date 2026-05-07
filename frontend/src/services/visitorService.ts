@@ -1,4 +1,4 @@
-import { supabase } from '../lib/supabase';
+import { api } from '../lib/api';
 
 export interface Visitor {
     id?: string;
@@ -17,46 +17,27 @@ export interface Visitor {
 export const visitorService = {
     async findByDocument(document: string, isForeigner: boolean) {
         const column = isForeigner ? 'passport' : 'cpf';
-        const { data, error } = await supabase
-            .from('visitors')
-            .select('*')
-            .eq(column, document)
-            .maybeSingle();
-        return { data, error };
+        const { data, error } = await api.get<Visitor[]>(`/visitors?${column}=${document}`);
+        return { data: data?.[0] || null, error };
     },
 
     async listAll() {
-        const { data, error } = await supabase
-            .from('visitors')
-            .select('*')
-            .order('full_name', { ascending: true });
-        return { data: data as Visitor[], error };
+        const { data, error } = await api.get<Visitor[]>('/visitors');
+        return { data: data || [], error };
     },
 
     async create(visitor: Omit<Visitor, 'id' | 'created_at'>) {
-        const { data, error } = await supabase
-            .from('visitors')
-            .insert(visitor)
-            .select()
-            .single();
-        return { data: data as Visitor, error };
+        const { data, error } = await api.post<Visitor>('/visitors', visitor);
+        return { data, error };
     },
 
     async update(id: string, updates: Partial<Visitor>) {
-        const { data, error } = await supabase
-            .from('visitors')
-            .update(updates)
-            .eq('id', id)
-            .select()
-            .single();
-        return { data: data as Visitor, error };
+        const { data, error } = await api.put<Visitor>(`/visitors/${id}`, updates);
+        return { data, error };
     },
 
     async delete(id: string) {
-        const { error } = await supabase
-            .from('visitors')
-            .delete()
-            .eq('id', id);
+        const { error } = await api.delete(`/visitors/${id}`);
         return { error };
     }
 };

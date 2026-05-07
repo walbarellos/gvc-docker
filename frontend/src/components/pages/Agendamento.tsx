@@ -129,9 +129,9 @@ export default function Agendamento() {
   }, []);
 
   const filteredAgendamentos = useMemo(() => {
-    if (!searchTerm) return agendamentos;
+    if (!searchTerm) return agendamentos || [];
     const term = searchTerm.toLowerCase();
-    return agendamentos.filter(
+    return (agendamentos || []).filter(
       (a) =>
         a.solicitante_nome?.toLowerCase().includes(term) ||
         a.solicitante_email?.toLowerCase().includes(term) ||
@@ -314,7 +314,7 @@ export default function Agendamento() {
                 className="px-4 py-2.5 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
               >
                 <option value="">Todos os espaços</option>
-                {spaces.map((space) => (
+                {(spaces || []).map((space) => (
                   <option key={space.id} value={space.id}>
                     {space.nome}
                   </option>
@@ -382,7 +382,7 @@ export default function Agendamento() {
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-slate-100">
-                  {paginatedAgendamentos.map((agendamento) => (
+                  {(paginatedAgendamentos || []).map((agendamento) => (
                     <tr key={agendamento.id} className="hover:bg-slate-50 transition-colors">
                       <td className="px-6 py-4">
                         <div>
@@ -459,7 +459,7 @@ export default function Agendamento() {
                   >
                     <ChevronLeft size={18} />
                   </button>
-                  {Array.from({ length: totalPages }, (_, i) => i + 1)
+                  {Array.from({ length: totalPages || 0 }, (_, i) => i + 1)
                     .filter((page) => page === 1 || page === totalPages || Math.abs(page - currentPage) <= 1)
                     .map((page, idx, arr) => (
                       <React.Fragment key={page}>

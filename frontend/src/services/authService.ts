@@ -1,4 +1,4 @@
-import { supabase } from '../lib/supabase';
+import { api, setToken, removeToken, getTokenStored } from '../lib/api';
 
 export interface UserProfile {
     id: string;
@@ -9,44 +9,45 @@ export interface UserProfile {
     ativo: boolean;
 }
 
+export interface AuthResponse {
+    token: string;
+    user: UserProfile;
+}
+
 export const authService = {
-    // Login
     async signIn(email: string, password: string) {
-        const { data, error } = await supabase.auth.signInWithPassword({
-            email,
-            password
-        });
-
-        return { session: data.session, user: data.user, error };
+        const { data, error } = await api.post<AuthResponse>('/auth/login', { email, senha: password }, false);
+        
+        if (data) {
+            setToken(data.token);
+            return { session: { access_token: data.token, user: data.user }, user: data.user, error: null };
+        }
+        
+        return { session: null, user: null, error };
     },
 
-    // Logout
     async signOut() {
-        const { error } = await supabase.auth.signOut();
-        return { error };
+        removeToken();
+        return { error: null };
     },
 
-    // Buscar perfil do usuário logado
     async getProfile(userId: string) {
-        const { data, error } = await supabase
-            .from('usuarios')
-            .select('*')
-            .eq('id', userId)
-            .single();
-
-        return { data: data as UserProfile, error };
+        const { data, error } = await api.get<UserProfile>(`/auth/usuarios/${userId}`);
+        return { data, error };
     },
 
-    // Verificar sessão atual
     async getSession() {
-        const { data: { session }, error } = await supabase.auth.getSession();
-        return { session, error };
+        const token = getTokenStored();
+        if (token) {
+            const { data } = await api.get<{ id: string; nome: string; email: string; perfil: string }>('/auth/me');
+            if (data) {
+                return { session: { access_token: token, user: data }, error: null };
+            }
+        }
+        return { session: null, error: null };
     },
 
-    // Escutar mudanças na sessão (login/logout)
-    onAuthStateChange(callback: (session: any) => void) {
-        return supabase.auth.onAuthStateChange((_event, session) => {
-            callback(session);
-        });
+    onAuthStateChange(_callback: (session: any) => void) {
+        return { data: { subscription: { unsubscribe: () => {} } } };
     }
 };

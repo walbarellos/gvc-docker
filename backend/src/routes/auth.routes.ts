@@ -1,7 +1,6 @@
 import type { FastifyInstance } from 'fastify';
 import bcrypt from 'bcryptjs';
 import { PrismaClient } from '@prisma/client';
-import '../types/fastify.js';
 
 const prisma = new PrismaClient();
 
@@ -10,17 +9,24 @@ export async function authRoutes(app: FastifyInstance) {
   app.post('/login', async (request, reply) => {
     const { email, senha } = request.body as any;
     
+    console.log('Login attempt - email:', email, 'senha recebida:', senha ? 'sim' : 'não');
+    
     const usuario = await prisma.usuario.findUnique({
       where: { email },
     });
 
+    console.log('Usuario found:', !!usuario, 'ativo:', usuario?.ativo);
+    console.log('Senha hash no DB:', usuario?.senha?.substring(0, 30));
+
     if (!usuario || !usuario.ativo) {
-      return reply.status(401).send({ error: 'Credenciais inválidas' });
+      return reply.status(401).send({ error: 'Credenciais inválidas - usuario não encontrado ou inativo' });
     }
 
     const valid = await bcrypt.compare(senha, usuario.senha || '');
+    console.log('bcrypt.compare result:', valid);
+    
     if (!valid) {
-      return reply.status(401).send({ error: 'Credenciais inválidas' });
+      return reply.status(401).send({ error: 'Credenciais inválidas - senha incorreta' });
     }
 
     const token = app.jwt.sign({

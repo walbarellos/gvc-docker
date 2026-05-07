@@ -70,7 +70,7 @@ export default function Telecentro() {
 
       const fullList: Computador[] = [];
       for (let i = 1; i <= totalComputadoresCount; i++) {
-        const existing = data.find(c => c.numero === i);
+        const existing = (data || []).find(c => c.numero === i);
         fullList.push(existing ? {
           id: existing.id,
           numero: existing.numero,
@@ -111,7 +111,7 @@ export default function Telecentro() {
         const { data } = await supabase.from('visitors').select('*');
         if (!data) return;
 
-        const filtered = data.filter((v: any) => {
+        const filtered = (data || []).filter((v: any) => {
           const searchLower = searchTerm.toLowerCase();
           const cleanTokenSearch = searchLower.replace(/[^\d]/g, '');
           const searchTokens = searchLower.split(/\s+/).filter(t => t.length > 0);
@@ -126,7 +126,7 @@ export default function Telecentro() {
           return nameMatches || cpfMatches || passportMatches;
         });
         
-        setSearchResults(filtered.map(v => ({
+        setSearchResults((filtered || []).map(v => ({
            id: v.id,
            fullName: v.full_name,
            cpf: v.cpf,
@@ -314,15 +314,15 @@ export default function Telecentro() {
         <div className="flex gap-4">
           <div className="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-green-50 border border-green-100 text-green-700 text-xs font-bold font-mono">
             <CheckCircle2 size={14} />
-            {computadores.filter(l => obterStatusComputador(l) === 'Livre').length} LIVRES
+            {(computadores || []).filter(l => obterStatusComputador(l) === 'Livre').length} LIVRES
           </div>
           <div className="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-blue-50 border border-blue-100 text-blue-700 text-xs font-bold font-mono">
             <Monitor size={14} />
-            {computadores.filter(l => obterStatusComputador(l) === 'Em Uso').length} EM USO
+            {(computadores || []).filter(l => obterStatusComputador(l) === 'Em Uso').length} EM USO
           </div>
           <div className="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-red-50 border border-red-100 text-red-700 text-xs font-bold font-mono">
             <AlertCircle size={14} />
-            {computadores.filter(l => obterStatusComputador(l) === 'Excedido').length} EXCEDIDOS
+            {(computadores || []).filter(l => obterStatusComputador(l) === 'Excedido').length} EXCEDIDOS
           </div>
         </div>
       </div>
@@ -335,7 +335,7 @@ export default function Telecentro() {
         </div>
       ) : (
         <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-6">
-          {computadores.map((computador) => {
+          {(computadores || []).map((computador) => {
             const status = obterStatusComputador(computador);
             const tempoRestante = computador.status !== "Livre" ? calcularTempoRestante(computador.horarioLimite) : null;
             
@@ -469,8 +469,8 @@ export default function Telecentro() {
 
                 <div className="space-y-2">
                   <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest px-1">Resultados</p>
-                  {searchResults.length > 0 ? (
-                    searchResults.map((visitor) => (
+                  {(searchResults || []).length > 0 ? (
+                    (searchResults || []).map((visitor) => (
                       <button
                         key={visitor.id}
                         type="button"

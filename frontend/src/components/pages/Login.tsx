@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'motion/react';
-import { supabase } from '../../lib/supabase';
+import { api, setToken } from '../../lib/api';
 
 const FOTOS = {
   foto1: '/images/123456.jpg',
@@ -26,17 +26,17 @@ export default function Login() {
     setError('');
 
     try {
-      const { error: authErr } = await supabase.auth.signInWithPassword({
-        email,
-        password: senha,
-      });
+      const { data, error: authErr } = await api.post<{ token: string; user: any }>(
+        '/auth/login',
+        { email, senha },
+        false
+      );
 
       if (authErr) {
-        if (authErr.message.includes('Invalid login credentials')) {
-          setError('Email ou senha incorretos.');
-        } else {
-          setError('Erro ao autenticar: ' + authErr.message);
-        }
+        setError('Email ou senha incorretos.');
+      } else if (data?.token) {
+        setToken(data.token);
+        window.location.reload();
       }
     } catch (err: unknown) {
       console.error('Login error:', err);
