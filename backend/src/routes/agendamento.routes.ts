@@ -1,5 +1,6 @@
 import type { FastifyInstance } from 'fastify';
 import { PrismaClient } from '@prisma/client';
+import '../types/fastify.js';
 
 const prisma = new PrismaClient();
 
@@ -24,7 +25,7 @@ export async function agendamentoRoutes(app: FastifyInstance) {
     const { resposta } = request.body as any;
     return prisma.agendamento.update({
       where: { id },
-      data: { status: 'aprovado', resposta_coordenador: resposta, coordenadorId: request.user.id, respondido_em: new Date() },
+      data: { status: 'aprovado', resposta_coordenador: resposta, coordenador_id: request.user.id, respondido_em: new Date() },
     });
   });
 
@@ -37,7 +38,7 @@ export async function agendamentoRoutes(app: FastifyInstance) {
     const { resposta } = request.body as any;
     return prisma.agendamento.update({
       where: { id },
-      data: { status: 'rejeitado', resposta_coordenador: resposta, coordenadorId: request.user.id, diversificado_em: new Date() },
+      data: { status: 'rejeitado', resposta_coordenador: resposta, coordenador_id: request.user.id, respondido_em: new Date() },
     });
   });
 }

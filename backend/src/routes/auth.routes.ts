@@ -1,6 +1,7 @@
 import type { FastifyInstance } from 'fastify';
 import bcrypt from 'bcryptjs';
 import { PrismaClient } from '@prisma/client';
+import '../types/fastify.js';
 
 const prisma = new PrismaClient();
 
