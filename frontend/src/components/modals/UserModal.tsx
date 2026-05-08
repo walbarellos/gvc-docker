@@ -1,10 +1,10 @@
 import React, { useState, useEffect } from 'react';
 import { X, Eye, EyeOff } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
-import { supabase } from '../../lib/supabase';
-
+import { spaceService, Space } from '../../services/spaceService';
 import { auditService } from '../../services/auditService';
 import { useAuth } from '../../contexts/AuthContext';
+import { api } from '../../lib/api';
 
 interface UserModalProps {
   isOpen: boolean;
@@ -43,7 +43,7 @@ export default function UserModal({ isOpen, onClose, userToEdit }: UserModalProp
 
   useEffect(() => {
     const fetchEspacos = async () => {
-      const { data } = await supabase.from('espacos').select('*').order('nome');
+      const { data } = await api.get<any[]>('/spaces');
       if (data) {
         setEspacos(data);
       }
@@ -101,7 +101,7 @@ export default function UserModal({ isOpen, onClose, userToEdit }: UserModalProp
     setLoading(true);
     try {
       if (!userToEdit || userToEdit.email !== formData.email) {
-        const { data: existing } = await supabase.from('usuarios').select('id').eq('email', formData.email);
+        const { data: existing } = await api.get<any[]>(`/usuarios?email=${formData.email}`);
         if (existing && existing.length > 0) {
           alert("Este email já está sendo utilizado por outro usuário no banco de dados.");
           setLoading(false);
@@ -119,7 +119,7 @@ export default function UserModal({ isOpen, onClose, userToEdit }: UserModalProp
       };
 
       if (userToEdit) {
-        const { error: updateError } = await supabase.from('usuarios').update(dataToSave).eq('id', userToEdit.id);
+        const { error: updateError } = await api.put(`/usuarios/${userToEdit.id}`, dataToSave);
         
         if (updateError) {
           console.error('Update error:', updateError);
@@ -130,21 +130,19 @@ export default function UserModal({ isOpen, onClose, userToEdit }: UserModalProp
         
         // Se a senha foi alterada e for o próprio usuário, atualizamos com updateUser
         if (changePassword && currentAdmin && currentAdmin.id === userToEdit.id) {
-          await supabase.auth.updateUser({ password: formData.senha });
+          await api.post('/auth/reset-password', { userId: userToEdit.id, senha: formData.senha });
         } else if (changePassword) {
           alert("Atenção: A atualização de senha para outros usuários via painel pode exigir a Supabase Admin API.");
         }
       } else {
-        const { data: responseData, error: fnError } = await supabase.functions.invoke('create-user', {
-          body: {
+        const { data: responseData, error: fnError } = await api.post('/auth/create-user', {
             email: formData.email,
             senha: formData.senha,
             nome: formData.nome,
             perfil: formData.perfil,
             espacoId: formData.espacoId,
             espacoNome: dataToSave.espaco_nome
-          }
-        });
+          });
 
         if (fnError || responseData?.error) {
           alert('Erro ao criar usuário: ' + (fnError?.message || responseData?.error));

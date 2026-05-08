@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback } from 'react';
 import { visitService } from '../services/visitService';
-import { supabase } from '../lib/supabase';
+import { api } from '../lib/api';
 
 export interface DashboardStats {
   visitorsToday: number;
@@ -95,16 +95,10 @@ export function useDashboardStats(spaceId: string | null): UseDashboardStatsResu
 
   useEffect(() => {
     fetchData();
-
-    const channel = supabase.channel('dashboard-stats-updates')
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'visits' }, () => {
-        fetchData();
-      })
-      .subscribe();
-
-    return () => {
-      supabase.removeChannel(channel);
-    };
+    
+    // Atualizar a cada 30 segundos
+    const interval = setInterval(fetchData, 30000);
+    return () => clearInterval(interval);
   }, [fetchData]);
 
   return { stats, recentVisits, chartData, loading, error, refetch: fetchData };
@@ -120,16 +114,13 @@ async function fetchChartData(spaceId: string): Promise<ChartData[]> {
     const start = new Date(day.setHours(0, 0, 0, 0)).toISOString();
     const end = new Date(day.setHours(23, 59, 59, 999)).toISOString();
 
-    const { count } = await supabase
-      .from('visits')
-      .select('*', { count: 'exact', head: true })
-      .eq('espaco_id', spaceId)
-      .gte('checkin', start)
-      .lte('checkin', end);
+    const { data } = await api.get<{ count: number }[]>(
+      `/visits/count?espaco_id=${spaceId}&checkin=gte.${start}&checkin=lte.${end}`
+    );
 
     days.push({
       name: formatDayName(day),
-      count: count || 0,
+      count: (data || [])[0]?.count || 0,
       fullDate: formatDate(day)
     });
   }

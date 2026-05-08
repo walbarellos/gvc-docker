@@ -59,6 +59,33 @@ export async function visitRoutes(app: FastifyInstance) {
     });
   });
 
+  // Buscar por ID
+  app.get('/:id', { preHandler: [app.authenticate] }, async (request: any) => {
+    const { id } = request.params;
+    const visit = await prisma.visit.findUnique({ 
+      where: { id }, 
+      include: { visitor: true } 
+    });
+    if (!visit) return { error: 'Visita não encontrada' };
+    return visit;
+  });
+
+  // Atualizar visita (para Telecentro)
+  app.put('/:id', { preHandler: [app.authenticate] }, async (request: any, reply: any) => {
+    const { id } = request.params;
+    const data = mapVisitFields(request.body);
+    
+    try {
+      const visit = await prisma.visit.update({
+        where: { id },
+        data
+      });
+      return visit;
+    } catch (error) {
+      return reply.status(400).send({ error: 'Erro ao atualizar visita' });
+    }
+  });
+
   // Contar visitas
   app.get('/count', { preHandler: [app.authenticate] }, async (request: any) => {
     const { espaco_id, date } = request.query as any;

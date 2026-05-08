@@ -1,4 +1,4 @@
-import { supabase } from '../lib/supabase';
+import { api } from '../lib/api';
 
 export type AuditoriaAcao = 
   | "criou_usuario" 
@@ -11,17 +11,22 @@ export type AuditoriaAcao =
   | "exportou_backup" 
   | "excluiu_visita";
 
-export const registrarAuditoria = async (acao: AuditoriaAcao, detalhes: string, entidadeId: string | null = null, userProfile: any = null) => {
+export const registrarAuditoria = async (
+  acao: AuditoriaAcao, 
+  detalhes: string, 
+  entidadeId: string | null = null, 
+  userProfile: { email?: string; perfil?: string } | null = null
+) => {
   try {
-    const { data: { user } } = await supabase.auth.getUser();
+    const payload = {
+      acao,
+      detalhes,
+      entidade_id: entidadeId,
+      usuario: userProfile?.email || "sistema",
+      perfil: userProfile?.perfil || "desconhecido"
+    };
     
-    await supabase.from('auditoria').insert({
-      usuario: user?.email || "sistema",
-      perfil: userProfile?.perfil || "desconhecido",
-      acao: acao,
-      detalhes: detalhes,
-      entidade_id: entidadeId
-    });
+    await api.post('/auditoria', payload);
   } catch (error) {
     console.error("Erro ao registrar auditoria:", error);
   }

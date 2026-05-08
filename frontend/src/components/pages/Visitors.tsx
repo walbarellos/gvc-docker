@@ -1,5 +1,6 @@
 import { useState, useEffect, useCallback } from 'react';
 import { supabase } from '../../lib/supabase';
+import { api } from '../../lib/api';
 import { visitService } from '../../services/visitService';
 import { visitorService } from '../../services/visitorService';
 import { Visitor, OperationType } from '../../types';
@@ -96,7 +97,7 @@ const mapped = (data || []).map((d: any) => ({
 
   useEffect(() => {
     if (userData?.espacoId === 'todos') {
-      supabase.from('espacos').select('id, nome').then(({ data }) => {
+      api.get<any[]>('/spaces').then(({ data }) => {
         if (data) setSpaces(data);
       });
     }

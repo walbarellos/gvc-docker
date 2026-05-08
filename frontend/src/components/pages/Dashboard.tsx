@@ -16,6 +16,7 @@ import { format, subDays, startOfDay, endOfDay } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 import { useAuth } from '../../contexts/AuthContext';
 import { supabase } from '../../lib/supabase';
+import { api } from '../../lib/api';
 
 export default function Dashboard() {
   const { userData, spaceConfig } = useAuth();
@@ -80,7 +81,7 @@ export default function Dashboard() {
       // Total de armários - se admin global, soma de todos os espaços
       let totalArmarios = spaceConfig?.totalArmarios || 20;
       if (isGlobalAdmin) {
-        const { data: spaces } = await supabase.from('espacos').select('perfil_armarios_quantidade').eq('ativo', true);
+        const { data: spaces } = await api.get<any[]>('/spaces?ativo=true');
         totalArmarios = spaces?.reduce((sum, s) => sum + (s.perfil_armarios_quantidade || 0), 0) || 20;
       }
 

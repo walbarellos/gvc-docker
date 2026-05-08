@@ -29,6 +29,7 @@ import {
   Bar 
 } from 'recharts';
 import { supabase } from '../../lib/supabase';
+import { api } from '../../lib/api';
 import { normalizarVisita, traduzirPerfil } from '../../lib/utils';
 import { motion, AnimatePresence } from 'motion/react';
 import { format } from 'date-fns';
@@ -104,7 +105,7 @@ export default function Reports() {
       const { data: configData } = await supabase.from('configuracoes').select('*').eq('id', 'sistema').single();
       if (configData) setConfig(configData.data || {});
 
-      const { data: locData } = await supabase.from('espacos').select('*').order('nome');
+      const { data: locData } = await api.get<any[]>('/spaces');
       if (locData) setLocations(locData);
     };
 
@@ -115,7 +116,7 @@ export default function Reports() {
     }).subscribe();
 
     const spacesChannel = supabase.channel('spaces-updates-reports').on('postgres_changes', { event: '*', schema: 'public', table: 'espacos' }, () => {
-      supabase.from('espacos').select('*').order('nome').then(({ data }) => {
+      api.get<any[]>('/spaces').then(({ data }) => {
         if (data) setLocations(data);
       });
     }).subscribe();

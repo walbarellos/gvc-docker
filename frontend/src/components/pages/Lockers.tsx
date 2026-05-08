@@ -1,6 +1,9 @@
 import { useState, useEffect } from 'react';
-import { supabase } from '../../lib/supabase';
 import { useAuth } from '../../contexts/AuthContext';
+import { visitorService, Visitor } from '../../services/visitorService';
+import { visitService } from '../../services/visitService';
+import { spaceService } from '../../services/spaceService';
+import { api } from '../../lib/api';
 import { useDebounce } from '../../hooks/useDebounce';
 import { 
   Lock, 
@@ -10,7 +13,8 @@ import {
   AlertCircle,
   Search,
   User,
-  X
+  X,
+  ChevronDown
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import Footer from '../layout/PageFooter';
@@ -33,43 +37,54 @@ export default function Lockers() {
   const [searchResults, setSearchResults] = useState<any[]>([]);
   const [isSearchOpen, setIsSearchOpen] = useState(false);
   const [toast, setToast] = useState<{ message: string; type: 'success' | 'error' } | null>(null);
+  const [spaces, setSpaces] = useState<any[]>([]);
+  const [selectedSpaceId, setSelectedSpaceId] = useState<string>('');
   
   const debouncedSearchTerm = useDebounce(searchTerm, 300);
+
+  useEffect(() => {
+    if (userData?.espacoId === 'todos') {
+      spaceService.listAll().then(({ data }) => {
+        if (data) setSpaces(data);
+      });
+    }
+  }, [userData]);
 
   const totalLockersCount = spaceConfig?.totalArmarios || 20;
 
   useEffect(() => {
     if (!userData) return;
 
-    const isGlobalAdmin = userData.perfil === 'administrador' && 
+    const isGlobalAdmin = userData.perfil === 'administrador' &&
       (!userData.espacoId || userData.espacoId === 'todos');
-    const espacoId = isGlobalAdmin ? null : userData.espacoId;
+    
+    const espacoId = isGlobalAdmin 
+      ? (selectedSpaceId || null)
+      : userData.espacoId;
 
     const fetchLockers = async () => {
-      let q = supabase.from('lockers').select('*');
-      if (espacoId) {
-        q = q.eq('espaco_id', espacoId);
-      }
-      
-      const { data, error } = await q;
+      const query = espacoId ? `?espacoId=${espacoId}` : '';
+      const { data, error } = await api.get<any[]>(`/lockers${query}`);
+
       if (error) {
         console.error("Erro ao carregar armários:", error);
+        setLoading(false);
         return;
       }
 
       const fullList: Locker[] = [];
       for (let i = 1; i <= totalLockersCount; i++) {
-        const existing = (data || []).find(l => l.number === i);
+        const existing = (data || []).find(l => l.number === i || l.number === i.toString());
         fullList.push(
-          existing 
+          existing
             ? { 
                 id: existing.id, 
                 number: existing.number, 
                 status: existing.status, 
-                visitorId: existing.visitor_id, 
-                visitorName: existing.visitor_name, 
+                visitorId: existing.visitor_id,
+                visitorName: existing.visitor_name,
                 updatedAt: existing.updated_at 
-              } 
+              }
             : { 
                 id: `temp-${i}`, 
                 number: i, 
@@ -77,27 +92,21 @@ export default function Lockers() {
               }
         );
       }
-      setLockers(fullList.sort((a,b) => a.number - b.number));
+      setLockers(fullList.sort((a, b) => a.number - b.number));
       setLoading(false);
     };
 
     fetchLockers();
 
-    const channel = supabase.channel('lockers-updates')
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'lockers' }, () => {
-        fetchLockers();
-      })
-      .subscribe();
-
-    return () => {
-      supabase.removeChannel(channel);
-    };
-  }, [totalLockersCount, userData]);
+    // Atualizar a cada 30 segundos
+    const interval = setInterval(fetchLockers, 30000);
+    return () => clearInterval(interval);
+  }, [totalLockersCount, userData, selectedSpaceId]);
 
   useEffect(() => {
     if (debouncedSearchTerm.length > 2) {
       const searchVisitors = async () => {
-        const { data } = await supabase.from('visitors').select('*');
+        const { data } = await visitorService.listAll();
         if (!data) return;
 
         const filtered = (data || []).filter((v: any) => {
@@ -106,23 +115,23 @@ export default function Lockers() {
           const searchTokens = searchLower.split(/\s+/).filter(t => t.length > 0);
           
           const nameMatches = searchTokens.length > 0 && searchTokens.every(token => 
-            v.full_name.toLowerCase().includes(token)
+            (v.fullName || v.full_name || '').toLowerCase().includes(token)
           );
           
-          const cpfMatches = v.cpf && cleanTokenSearch && v.cpf.replace(/[^\d]/g, '').includes(cleanTokenSearch);
+          const cpfMatches = v.cpf && cleanTokenSearch && v.cpf.includes(cleanTokenSearch);
           const passportMatches = v.passport && searchLower && v.passport.toLowerCase().includes(searchLower);
           
           return nameMatches || cpfMatches || passportMatches;
         });
-
+        
         setSearchResults((filtered || []).map(v => ({
-           id: v.id,
-           fullName: v.full_name,
-           cpf: v.cpf,
-           passport: v.passport
+          id: v.id,
+          fullName: v.fullName || v.full_name,
+          cpf: v.cpf,
+          passport: v.passport
         })).slice(0, 5));
       };
-
+      
       searchVisitors();
     } else {
       setSearchResults([]);
@@ -140,52 +149,50 @@ export default function Lockers() {
   const assignLocker = async (visitor: any) => {
     if (!selectedLocker || !userData) return;
 
-    const isGlobalAdmin = userData.perfil === 'administrador' && 
+    const isGlobalAdmin = userData.perfil === 'administrador' &&
       (!userData.espacoId || userData.espacoId === 'todos');
-    const targetEspacoId = isGlobalAdmin ? null : userData.espacoId;
+    const targetEspacoId = isGlobalAdmin
+      ? (selectedSpaceId || null)
+      : userData.espacoId;
 
     try {
-      const { data: activeCheckIn } = await supabase
-        .from('visits')
-        .select('id, local')
-        .eq('visitor_id', visitor.id)
-        .in('status', ['Ativo', 'active'])
-        .eq('espaco_id', targetEspacoId)
-        .limit(1);
-      
+      // Verificar se visitante tem check-in ativo
+      const { data: activeCheckIn } = await api.get<any[]>(
+        `/visits?visitorId=${visitor.id}&status=Ativo&espacoId=${targetEspacoId || ''}`
+      );
+
       if (!activeCheckIn || activeCheckIn.length === 0) {
-        setToast({ 
-          message: 'ERRO: Visitante não possui check-in ativo neste espaço.', 
-          type: 'error' 
+        setToast({
+          message: 'ERRO: Visitante não possui check-in ativo neste espaço.',
+          type: 'error'
         });
         setTimeout(() => setToast(null), 5000);
         return;
       }
 
       if (targetEspacoId) {
-        const { data: existing } = await supabase.from('lockers').select('number')
-          .eq('espaco_id', targetEspacoId)
-          .in('status', ['occupied', 'Ocupado'])
-          .eq('visitor_id', visitor.id);
-        
+        const { data: existing } = await api.get<any[]>(
+          `/lockers?espacoId=${targetEspacoId}&visitorId=${visitor.id}&status=occupied`
+        );
+
         if (existing && existing.length > 0) {
-          setToast({ 
-            message: `ERRO: Este visitante já possui o armário ${existing[0].number}`, 
-            type: 'error' 
+          setToast({
+            message: `ERRO: Este visitante já possui o armário ${existing[0].number}`,
+            type: 'error'
           });
           setTimeout(() => setToast(null), 5000);
           return;
         }
       }
 
-      await supabase.from('lockers').insert({
+      await api.post('/lockers', {
         number: selectedLocker.number,
         status: 'occupied',
         visitor_id: visitor.id,
         visitor_name: visitor.fullName,
         espaco_id: targetEspacoId
       });
-      
+
       setToast({ message: `Armário ${selectedLocker.number} ocupado com sucesso!`, type: 'success' });
       setIsSearchOpen(false);
       setSelectedLocker(null);
@@ -199,7 +206,7 @@ export default function Lockers() {
 
   const releaseLocker = async (locker: Locker) => {
     try {
-      await supabase.from('lockers').delete().eq('id', locker.id);
+      await api.delete(`/lockers/${locker.id}`);
       
       setToast({ message: `Armário ${locker.number} liberado com sucesso!`, type: 'success' });
       setTimeout(() => setToast(null), 3000);
@@ -219,7 +226,7 @@ export default function Lockers() {
     }
   };
 
-  if (!userData || (spaceConfig && !spaceConfig.perfilArmarios && userData.perfil !== 'administrador')) {
+  if (!userData || (userData.perfil !== 'administrador' && spaceConfig && !spaceConfig.perfilArmarios)) {
     return (
       <div className="p-8 flex flex-col items-center justify-center min-h-[60vh] text-center">
         <div className="w-20 h-20 bg-amber-50 text-amber-500 rounded-full flex items-center justify-center mb-6">
@@ -254,6 +261,22 @@ export default function Lockers() {
           <h1 className="text-3xl font-display font-bold text-gray-900">Gestão de Armários</h1>
           <p className="text-gray-500 text-sm">Controle de ocupação e chaves para visitantes.</p>
         </div>
+        
+        {userData?.espacoId === 'todos' && (
+          <div className="flex items-center gap-2">
+            <label className="text-xs font-bold text-slate-400 uppercase tracking-widest">Espaço:</label>
+            <select 
+              value={selectedSpaceId} 
+              onChange={e => setSelectedSpaceId(e.target.value)}
+              className="bg-white border border-slate-200 rounded-lg px-4 py-2 text-sm focus:ring-2 focus:ring-primary/20 outline-none"
+            >
+              <option value="">Selecione um espaço</option>
+              {(spaces || []).map(s => (
+                <option key={s.id} value={s.id}>{s.nome}</option>
+              ))}
+            </select>
+          </div>
+        )}
         
         <div className="flex gap-4">
           <div className="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-emerald-50 border border-emerald-100 text-emerald-700 text-xs font-bold font-mono">

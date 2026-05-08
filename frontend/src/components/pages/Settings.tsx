@@ -15,6 +15,7 @@ import {
   Package
 } from 'lucide-react';
 import { supabase } from '../../lib/supabase';
+import { api } from '../../lib/api';
 import { motion, AnimatePresence } from 'motion/react';
 import { format } from 'date-fns';
 import SpacesTab from '../settings/SpacesTab';
@@ -36,7 +37,7 @@ export default function Settings() {
 
   useEffect(() => {
     const fetchStats = async () => {
-      const { data: spacesData } = await supabase.from('espacos').select('ativo, total_armarios');
+      const { data: spacesData } = await api.get<any[]>('/spaces');
       const { count: usersCount } = await supabase.from('usuarios').select('*', { count: 'exact', head: true });
 
       if (spacesData) {

@@ -3,45 +3,77 @@ import { api } from '../lib/api';
 export interface Space {
   id?: string;
   nome: string;
-  email?: string;
-  endereco?: string;
   municipio?: string;
-  horario_funcionamento?: string;
-  perfil_armarios?: boolean;
-  perfil_armarios_quantidade?: number;
-  perfil_telecentro?: boolean;
-  perfil_agendamento?: boolean;
-  mensagem_boas_vindas?: string;
+  horarioFuncionamento?: string;
+  perfilArmarios?: boolean;
+  perfilArmariosQuantidade?: number;
+  perfilTelecentro?: boolean;
+  perfilAgendamento?: boolean;
+  mensagemBoasVindas?: string;
   ativo?: boolean;
-  capacidade_agendamento?: number;
-  has_auditorio?: boolean;
-  qtd_auditorio?: number;
-  has_sala_estudos?: boolean;
-  qtd_sala_estudos?: number;
-  has_teatro?: boolean;
-  qtd_teatro?: number;
-  has_filmoteca?: boolean;
-  qtd_filmoteca?: number;
-  has_espaco_aberto?: boolean;
-  qtd_espaco_aberto?: number;
-  has_visita_guiada?: boolean;
-  qtd_visita_guiada?: number;
+  capacidadeVisitantes?: number;
+  totalComputadores?: number;
+  tempoLimiteComputador?: number;
+  capacidadeAgendamento?: number;
+  hasAuditorio?: boolean;
+  qtdAuditorio?: number;
+  hasSalaEstudos?: boolean;
+  qtdSalaEstudos?: number;
+  hasTeatro?: boolean;
+  qtdTeatro?: number;
+  hasFilmoteca?: boolean;
+  qtdFilmoteca?: number;
+  hasEspacoAberto?: boolean;
+  qtdEspacoAberto?: number;
+  hasVisitaGuiada?: boolean;
+  qtdVisitaGuiada?: number;
+}
+
+function mapSpace(data: any): Space {
+  return {
+    id: data.id,
+    nome: data.nome,
+    municipio: data.municipio,
+    horarioFuncionamento: data.horario_funcionamento,
+    perfilArmarios: data.perfil_armarios,
+    perfilArmariosQuantidade: data.perfil_armarios_quantidade,
+    perfilTelecentro: data.perfil_telecentro,
+    perfilAgendamento: data.perfil_agendamento,
+    mensagemBoasVindas: data.mensagem_boas_vindas,
+    ativo: data.ativo,
+    capacidadeVisitantes: data.capacidade_visitantes,
+    totalComputadores: data.total_computadores,
+    tempoLimiteComputador: data.tempo_limite_computador,
+    capacidadeAgendamento: data.capacidade_agendamento,
+    hasAuditorio: data.has_auditorio,
+    qtdAuditorio: data.qtd_auditorio,
+    hasSalaEstudos: data.has_sala_estudos,
+    qtdSalaEstudos: data.qtd_sala_estudos,
+    hasTeatro: data.has_teatro,
+    qtdTeatro: data.qtd_teatro,
+    hasFilmoteca: data.has_filmoteca,
+    qtdFilmoteca: data.qtd_filmoteca,
+    hasEspacoAberto: data.has_espaco_aberto,
+    qtdEspacoAberto: data.qtd_espaco_aberto,
+    hasVisitaGuiada: data.has_visita_guiada,
+    qtdVisitaGuiada: data.qtd_visita_guiada
+  };
 }
 
 export const spaceService = {
   async list() {
     const { data, error } = await api.get<Space[]>('/spaces?ativo=true&order=nome');
-    return { data: data || [], error };
+    return { data: (data || []).map(mapSpace), error };
   },
 
   async listAll() {
     const { data, error } = await api.get<Space[]>('/spaces?order=nome');
-    return { data: data || [], error };
+    return { data: (data || []).map(mapSpace), error };
   },
 
   async getById(id: string) {
     const { data, error } = await api.get<Space>(`/spaces/${id}`);
-    return { data, error };
+    return { data: data ? mapSpace(data) : null, error };
   },
 
   async getUsers(spaceId: string) {

@@ -1,7 +1,8 @@
-import React, { useState, useEffect } from 'react';
+import { useState, useEffect } from 'react';
 import { useAuth } from '../../contexts/AuthContext';
 import { visitorService, Visitor } from '../../services/visitorService';
 import { visitService } from '../../services/visitService';
+import { spaceService } from '../../services/spaceService';
 import { api } from '../../lib/api';
 import { 
   Monitor, 
@@ -13,7 +14,8 @@ import {
   X,
   UserPlus,
   Clock,
-  Unlock
+  Unlock,
+  ChevronDown
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import Footer from '../layout/PageFooter';
@@ -40,9 +42,30 @@ export default function Telecentro() {
   const [isSearchOpen, setIsSearchOpen] = useState(false);
   const [toast, setToast] = useState<{ message: string; type: 'success' | 'error' } | null>(null);
   const [tick, setTick] = useState(0);
+  const [spaces, setSpaces] = useState<any[]>([]);
+  const [selectedSpaceId, setSelectedSpaceId] = useState<string>('');
 
-  const totalComputadoresCount = spaceConfig?.totalComputadores || 10;
-  const limiteMaximoMinutos = spaceConfig?.tempoLimiteComputador || 30;
+  useEffect(() => {
+    if (userData?.espacoId === 'todos') {
+      spaceService.listAll().then(({ data }) => {
+        if (data) setSpaces(data);
+      });
+    }
+  }, [userData]);
+
+  const isGlobalAdmin = userData?.perfil === 'administrador' && 
+    (!userData.espacoId || userData.espacoId === 'todos');
+  
+  const espacoId = isGlobalAdmin 
+    ? (selectedSpaceId || null)
+    : userData?.espacoId;
+
+  const totalComputadoresCount = isGlobalAdmin
+    ? 10
+    : (spaceConfig?.totalComputadores || 10);
+  const limiteMaximoMinutos = isGlobalAdmin
+    ? 30
+    : (spaceConfig?.tempoLimiteComputador || 30);
 
   // Timer para atualizar contagem regressiva
   useEffect(() => {
@@ -54,11 +77,11 @@ export default function Telecentro() {
   useEffect(() => {
     if (!userData) return;
 
-    const fetchComputadores = async () => {
-      const isGlobalAdmin = userData.perfil === 'administrador' &&
-        (!userData.espacoId || userData.espacoId === 'todos');
-      const espacoId = isGlobalAdmin ? null : userData.espacoId;
+    const espacoId = isGlobalAdmin 
+      ? (selectedSpaceId || null)
+      : userData.espacoId;
 
+    const fetchComputadores = async () => {
       const query = espacoId ? `?espacoId=${espacoId}` : '';
       const { data, error } = await api.get<any[]>(`/computadores${query}`);
 
@@ -70,20 +93,7 @@ export default function Telecentro() {
 
       const fullList: Computador[] = [];
       for (let i = 1; i <= totalComputadoresCount; i++) {
-        let existing = (data || []).find(c => c.numero === i);
-        if (!existing) {
-          // Criar computador automaticamente se não existir
-          try {
-            const { data: newComp } = await api.post<any>('/computadores', {
-              numero: i,
-              status: 'Livre',
-              espacoId: espacoId
-            });
-            existing = newComp;
-          } catch (e) {
-            console.error('Erro ao criar computador', e);
-          }
-        }
+        const existing = (data || []).find(c => c.numero === i || c.numero === i.toString());
         fullList.push(existing ? {
           id: existing.id,
           numero: existing.numero,
@@ -106,10 +116,11 @@ export default function Telecentro() {
     };
 
     fetchComputadores();
-    // Atualizar a cada 30 segundos (substitui o Realtime)
+
+    // Atualizar a cada 30 segundos
     const interval = setInterval(fetchComputadores, 30000);
     return () => clearInterval(interval);
-  }, [totalComputadoresCount, userData]);
+  }, [totalComputadoresCount, userData, selectedSpaceId]);
 
   // Buscar visitantes para o modal
   useEffect(() => {
@@ -159,7 +170,9 @@ export default function Telecentro() {
 
     const isGlobalAdmin = userData.perfil === 'administrador' &&
       (!userData.espacoId || userData.espacoId === 'todos');
-    const targetEspacoId = isGlobalAdmin ? null : userData.espacoId;
+    const targetEspacoId = isGlobalAdmin
+      ? (selectedSpaceId || null)
+      : userData.espacoId;
 
     try {
       // Verificar se visitante tem check-in ativo
@@ -176,7 +189,6 @@ export default function Telecentro() {
         return;
       }
 
-      // Verificar se já está usando outro computador
       if (targetEspacoId) {
         const { data: existing } = await api.get<any[]>(
           `/computadores?espacoId=${targetEspacoId}&usuarioId=${visitante.id}&status=Em Uso`
@@ -195,14 +207,13 @@ export default function Telecentro() {
       const agora = new Date();
       const limite = new Date(agora.getTime() + limiteMaximoMinutos * 60000);
 
-      // Criar registro do computador
       await api.post('/computadores', {
         numero: selectedComputador.numero,
         status: 'Em Uso',
         usuarioId: visitante.id,
         usuarioNome: visitante.fullName,
         espacoId: targetEspacoId,
-        espacoNome: userData.espacoNome || '',
+        espacoNome: (spaces || []).find(s => s.id === targetEspacoId)?.nome || '',
         horarioInicio: agora.toISOString(),
         horarioLimite: limite.toISOString()
       });
@@ -273,7 +284,9 @@ export default function Telecentro() {
 
   // ... (manter o JSX de retorno - está OK, só remover imports do supabase)
 
-  if (!userData || (spaceConfig && !spaceConfig.perfilTelecentro && userData.perfil !== 'administrador')) {
+  if (!userData) return null;
+
+  if (!isGlobalAdmin && (!spaceConfig || !spaceConfig?.perfilTelecentro)) {
     return (
       <div className="p-8 flex flex-col items-center justify-center min-h-[60vh] text-center">
         <div className="w-20 h-20 bg-amber-50 text-amber-500 rounded-full flex items-center justify-center mb-6">
@@ -281,9 +294,34 @@ export default function Telecentro() {
         </div>
         <h2 className="text-2xl font-display font-bold text-slate-900 mb-2">Módulo de Telecentro Desativado</h2>
         <p className="text-slate-500 max-w-md mx-auto">
-          Este espaço cultural não possui o perfil de telecentro ativo.
+          Este espaço cultural não possui o perfil de telecentro ativo. 
           Entre em contato com o administrador para habilitar esta funcionalidade.
         </p>
+      </div>
+    );
+  }
+
+  // Para admin global, mostrar seletor de espaços
+  if (isGlobalAdmin && !selectedSpaceId) {
+    return (
+      <div className="p-8 flex flex-col items-center justify-center min-h-[60vh] text-center">
+        <div className="w-20 h-20 bg-blue-50 text-blue-500 rounded-full flex items-center justify-center mb-6">
+          <Monitor size={48} />
+        </div>
+        <h2 className="text-2xl font-display font-bold text-slate-900 mb-2">Selecione um Espaço</h2>
+        <p className="text-slate-500 max-w-md mx-auto mb-4">
+          Como administrador global, selecione um espaço para gerenciar o Telecentro.
+        </p>
+        <select 
+          value={selectedSpaceId} 
+          onChange={e => setSelectedSpaceId(e.target.value)}
+          className="bg-white border border-slate-200 rounded-lg px-4 py-2 text-sm focus:ring-2 focus:ring-primary/20 outline-none"
+        >
+          <option value="">Selecione um espaço</option>
+          {(spaces || []).map(s => (
+            <option key={s.id} value={s.id}>{s.nome}</option>
+          ))}
+        </select>
       </div>
     );
   }
