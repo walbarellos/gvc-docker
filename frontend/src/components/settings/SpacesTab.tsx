@@ -18,24 +18,7 @@ const SpacesTab: React.FC = () => {
   const [confirmMode, setConfirmMode] = useState<'delete' | 'disable'>('delete');
 
   useEffect(() => {
-    const fetchSpaces = async () => {
-      const { data, error } = await spaceService.listAll();
-      if (data) {
-        setSpaces(data.map(d => ({
-          ...d,
-          totalArmarios: d.total_armarios || d.totalArmarios,
-          perfilArmarios: d.perfil_armarios || d.perfilArmarios,
-          perfilTelecentro: d.perfil_telecentro || d.perfilTelecentro,
-          totalComputadores: d.total_computadores || d.totalComputadores,
-          perfilAgendamento: d.perfil_agendamento || d.perfilAgendamento,
-          capacidadeAgendamento: d.capacidade_agendamento || d.capacidadeAgendamento,
-        })));
-      }
-      setLoading(false);
-    };
-
     fetchSpaces();
-
     return () => {};
   }, []);
 
@@ -50,11 +33,33 @@ const SpacesTab: React.FC = () => {
         await spaceService.delete(targetSpace.id);
         await auditService.log({ acao: "excluiu_espaco", detalhes: `Excluiu espaço ${targetSpace.nome}`, entidadeId: targetSpace.id, userProfile: currentAdmin });
       }
+      await fetchSpaces();
     } catch (error) {
       alert('Erro ao processar ação.');
     } finally {
       setIsConfirmModalOpen(false);
     }
+  };
+
+  const fetchSpaces = async () => {
+    const { data, error } = await spaceService.listAll();
+    if (data) {
+      setSpaces(data.map(d => ({
+        ...d,
+        totalArmarios: d.total_armarios || d.totalArmarios,
+        perfilArmarios: d.perfil_armarios || d.perfilArmarios,
+        perfilTelecentro: d.perfil_telecentro || d.perfilTelecentro,
+        totalComputadores: d.total_computadores || d.totalComputadores,
+        perfilAgendamento: d.perfil_agendamento || d.perfilAgendamento,
+        capacidadeAgendamento: d.capacidade_agendamento || d.capacidadeAgendamento,
+      })));
+    }
+    setLoading(false);
+  };
+
+  const handleSave = async () => {
+    await fetchSpaces();
+    setIsModalOpen(false);
   };
 
   const handleDelete = async (space: any) => {
@@ -175,6 +180,7 @@ const SpacesTab: React.FC = () => {
         isOpen={isModalOpen}
         onClose={() => setIsModalOpen(false)}
         spaceToEdit={spaceToEdit}
+        onSave={handleSave}
       />
 
       <ConfirmModal 

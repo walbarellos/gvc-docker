@@ -56,9 +56,14 @@ export const api = {
     },
 
     delete: async <T>(endpoint: string, includeAuth = true): Promise<{ data: T | null; error: { message: string } | null }> => {
+        const h: Record<string, string> = {};
+        if (includeAuth) {
+            const token = getToken();
+            if (token) h['Authorization'] = `Bearer ${token}`;
+        }
         const res = await fetch(`${API_URL}${endpoint}`, {
             method: 'DELETE',
-            headers: headers(includeAuth),
+            headers: h,
         });
         return handleResponse<T>(res);
     },

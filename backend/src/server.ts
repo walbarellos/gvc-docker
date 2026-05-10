@@ -21,12 +21,12 @@ dotenv.config();
 const app = Fastify({ logger: true });
 
 // Registros
-await app.register(cors, {
+app.register(cors, {
   origin: process.env.CORS_ORIGIN?.split(',') || true,
   credentials: true,
 });
 
-await app.register(jwt, {
+app.register(jwt, {
   secret: process.env.JWT_SECRET || 'default-secret',
 });
 
@@ -46,19 +46,19 @@ app.get('/health', async () => ({ status: 'ok', timestamp: new Date().toISOStrin
 app.get('/', async () => ({ message: 'GVC API - Sistema de Gestão de Visitantes', version: '1.0.0' }));
 
 // Rotas
-await app.register(authRoutes, { prefix: '/auth' });
-await app.register(publicRoutes, { prefix: '/public' });
-await app.register(visitorRoutes, { prefix: '/visitors' });
-await app.register(visitRoutes, { prefix: '/visits' });
-await app.register(spaceRoutes, { prefix: '/spaces' });
-await app.register(agendamentoRoutes, { prefix: '/agendamentos' });
-await app.register(dashboardRoutes, { prefix: '/dashboard' });
-await app.register(lockerRoutes, { prefix: '/lockers' });
-await app.register(computadorRoutes, { prefix: '/computadores' });
-await app.register(auditoriaRoutes, { prefix: '/auditoria' });
-await app.register(assinaturaRoutes, { prefix: '/assinaturas_digitais' });
-await app.register(userRoutes, { prefix: '/usuarios' });
-await app.register(configuracaoRoutes, { prefix: '/configuracoes' });
+app.register(authRoutes, { prefix: '/auth' });
+app.register(publicRoutes, { prefix: '/public' });
+app.register(visitorRoutes, { prefix: '/visitors' });
+app.register(visitRoutes, { prefix: '/visits' });
+app.register(spaceRoutes, { prefix: '/spaces' });
+app.register(agendamentoRoutes, { prefix: '/agendamentos' });
+app.register(dashboardRoutes, { prefix: '/dashboard' });
+app.register(lockerRoutes, { prefix: '/lockers' });
+app.register(computadorRoutes, { prefix: '/computadores' });
+app.register(auditoriaRoutes, { prefix: '/auditoria' });
+app.register(assinaturaRoutes, { prefix: '/assinaturas_digitais' });
+app.register(userRoutes, { prefix: '/usuarios' });
+app.register(configuracaoRoutes, { prefix: '/configuracoes' });
 
 // Startup
 const start = async () => {

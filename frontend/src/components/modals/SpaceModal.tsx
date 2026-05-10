@@ -11,6 +11,7 @@ interface SpaceModalProps {
   isOpen: boolean;
   onClose: () => void;
   spaceToEdit?: any;
+  onSave?: () => void;
 }
 
 const MUNICIPARIOS_ACRE = [
@@ -21,7 +22,7 @@ const MUNICIPARIOS_ACRE = [
   "Sena Madureira", "Senador Guiomard", "Tarauacá", "Xapuri"
 ];
 
-const SpaceModal: React.FC<SpaceModalProps> = ({ isOpen, onClose, spaceToEdit }) => {
+const SpaceModal: React.FC<SpaceModalProps> = ({ isOpen, onClose, spaceToEdit, onSave }) => {
   const { userData: currentAdmin } = useAuth();
   const [loading, setLoading] = useState(false);
   const [municipioSearch, setMunicipioSearch] = useState('');
@@ -191,7 +192,8 @@ const SpaceModal: React.FC<SpaceModalProps> = ({ isOpen, onClose, spaceToEdit })
           await auditService.log({ acao: "criou_espaco", detalhes: `Criou novo espaço cultural ${formData.nome}`, entidadeId: (data as any)?.id, userProfile: currentAdmin });
         }
       }
-      onClose();
+      if (onSave) onSave();
+      else onClose();
     } catch (error) {
       console.error(error);
       alert('Erro ao salvar espaço.');

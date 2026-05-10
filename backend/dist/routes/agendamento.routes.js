@@ -1,0 +1,245 @@
+"use strict";
+Object.defineProperty(exports, "__esModule", { value: true });
+exports.agendamentoRoutes = agendamentoRoutes;
+const client_1 = require("@prisma/client");
+const prisma = new client_1.PrismaClient();
+function parseDate(value) {
+    if (!value)
+        return null;
+    if (value instanceof Date)
+        return value;
+    if (typeof value === 'string') {
+        const d = new Date(value);
+        if (!isNaN(d.getTime()))
+            return d;
+        const parts = value.split('-');
+        if (parts.length === 3) {
+            const year = parseInt(parts[0], 10);
+            const month = parseInt(parts[1], 10) - 1;
+            const day = parseInt(parts[2], 10);
+            const d2 = new Date(year, month, day);
+            if (!isNaN(d2.getTime()))
+                return d2;
+        }
+    }
+    return null;
+}
+function mapAgendamentoFields(data) {
+    if (!data)
+        return data;
+    const mapped = {};
+    if (data.espacoId !== undefined)
+        mapped.espacoId = data.espacoId || null;
+    if (data.espaco_id !== undefined)
+        mapped.espacoId = data.espaco_id || null;
+    if (data.solicitante_nome !== undefined)
+        mapped.solicitante_nome = data.solicitante_nome || '';
+    if (data.solicitanteNome !== undefined)
+        mapped.solicitante_nome = data.solicitanteNome || '';
+    if (data.solicitante_email !== undefined)
+        mapped.solicitante_email = data.solicitante_email || '';
+    if (data.solicitanteEmail !== undefined)
+        mapped.solicitante_email = data.solicitanteEmail || '';
+    if (data.solicitante_telefone !== undefined)
+        mapped.solicitante_telefone = data.solicitante_telefone || '';
+    if (data.solicitanteTelefone !== undefined)
+        mapped.solicitante_telefone = data.solicitanteTelefone || '';
+    if (data.solicitante_documento !== undefined)
+        mapped.solicitante_documento = data.solicitante_documento || null;
+    if (data.solicitanteDocumento !== undefined)
+        mapped.solicitante_documento = data.solicitanteDocumento || null;
+    if (data.tipo_solicitante !== undefined)
+        mapped.tipo_solicitante = data.tipo_solicitante || '';
+    if (data.tipoSolicitante !== undefined)
+        mapped.tipo_solicitante = data.tipoSolicitante || '';
+    if (data.tipo_espaco !== undefined)
+        mapped.tipo_espaco = data.tipo_espaco || '';
+    if (data.tipoEspaco !== undefined)
+        mapped.tipo_espaco = data.tipoEspaco || '';
+    if (data.espaco_solicitado !== undefined)
+        mapped.espaco_solicitado = data.espaco_solicitado || '';
+    if (data.espacoSolicitado !== undefined)
+        mapped.espaco_solicitado = data.espacoSolicitado || '';
+    const data_pretendida = data.data_pretendida || data.dataPretendida;
+    if (data_pretendida) {
+        const parsed = parseDate(data_pretendida);
+        if (parsed)
+            mapped.data_pretendida = parsed;
+    }
+    const horario_inicio = data.horario_inicio || data.horarioInicio;
+    if (horario_inicio) {
+        const parsed = parseDate(horario_inicio);
+        if (parsed)
+            mapped.horario_inicio = parsed;
+    }
+    const horario_fim = data.horario_fim || data.horarioFim;
+    if (horario_fim) {
+        const parsed = parseDate(horario_fim);
+        if (parsed)
+            mapped.horario_fim = parsed;
+    }
+    if (data.numero_participantes !== undefined)
+        mapped.numero_participantes = parseInt(data.numero_participantes) || 0;
+    if (data.numeroParticipantes !== undefined)
+        mapped.numero_participantes = parseInt(data.numeroParticipantes) || 0;
+    if (data.descricao_evento !== undefined)
+        mapped.descricao_evento = data.descricao_evento || '';
+    if (data.descricaoEvento !== undefined)
+        mapped.descricao_evento = data.descricaoEvento || '';
+    if (data.natureza_evento !== undefined)
+        mapped.natureza_evento = data.natureza_evento || '';
+    if (data.naturezaEvento !== undefined)
+        mapped.natureza_evento = data.naturezaEvento || '';
+    if (data.gratuito !== undefined)
+        mapped.gratuito = data.gratuito;
+    if (data.gratuito !== undefined && typeof data.gratuito === 'string') {
+        mapped.gratuito = data.gratuito === 'true';
+    }
+    if (data.valor_ingresso !== undefined)
+        mapped.valor_ingresso = parseFloat(data.valor_ingresso) || null;
+    if (data.valorIngresso !== undefined)
+        mapped.valor_ingresso = parseFloat(data.valorIngresso) || null;
+    if (data.necessita_equipamentos !== undefined)
+        mapped.necessita_equipamentos = data.necessita_equipamentos || null;
+    if (data.necessitaEquipamentos !== undefined)
+        mapped.necessita_equipamentos = data.necessitaEquipamentos || null;
+    if (data.observacoes !== undefined)
+        mapped.observacoes = data.observacoes || null;
+    if (data.termo_aceito !== undefined)
+        mapped.termo_aceito = data.termo_aceito;
+    if (data.termoAceito !== undefined)
+        mapped.termo_aceito = data.termoAceito;
+    const termo_aceito_em = data.termo_aceito_em || data.termoAceitoEm;
+    if (termo_aceito_em) {
+        const parsed = parseDate(termo_aceito_em);
+        if (parsed)
+            mapped.termo_aceito_em = parsed;
+    }
+    if (data.responsabhilidade_evento !== undefined)
+        mapped.responsabhilidade_evento = data.responsabhilidade_evento;
+    if (data.responsabhilidadeEvento !== undefined)
+        mapped.responsabhilidade_evento = data.responsabhilidadeEvento;
+    if (data.danos_patrimonio !== undefined)
+        mapped.danos_patrimonio = data.danos_patrimonio;
+    if (data.danosPatrimonio !== undefined)
+        mapped.danos_patrimonio = data.danosPatrimonio;
+    if (data.respeito_lotacao !== undefined)
+        mapped.respeito_lotacao = data.respeito_lotacao;
+    if (data.respeitoLotacao !== undefined)
+        mapped.respeito_lotacao = data.respeitoLotacao;
+    if (data.autorizo_divulgacao !== undefined)
+        mapped.autorizo_divulgacao = data.autorizo_divulgacao;
+    if (data.autorizoDivulgacao !== undefined)
+        mapped.autorizo_divulgacao = data.autorizoDivulgacao;
+    if (data.documento_anexo_url !== undefined)
+        mapped.documento_anexo_url = data.documento_anexo_url || null;
+    if (data.documentoAnexoUrl !== undefined)
+        mapped.documento_anexo_url = data.documentoAnexoUrl || null;
+    if (data.status !== undefined)
+        mapped.status = data.status || 'pendente';
+    return mapped;
+}
+async function agendamentoRoutes(app) {
+    // Listar (com filtros)
+    app.get('/', { preHandler: [app.authenticate] }, async (request) => {
+        const { espaco_id, status, data_inicio, data_fim, limit } = request.query;
+        const where = {};
+        if (espaco_id)
+            where.espacoId = espaco_id;
+        if (status)
+            where.status = status;
+        if (data_inicio)
+            where.data_pretendida = { gte: new Date(data_inicio) };
+        if (data_fim)
+            where.data_pretendida = { ...where.data_pretendida, lte: new Date(data_fim) };
+        if (request.user.perfil === 'cidadao') {
+            where.solicitanteEmail = request.user.email;
+        }
+        else if (request.user.perfil !== 'administrador') {
+            where.espacoId = request.user.espacoId;
+        }
+        return prisma.agendamento.findMany({
+            where,
+            orderBy: { created_at: 'desc' },
+            take: limit ? parseInt(limit) : undefined,
+            include: { espaco: true }
+        });
+    });
+    // Buscar por ID
+    app.get('/:id', { preHandler: [app.authenticate] }, async (request) => {
+        const { id } = request.params;
+        return prisma.agendamento.findUnique({
+            where: { id },
+            include: { espaco: true }
+        });
+    });
+    // Criar
+    app.post('/', async (request) => {
+        const data = mapAgendamentoFields(request.body);
+        data.termo_aceito_em = data.termo_aceito ? new Date() : null;
+        return prisma.agendamento.create({ data });
+    });
+    // Atualizar
+    app.put('/:id', { preHandler: [app.authenticate] }, async (request) => {
+        const { id } = request.params;
+        const data = mapAgendamentoFields(request.body);
+        return prisma.agendamento.update({ where: { id }, data });
+    });
+    // Atualizar status
+    app.patch('/:id', { preHandler: [app.authenticate] }, async (request, reply) => {
+        const { id } = request.params;
+        const { status, resposta_coordenador } = request.body;
+        if (status && !['coordenador', 'administrador'].includes(request.user.perfil)) {
+            return reply.status(403).send({ error: 'Apenas coordenador pode alterar status' });
+        }
+        const data = {};
+        if (status)
+            data.status = status;
+        if (resposta_coordenador) {
+            data.resposta_coordenador = resposta_coordenador;
+            data.coordenador_id = request.user.id;
+            data.respondido_em = new Date();
+        }
+        return prisma.agendamento.update({ where: { id }, data });
+    });
+    // Aprovar (coordenador+)
+    app.put('/:id/approve', { preHandler: [app.authenticate] }, async (request, reply) => {
+        if (!['coordenador', 'administrador'].includes(request.user.perfil)) {
+            return reply.status(403).send({ error: 'Apenas coordenador pode aprovar' });
+        }
+        const { id } = request.params;
+        const { resposta } = request.body;
+        return prisma.agendamento.update({
+            where: { id },
+            data: { status: 'aprovado', resposta_coordenador: resposta, coordenador_id: request.user.id, respondido_em: new Date() },
+        });
+    });
+    // Rejeitar
+    app.put('/:id/reject', { preHandler: [app.authenticate] }, async (request, reply) => {
+        if (!['coordenador', 'administrador'].includes(request.user.perfil)) {
+            return reply.status(403).send({ error: 'Apenas coordenador pode rejeitar' });
+        }
+        const { id } = request.params;
+        const { resposta } = request.body;
+        return prisma.agendamento.update({
+            where: { id },
+            data: { status: 'rejeitado', resposta_coordenador: resposta, coordenador_id: request.user.id, respondido_em: new Date() },
+        });
+    });
+    // Dashboard stats
+    app.get('/dashboard', { preHandler: [app.authenticate] }, async (request) => {
+        const where = {};
+        if (request.user.perfil !== 'administrador') {
+            where.espacoId = request.user.espacoId;
+        }
+        const [total, pendentes, aprovados, rejeitados, cancelados] = await Promise.all([
+            prisma.agendamento.count({ where }),
+            prisma.agendamento.count({ where: { ...where, status: 'pendente' } }),
+            prisma.agendamento.count({ where: { ...where, status: 'aprovado' } }),
+            prisma.agendamento.count({ where: { ...where, status: 'rejeitado' } }),
+            prisma.agendamento.count({ where: { ...where, status: 'cancelado' } }),
+        ]);
+        return { total, pendentes, aprovados, rejeitados, cancelados };
+    });
+}
+//# sourceMappingURL=agendamento.routes.js.map

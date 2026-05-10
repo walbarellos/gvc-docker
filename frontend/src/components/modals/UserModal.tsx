@@ -135,14 +135,13 @@ export default function UserModal({ isOpen, onClose, userToEdit }: UserModalProp
           alert("Atenção: A atualização de senha para outros usuários via painel pode exigir a Supabase Admin API.");
         }
       } else {
-        const { data: responseData, error: fnError } = await api.post('/auth/create-user', {
-            email: formData.email,
-            senha: formData.senha,
-            nome: formData.nome,
-            perfil: formData.perfil,
-            espacoId: formData.espacoId,
-            espacoNome: dataToSave.espaco_nome
-          });
+    const { data: responseData, error: fnError } = await api.post('/auth/create-user', {
+        email: formData.email,
+        senha: formData.senha,
+        nome: formData.nome,
+        perfil: formData.perfil,
+        espacoId: formData.espacoId
+    });
 
         if (fnError || responseData?.error) {
           alert('Erro ao criar usuário: ' + (fnError?.message || responseData?.error));
