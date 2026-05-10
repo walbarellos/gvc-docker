@@ -2,7 +2,7 @@ import { useState, useEffect, useMemo, useCallback } from 'react';
 import { 
   ChevronLeft, 
   ChevronRight, 
-  Download, 
+  FileDown, 
   FileSpreadsheet, 
   FileText, 
   Filter, 
@@ -28,13 +28,15 @@ import {
   ResponsiveContainer, 
   Bar 
 } from 'recharts';
-import { supabase } from '../../lib/supabase';
 import { api } from '../../lib/api';
 import { normalizarVisita, traduzirPerfil } from '../../lib/utils';
 import { motion, AnimatePresence } from 'motion/react';
 import { format } from 'date-fns';
 import * as XLSX from 'xlsx';
 import { auditService } from '../../services/auditService';
+import { visitService } from '../../services/visitService';
+import { spaceService } from '../../services/spaceService';
+import { computadorService } from '../../services/computadorService';
 import { useAuth } from '../../contexts/AuthContext';
 import ConfirmModal from '../modals/ConfirmModal';
 
@@ -102,29 +104,14 @@ export default function Reports() {
 
   useEffect(() => {
     const fetchConfigAndLocations = async () => {
-      const { data: configData } = await supabase.from('configuracoes').select('*').eq('id', 'sistema').single();
+      const { data: configData } = await api.get<any>('/configuracoes/sistema');
       if (configData) setConfig(configData.data || {});
 
-      const { data: locData } = await api.get<any[]>('/spaces');
+      const { data: locData } = await spaceService.list();
       if (locData) setLocations(locData);
     };
 
     fetchConfigAndLocations();
-
-    const configChannel = supabase.channel('config-updates').on('postgres_changes', { event: '*', schema: 'public', table: 'configuracoes' }, (payload: any) => {
-      if (payload.new && payload.new.id === 'sistema') setConfig(payload.new.data || {});
-    }).subscribe();
-
-    const spacesChannel = supabase.channel('spaces-updates-reports').on('postgres_changes', { event: '*', schema: 'public', table: 'espacos' }, () => {
-      api.get<any[]>('/spaces').then(({ data }) => {
-        if (data) setLocations(data);
-      });
-    }).subscribe();
-
-    return () => {
-      supabase.removeChannel(configChannel);
-      supabase.removeChannel(spacesChannel);
-    };
   }, []);
 
   useEffect(() => {
@@ -136,28 +123,27 @@ export default function Reports() {
   const fetchVisits = async () => {
     setLoading(true);
     try {
-      let q = supabase.from('visits').select('*')
-        .gte('checkin', new Date(startDate + 'T00:00:00').toISOString())
-        .lte('checkin', new Date(endDate + 'T23:59:59').toISOString())
-        .order('checkin', { ascending: false });
-
-      if (filterLocation !== 'Todos os Locais' && filterLocation !== 'todos') {
-        q = q.eq('espaco_id', filterLocation);
-      }
-
-      if (filterProfile !== 'Todos os Perfis') {
-        q = q.eq('perfil', filterProfile);
-      }
-
-      if (filterStatus !== 'Todos os Status') {
-        q = q.eq('status', filterStatus);
-      }
-
-      const { data, error } = await q;
-
-      if (error) throw error;
+      const espacoId = (filterLocation !== 'Todos os Locais' && filterLocation !== 'todos') 
+        ? filterLocation 
+        : undefined;
       
-      const fetchedVisits = (data || []).map(doc => normalizarVisita(doc)) as Visit[];
+      const { data } = await visitService.list(espacoId, {
+        checkin_gte: new Date(startDate + 'T00:00:00').toISOString(),
+        checkin_lte: new Date(endDate + 'T23:59:59').toISOString(),
+        order: 'desc'
+      });
+      
+      let filteredVisits = data || [];
+      
+      if (filterProfile !== 'Todos os Perfis') {
+        filteredVisits = filteredVisits.filter(v => v.perfil === filterProfile);
+      }
+      
+      if (filterStatus !== 'Todos os Status') {
+        filteredVisits = filteredVisits.filter(v => v.status === filterStatus);
+      }
+      
+      const fetchedVisits = filteredVisits.map(doc => normalizarVisita(doc)) as Visit[];
       setVisits(fetchedVisits);
       setCurrentPage(0);
     } catch (error: any) {
@@ -172,15 +158,14 @@ export default function Reports() {
     setLoadingCharts(true);
     try {
       // Filtrar visitantes pelo período e localização
-      let visitsQuery = supabase.from('visits').select('visitor_id, espaco_id, checkin')
-        .gte('checkin', new Date(startDate + 'T00:00:00').toISOString())
-        .lte('checkin', new Date(endDate + 'T23:59:59').toISOString());
-
-      if (filterLocation !== 'Todos os Locais' && filterLocation !== 'todos') {
-        visitsQuery = visitsQuery.eq('espaco_id', filterLocation);
-      }
-
-      const { data: visitsData } = await visitsQuery;
+      const espacoId = (filterLocation !== 'Todos os Locais' && filterLocation !== 'todos') 
+        ? filterLocation 
+        : undefined;
+      
+      const { data: visitsData } = await visitService.list(espacoId, {
+        checkin_gte: new Date(startDate + 'T00:00:00').toISOString(),
+        checkin_lte: new Date(endDate + 'T23:59:59').toISOString()
+      });
 
       if (!visitsData || visitsData.length === 0) {
         setGenderData([]);
@@ -307,11 +292,10 @@ export default function Reports() {
     setLoadingTelecentro(true);
     (async () => {
       try {
-        let query = supabase.from('computadores').select('*');
-        if (filterLocation && filterLocation !== 'Todos os Locais' && filterLocation !== 'todos') {
-          query = query.eq('espaco_id', filterLocation);
-        }
-        const { data: comps } = await query;
+        const espacoId = (filterLocation && filterLocation !== 'Todos os Locais' && filterLocation !== 'todos') 
+          ? filterLocation 
+          : undefined;
+        const { data: comps } = await computadorService.list({ espacoId });
         
         if (!comps) {
           setTelecentroStats({ acessosHoje: 0, tempoMedio: 0, livres: 0, emUso: 0, excedidos: 0 });
@@ -429,7 +413,11 @@ export default function Reports() {
   const confirmDelete = async () => {
     if (!visitToDelete) return;
     try {
-      await supabase.from('visits').delete().eq('id', visitToDelete.id);
+      const { error } = await visitService.undoCheckin(visitToDelete.id);
+      if (error) {
+        alert("Erro ao excluir registro: " + error.message);
+        return;
+      }
       setVisits(prev => (prev || []).filter(v => v.id !== visitToDelete.id));
       await auditService.log({ acao: "excluiu_visita", detalhes: `Excluiu registro de visita de ${visitToDelete.nome} em ${visitToDelete.local}`, entidadeId: visitToDelete.id, userProfile: currentAdmin });
     } catch (error) {
@@ -738,7 +726,7 @@ export default function Reports() {
                       <td className="px-6 py-4 text-right no-print">
                          <div className="flex justify-end gap-2">
                             <button className="text-gray-400 hover:text-primary transition-colors p-2 hover:bg-gray-100 rounded-lg">
-                              <Download size={16} />
+                              <FileDown size={16} />
                             </button>
                             <button 
                               onClick={() => handleDelete(visit)}

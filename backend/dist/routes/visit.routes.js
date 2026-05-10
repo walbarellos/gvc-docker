@@ -1,8 +1,17 @@
-"use strict";
-Object.defineProperty(exports, "__esModule", { value: true });
-exports.visitRoutes = visitRoutes;
-const client_1 = require("@prisma/client");
-const prisma = new client_1.PrismaClient();
+import { PrismaClient } from '@prisma/client';
+const prisma = new PrismaClient();
+const statusMap = {
+    'Ativo': 'ativo',
+    'ativo': 'ativo',
+    'Concluido': 'finalizado',
+    'concluido': 'finalizado',
+    'Finalizado': 'finalizado',
+    'finalizado': 'finalizado',
+    'Cancelado': 'cancelado',
+    'cancelado': 'cancelado',
+    'Inativo': 'cancelado',
+    'inativo': 'cancelado',
+};
 function parseDate(value) {
     if (!value)
         return null;
@@ -51,15 +60,69 @@ function mapVisitFields(data) {
     }
     return mapped;
 }
-async function visitRoutes(app) {
+export async function visitRoutes(app) {
     // Listar todas as visitas (com filtros)
     app.get('/', { preHandler: [app.authenticate] }, async (request) => {
-        const { espaco_id, status, limit, order } = request.query;
+        const { espaco_id, status, limit, order, checkin, checkin_gte, checkin_lte, checkin_lt, checkin_gt } = request.query;
         const where = {};
         if (espaco_id)
             where.espacoId = espaco_id;
-        if (status)
-            where.status = status;
+        // Handle multiple status values (e.g., status=Ativo,Excedido)
+        if (status) {
+            if (status.includes(',')) {
+                const statuses = status.split(',').map((s) => statusMap[s.trim()] || s.trim());
+                where.status = { in: statuses };
+            }
+            else {
+                where.status = statusMap[status] || status;
+            }
+        }
+        // Handle checkin filters (PostgREST format: checkin=gte.2026-05-09 or checkin_gte=2026-05-09)
+        const checkinConditions = {};
+        // PostgREST format: checkin=gte.2026-05-09
+        if (checkin) {
+            if (checkin.startsWith('lt.')) {
+                checkinConditions.lt = new Date(checkin.substring(3));
+            }
+            else if (checkin.startsWith('gt.')) {
+                checkinConditions.gt = new Date(checkin.substring(3));
+            }
+            else if (checkin.startsWith('lte.')) {
+                checkinConditions.lte = new Date(checkin.substring(4));
+            }
+            else if (checkin.startsWith('gte.')) {
+                checkinConditions.gte = new Date(checkin.substring(4));
+            }
+            else {
+                const parsed = parseDate(checkin);
+                if (parsed)
+                    checkinConditions.gte = parsed;
+            }
+        }
+        // Direct query params: checkin_gte, checkin_lte, etc.
+        if (checkin_gte) {
+            const parsed = parseDate(checkin_gte);
+            if (parsed)
+                checkinConditions.gte = parsed;
+        }
+        if (checkin_lte) {
+            const parsed = parseDate(checkin_lte);
+            if (parsed)
+                checkinConditions.lte = parsed;
+        }
+        if (checkin_lt) {
+            const parsed = parseDate(checkin_lt);
+            if (parsed)
+                checkinConditions.lt = parsed;
+        }
+        if (checkin_gt) {
+            const parsed = parseDate(checkin_gt);
+            if (parsed)
+                checkinConditions.gt = parsed;
+        }
+        if (Object.keys(checkinConditions).length > 0) {
+            where.checkin = checkinConditions;
+        }
         return prisma.visit.findMany({
             where,
             orderBy: order ? { checkin: order === 'asc' ? 'asc' : 'desc' } : { checkin: 'desc' },
@@ -116,7 +179,7 @@ async function visitRoutes(app) {
             where: {
                 visitorId,
                 espacoId,
-                status: 'Ativo',
+                status: 'ativo',
                 checkin: { gte: new Date(Date.now() - 60 * 60 * 1000) },
             },
         });
@@ -128,7 +191,7 @@ async function visitRoutes(app) {
             return reply.status(404).send({ error: 'Visitante não encontrado' });
         }
         const visit = await prisma.visit.create({
-            data: { visitorId, espacoId, nome: visitor.fullName, perfil: perfil || 'general', status: 'Ativo' },
+            data: { visitorId, espacoId, nome: visitor.fullName, perfil: perfil || 'general', status: 'ativo' },
         });
         return visit;
     });
@@ -137,14 +200,14 @@ async function visitRoutes(app) {
         const { id } = request.params;
         const visit = await prisma.visit.update({
             where: { id },
-            data: { checkout: new Date(), status: 'Inativo' },
+            data: { checkout: new Date(), status: 'finalizado' },
         });
         return visit;
     });
     // Visitas ativas do espaço
     app.get('/active', { preHandler: [app.authenticate] }, async (request) => {
         const visits = await prisma.visit.findMany({
-            where: { espacoId: request.user.espacoId, status: 'Ativo' },
+            where: { espacoId: request.user.espacoId, status: 'ativo' },
         });
         return visits;
     });

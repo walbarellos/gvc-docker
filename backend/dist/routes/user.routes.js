@@ -1,16 +1,14 @@
-"use strict";
-var __importDefault = (this && this.__importDefault) || function (mod) {
-    return (mod && mod.__esModule) ? mod : { "default": mod };
-};
-Object.defineProperty(exports, "__esModule", { value: true });
-exports.userRoutes = userRoutes;
-const client_1 = require("@prisma/client");
-const bcryptjs_1 = __importDefault(require("bcryptjs"));
-const prisma = new client_1.PrismaClient();
-async function userRoutes(app) {
-    // Listar todos
-    app.get('/', { preHandler: [app.authenticate] }, async () => {
-        return prisma.usuario.findMany({ orderBy: { nome: 'asc' } });
+import { PrismaClient } from '@prisma/client';
+import bcrypt from 'bcryptjs';
+const prisma = new PrismaClient();
+export async function userRoutes(app) {
+    // Listar todos (com filtro opcional por espacoId)
+    app.get('/', { preHandler: [app.authenticate] }, async (request) => {
+        const { espacoId } = request.query;
+        const where = {};
+        if (espacoId)
+            where.espacoId = espacoId;
+        return prisma.usuario.findMany({ where, orderBy: { nome: 'asc' } });
     });
     // Buscar por ID
     app.get('/:id', { preHandler: [app.authenticate] }, async (request) => {
@@ -24,7 +22,7 @@ async function userRoutes(app) {
         }
         const { senha, ...data } = request.body;
         if (senha) {
-            data.senha = await bcryptjs_1.default.hash(senha, 10);
+            data.senha = await bcrypt.hash(senha, 10);
         }
         return prisma.usuario.create({ data });
     });
@@ -36,7 +34,7 @@ async function userRoutes(app) {
         const { id } = request.params;
         const { senha, ...data } = request.body;
         if (senha) {
-            data.senha = await bcryptjs_1.default.hash(senha, 10);
+            data.senha = await bcrypt.hash(senha, 10);
         }
         return prisma.usuario.update({ where: { id }, data });
     });

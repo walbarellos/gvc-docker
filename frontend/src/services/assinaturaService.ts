@@ -87,3 +87,26 @@ export const registrarAssinaturaDigital = async (dados: AssinaturaData): Promise
     };
   }
 };
+
+export const assinaturaService = {
+  async create(params: AssinaturaCreateParams) {
+    const assinaturaData = {
+      visitor_id: params.visitorId,
+      nome_assinante: params.nomeAssinante,
+      cpf_assinante: params.cpfAssinante,
+      tipo_documento: params.tipoDocumento,
+      documento_id: params.documentoId,
+      documento_hash: params.documentoHash,
+      ip_publico: params.ipPublico || '',
+      user_agent: params.userAgent || navigator.userAgent,
+      browser_fingerprint: params.browserFingerprint || '',
+      cpf_validado: params.cpfValidado,
+      cpf_status: params.cpfStatus,
+      termo_conteudo: params.termoConteudo,
+      termo_hash: params.termoHash,
+    };
+    
+    const { data, error } = await api.post<any>('/assinaturas', assinaturaData);
+    return { data, error };
+  }
+};

@@ -3,13 +3,23 @@ import { PrismaClient } from '@prisma/client';
 
 const prisma = new PrismaClient();
 
+type LockerStatus = 'Livre' | 'Ocupado' | 'Manutencao';
+
+const lockerStatusMap: Record<string, LockerStatus> = {
+  'Livre': 'Livre',
+  'Ocupado': 'Ocupado',
+  'Manutencao': 'Manutencao',
+  'disponivel': 'Livre',
+  'ocupado': 'Ocupado',
+};
+
 export async function lockerRoutes(app: FastifyInstance) {
   // Listar todos
   app.get('/', { preHandler: [app.authenticate] }, async (request: any) => {
     const { espaco_id, status } = request.query as any;
     const where: any = {};
     if (espaco_id) where.espacoId = espaco_id;
-    if (status) where.status = status;
+    if (status) where.status = lockerStatusMap[status] || status;
     return prisma.locker.findMany({ where, orderBy: { number: 'asc' } });
   });
 

@@ -1,9 +1,6 @@
-"use strict";
-Object.defineProperty(exports, "__esModule", { value: true });
-exports.dashboardRoutes = dashboardRoutes;
-const client_1 = require("@prisma/client");
-const prisma = new client_1.PrismaClient();
-async function dashboardRoutes(app) {
+import { PrismaClient } from '@prisma/client';
+const prisma = new PrismaClient();
+export async function dashboardRoutes(app) {
     // Estatísticas
     app.get('/stats', { preHandler: [app.authenticate] }, async (request) => {
         const today = new Date();

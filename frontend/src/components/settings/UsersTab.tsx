@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { supabase } from '../../lib/supabase';
+import { userService } from '../../services/userService';
 import { Plus, Edit2, Trash2, Shield, User as UserIcon, UserCheck, AlertCircle } from 'lucide-react';
 import UserModal from '../modals/UserModal';
 import ConfirmModal from '../modals/ConfirmModal';
@@ -17,34 +17,31 @@ const UsersTab: React.FC = () => {
 
   useEffect(() => {
     const fetchUsers = async () => {
-      const { data } = await supabase.from('usuarios').select('*').order('nome');
-      if (data) {
+      const { data, error } = await userService.list();
+      if (data && !error) {
         setUsers(data.map(d => ({
           ...d,
-          espacoId: d.espaco_id,
-          espacoNome: d.espaco_nome
+          espacoId: d.espacoId,
+          espaco_nome: d.espaco_nome
         })));
       }
       setLoading(false);
     };
 
     fetchUsers();
-
-    const channel = supabase.channel('usuarios-updates-tab').on('postgres_changes', { event: '*', schema: 'public', table: 'usuarios' }, () => {
-      fetchUsers();
-    }).subscribe();
-
-    return () => {
-      supabase.removeChannel(channel);
-    };
   }, []);
 
   const confirmDelete = async () => {
     if (!userToDelete) return;
     
     try {
-      await supabase.from('usuarios').delete().eq('id', userToDelete.id);
+      const { error } = await userService.delete(userToDelete.id);
+      if (error) {
+        alert('Erro ao excluir usuário: ' + error.message);
+        return;
+      }
       await auditService.log({ acao: "excluiu_usuario", detalhes: `Excluiu usuário ${userToDelete.nome}`, entidadeId: userToDelete.id, userProfile: currentAdmin });
+      setUsers(users.filter(u => u.id !== userToDelete.id));
     } catch (error) {
       alert('Erro ao excluir usuário.');
     } finally {

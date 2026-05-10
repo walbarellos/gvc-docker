@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { supabase } from '../../lib/supabase';
+import { auditService } from '../../services/auditService';
 import { format } from 'date-fns';
 import { Activity, Clock } from 'lucide-react';
 import { useAuth } from '../../contexts/AuthContext';
@@ -16,11 +16,7 @@ const AuditoriaTab: React.FC = () => {
     }
 
     const fetchLogs = async () => {
-      const { data, error } = await supabase.from('auditoria')
-        .select('*')
-        .order('created_at', { ascending: false })
-        .limit(50);
-        
+      const { data, error } = await auditService.getRecent(50);
       if (data) {
         setLogs(data.map(d => ({
           ...d,
@@ -31,15 +27,6 @@ const AuditoriaTab: React.FC = () => {
     };
 
     fetchLogs();
-
-    const channel = supabase.channel('auditoria-updates-tab')
-      .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'auditoria' }, () => {
-        fetchLogs();
-      }).subscribe();
-
-    return () => {
-      supabase.removeChannel(channel);
-    };
   }, [isCoordinator]);
 
   if (!isCoordinator) {

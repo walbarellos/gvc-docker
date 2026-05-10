@@ -1,8 +1,6 @@
-"use strict";
-Object.defineProperty(exports, "__esModule", { value: true });
-exports.visitorRoutes = visitorRoutes;
-const client_1 = require("@prisma/client");
-const prisma = new client_1.PrismaClient();
+import { PrismaClient } from '@prisma/client';
+import { createVisitorSchema, updateVisitorSchema, sendValidationError } from '../schemas/index.js';
+const prisma = new PrismaClient();
 function parseDate(value) {
     if (!value || typeof value !== 'string')
         return null;
@@ -69,7 +67,7 @@ function mapVisitorFields(data) {
         mapped.photoUrl = data.photoUrl || null;
     return mapped;
 }
-async function visitorRoutes(app) {
+export async function visitorRoutes(app) {
     // Listar todos
     app.get('/', { preHandler: [app.authenticate] }, async (request) => {
         const { cpf, passport, order } = request.query;
@@ -90,17 +88,23 @@ async function visitorRoutes(app) {
         return visitor;
     });
     // Criar
-    app.post('/', { preHandler: [app.authenticate] }, async (request) => {
-        const data = mapVisitorFields(request.body);
+    app.post('/', { preHandler: [app.authenticate] }, async (request, reply) => {
+        const validation = createVisitorSchema.safeParse(request.body);
+        if (!validation.success) {
+            return sendValidationError(reply, validation.error);
+        }
+        const data = mapVisitorFields(validation.data);
         const visitor = await prisma.visitor.create({ data });
         return visitor;
     });
     // Atualizar
-    app.put('/:id', { preHandler: [app.authenticate] }, async (request) => {
+    app.put('/:id', { preHandler: [app.authenticate] }, async (request, reply) => {
+        const validation = updateVisitorSchema.safeParse(request.body);
+        if (!validation.success) {
+            return sendValidationError(reply, validation.error);
+        }
         const { id } = request.params;
-        console.log('PUT visitor - body:', JSON.stringify(request.body));
-        const data = mapVisitorFields(request.body);
-        console.log('PUT visitor - mapped:', JSON.stringify(data));
+        const data = mapVisitorFields(validation.data);
         const visitor = await prisma.visitor.update({ where: { id }, data });
         return visitor;
     });

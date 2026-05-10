@@ -1,14 +1,8 @@
-"use strict";
-var __importDefault = (this && this.__importDefault) || function (mod) {
-    return (mod && mod.__esModule) ? mod : { "default": mod };
-};
-Object.defineProperty(exports, "__esModule", { value: true });
-exports.authRoutes = authRoutes;
-const bcryptjs_1 = __importDefault(require("bcryptjs"));
-const userController_1 = require("../controllers/userController");
-const client_1 = require("@prisma/client");
-const prisma = new client_1.PrismaClient();
-async function authRoutes(app) {
+import bcrypt from 'bcryptjs';
+import { createUser } from '../controllers/userController.js';
+import { PrismaClient } from '@prisma/client';
+const prisma = new PrismaClient();
+export async function authRoutes(app) {
     // Login
     app.post('/login', async (request, reply) => {
         const { email, senha } = request.body;
@@ -21,7 +15,7 @@ async function authRoutes(app) {
         if (!usuario || !usuario.ativo) {
             return reply.status(401).send({ error: 'Credenciais inválidas - usuario não encontrado ou inativo' });
         }
-        const valid = await bcryptjs_1.default.compare(senha, usuario.senha || '');
+        const valid = await bcrypt.compare(senha, usuario.senha || '');
         console.log('bcrypt.compare result:', valid);
         if (!valid) {
             return reply.status(401).send({ error: 'Credenciais inválidas - senha incorreta' });
@@ -62,6 +56,6 @@ async function authRoutes(app) {
         };
     });
     // Nova rota para criar usuário
-    app.post('/create-user', { preHandler: [app.authenticate] }, userController_1.createUser);
+    app.post('/create-user', { preHandler: [app.authenticate] }, createUser);
 }
 //# sourceMappingURL=auth.routes.js.map

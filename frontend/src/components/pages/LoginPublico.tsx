@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { motion, AnimatePresence } from 'motion/react';
-import { supabase } from '../../lib/supabase';
+import { authService } from '../../services/authService';
 
 const FOTOS = {
   espaco1: 'https://images.unsplash.com/photo-1514306191717-452ec28c7814?w=800',
@@ -23,20 +23,9 @@ export default function LoginPublico() {
   const handleGoogleLogin = async () => {
     setLoading(true);
     setError('');
-    const { error } = await supabase.auth.signInWithOAuth({
-      provider: 'google',
-      options: {
-        redirectTo: `${window.location.origin}/agendamento/formulario`,
-        queryParams: {
-          access_type: 'offline',
-          prompt: 'consent',
-        },
-      },
-    });
-    if (error) {
-      setError('Erro ao conectar com Google. Tente novamente.');
-      setLoading(false);
-    }
+    // TODO: Implementar OAuth via API quando houver endpoint
+    setError('Login com Google temporariamente indisponível. Use email e senha.');
+    setLoading(false);
   };
 
   const handleEmailLogin = async (e: React.FormEvent) => {
@@ -44,16 +33,13 @@ export default function LoginPublico() {
     setLoading(true);
     setError('');
 
-    const { error: authError } = await supabase.auth.signInWithPassword({
-      email,
-      password,
-    });
+    const { session, error } = await authService.signIn(email, password);
 
-    if (authError) {
-      if (authError.message.includes('Invalid login credentials')) {
+    if (error) {
+      if (error.message?.includes('Invalid') || error.message?.includes('incorrectos')) {
         setError('Email ou senha incorretos.');
       } else {
-        setError('Erro ao autenticar: ' + authError.message);
+        setError('Erro ao autenticar: ' + error.message);
       }
       setLoading(false);
     } else {

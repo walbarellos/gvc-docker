@@ -1,9 +1,13 @@
-"use strict";
-Object.defineProperty(exports, "__esModule", { value: true });
-exports.lockerRoutes = lockerRoutes;
-const client_1 = require("@prisma/client");
-const prisma = new client_1.PrismaClient();
-async function lockerRoutes(app) {
+import { PrismaClient } from '@prisma/client';
+const prisma = new PrismaClient();
+const lockerStatusMap = {
+    'Livre': 'Livre',
+    'Ocupado': 'Ocupado',
+    'Manutencao': 'Manutencao',
+    'disponivel': 'Livre',
+    'ocupado': 'Ocupado',
+};
+export async function lockerRoutes(app) {
     // Listar todos
     app.get('/', { preHandler: [app.authenticate] }, async (request) => {
         const { espaco_id, status } = request.query;
@@ -11,7 +15,7 @@ async function lockerRoutes(app) {
         if (espaco_id)
             where.espacoId = espaco_id;
         if (status)
-            where.status = status;
+            where.status = lockerStatusMap[status] || status;
         return prisma.locker.findMany({ where, orderBy: { number: 'asc' } });
     });
     // Buscar por ID

@@ -1,9 +1,6 @@
-"use strict";
-Object.defineProperty(exports, "__esModule", { value: true });
-exports.assinaturaRoutes = assinaturaRoutes;
-const client_1 = require("@prisma/client");
-const prisma = new client_1.PrismaClient();
-async function assinaturaRoutes(app) {
+import { PrismaClient } from '@prisma/client';
+const prisma = new PrismaClient();
+export async function assinaturaRoutes(app) {
     // Listar todos
     app.get('/', { preHandler: [app.authenticate] }, async (request) => {
         const { limit } = request.query;

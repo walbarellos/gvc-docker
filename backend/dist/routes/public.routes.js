@@ -1,9 +1,6 @@
-"use strict";
-Object.defineProperty(exports, "__esModule", { value: true });
-exports.publicRoutes = publicRoutes;
-const client_1 = require("@prisma/client");
-const prisma = new client_1.PrismaClient();
-async function publicRoutes(app) {
+import { PrismaClient } from '@prisma/client';
+const prisma = new PrismaClient();
+export async function publicRoutes(app) {
     // Criar agendamento público
     app.post('/agendamentos', async (request, reply) => {
         const data = request.body;

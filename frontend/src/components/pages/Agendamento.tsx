@@ -1,4 +1,5 @@
 import React, { useState, useMemo } from 'react';
+import { api } from '../../lib/api';
 import {
   CalendarDays,
   Clock,
@@ -19,9 +20,9 @@ import { useAuth } from '../../contexts/AuthContext';
 import { useAgendamentos, useDashboardAgendamentos } from '../../hooks/useAgendamentos';
 import { useUpdateStatusAgendamento } from '../../hooks/useAgendamentos';
 import { spaceService, Space } from '../../services/spaceService';
+import { agendamentoService } from '../../services/agendamentoService';
 import type { Agendamento } from '../../services/agendamentoService';
 import AgendamentoDetalhesModal from '../modals/AgendamentoDetalhesModal';
-import { supabase } from '../../lib/supabase';
 
 interface AgendamentoWithSpace {
   id: string;

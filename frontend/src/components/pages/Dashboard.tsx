@@ -3,6 +3,7 @@ import { Link } from 'react-router-dom';
 import { normalizarVisita, traduzirPerfil } from '../../lib/utils';
 import { dashboardService } from '../../services/dashboardService';
 import { visitService } from '../../services/visitService';
+import { spaceService } from '../../services/spaceService';
 import {
   Users, Lock, AlertCircle, Clock, MapPin,
   TrendingUp, ChevronRight
@@ -15,7 +16,6 @@ import {
 import { format, subDays, startOfDay, endOfDay } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 import { useAuth } from '../../contexts/AuthContext';
-import { supabase } from '../../lib/supabase';
 import { api } from '../../lib/api';
 
 export default function Dashboard() {
@@ -42,47 +42,26 @@ export default function Dashboard() {
       const startToday = startOfDay(today).toISOString();
       const endToday = endOfDay(today).toISOString();
 
-      let visitsQuery = supabase.from('visits').select('*', { count: 'exact' })
-        .gte('checkin', startToday)
-        .lte('checkin', endToday);
-      
-      if (!isGlobalAdmin && userData.espacoId) {
-        visitsQuery = visitsQuery.eq('espaco_id', userData.espacoId);
-      }
-      
-      const { count: countToday } = await visitsQuery;
+      // Visitas de hoje
+      const { count: countToday } = await visitService.countToday(userData.espacoId || '');
 
-      let activeQuery = supabase.from('visits')
-        .select('*, visitors(full_name, cpf, passport, is_foreigner)')
-        .in('status', ['Ativo', 'Excedido']);
-      
-      if (!isGlobalAdmin && userData.espacoId) {
-        activeQuery = activeQuery.eq('espaco_id', userData.espacoId);
-      }
-      
-      const { data: activeData } = await activeQuery;
+      // Visitas ativas
+      const espacoId = isGlobalAdmin ? undefined : userData.espacoId;
+      const { data: activeData } = await visitService.list(espacoId, { status: 'Ativo,Excedido' });
       const activeVisitsCount = activeData?.length || 0;
       const occupiedLockersCount = activeData?.filter(d => d.armario).length || 0;
 
-      let historyQuery = supabase.from('visits')
-        .select('*, visitors(full_name, cpf, passport, is_foreigner)')
-        .order('checkin', { ascending: false })
-        .limit(5);
-      
-      if (!isGlobalAdmin && userData.espacoId) {
-        historyQuery = historyQuery.eq('espaco_id', userData.espacoId);
-      }
-      
-      const { data: recentData } = await historyQuery;
+      // Visitas recentes
+      const { data: recentData } = await visitService.list(espacoId, { limit: 5, order: 'desc' });
       if (recentData) {
-        setRecentVisits((recentData || []).map((doc: any) => normalizarVisita(doc)));
+        setRecentVisits(recentData.map((doc: any) => normalizarVisita(doc)));
       }
 
-      // Total de armários - se admin global, soma de todos os espaços
+      // Total de armários
       let totalArmarios = spaceConfig?.totalArmarios || 20;
       if (isGlobalAdmin) {
-        const { data: spaces } = await api.get<any[]>('/spaces?ativo=true');
-        totalArmarios = spaces?.reduce((sum, s) => sum + (s.perfil_armarios_quantidade || 0), 0) || 20;
+        const { data: spaces } = await spaceService.list();
+        totalArmarios = spaces?.reduce((sum, s) => sum + (s.perfilArmariosQuantidade || 0), 0) || 20;
       }
 
       setStats({
@@ -99,19 +78,12 @@ export default function Dashboard() {
         const day = subDays(today, i);
         const start = startOfDay(day).toISOString();
         const end = endOfDay(day).toISOString();
-
-        let q = supabase.from('visits').select('*', { count: 'exact', head: true })
-          .gte('checkin', start)
-          .lte('checkin', end);
         
-        if (!isGlobalAdmin && userData.espacoId) {
-          q = q.eq('espaco_id', userData.espacoId);
-        }
-
-        const { count } = await q;
+        const result = await visitService.countByDateRange(start, end, espacoId);
+        
         days.push({
           name: format(day, 'eee', { locale: ptBR }).toUpperCase(),
-          count: count || 0,
+          count: result.count || 0,
           fullDate: format(day, 'dd/MM')
         });
       }
@@ -126,30 +98,7 @@ export default function Dashboard() {
 
   useEffect(() => {
     fetchData();
-
-    const channel = supabase.channel('dashboard-updates');
-    
-    if (userData?.perfil === 'administrador' && (!userData?.espacoId || userData?.espacoId === 'todos')) {
-      channel.on('postgres_changes', { event: '*', schema: 'public', table: 'visits' }, () => {
-        fetchData();
-      });
-    } else if (userData?.espacoId) {
-      channel.on('postgres_changes', { 
-        event: '*', 
-        schema: 'public', 
-        table: 'visits',
-        filter: `espaco_id=eq.${userData.espacoId}`
-      }, () => {
-        fetchData();
-      });
-    }
-    
-    channel.subscribe();
-
-    return () => {
-      supabase.removeChannel(channel);
-    };
-  }, [fetchData, userData]);
+  }, [fetchData]);
 
   const formatTime = (ts: any) => {
     if (!ts) return '--:--';

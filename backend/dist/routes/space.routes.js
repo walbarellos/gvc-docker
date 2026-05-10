@@ -1,8 +1,5 @@
-"use strict";
-Object.defineProperty(exports, "__esModule", { value: true });
-exports.spaceRoutes = spaceRoutes;
-const client_1 = require("@prisma/client");
-const prisma = new client_1.PrismaClient();
+import { PrismaClient } from '@prisma/client';
+const prisma = new PrismaClient();
 function mapSpaceFields(data) {
     if (!data)
         return data;
@@ -115,7 +112,7 @@ function mapSpaceFields(data) {
         mapped.qtd_visita_guiada = parseInt(data.qtdVisitaGuiada) || null;
     return mapped;
 }
-async function spaceRoutes(app) {
+export async function spaceRoutes(app) {
     // Listar todos (com filtros)
     app.get('/', { preHandler: [app.authenticate] }, async (request) => {
         const { ativo, order } = request.query;
@@ -137,10 +134,8 @@ async function spaceRoutes(app) {
         if (request.user.perfil !== 'administrador') {
             return reply.status(403).send({ error: 'Apenas administrador pode criar espaço' });
         }
-        console.log('POST /spaces - body:', JSON.stringify(request.body));
         const body = Array.isArray(request.body) ? request.body[0] : request.body;
         const data = mapSpaceFields(body);
-        console.log('POST /spaces - mapped:', JSON.stringify(data));
         return prisma.espaco.create({ data });
     });
     // Atualizar

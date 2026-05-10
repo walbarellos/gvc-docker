@@ -77,7 +77,7 @@ export const spaceService = {
   },
 
   async getUsers(spaceId: string) {
-    const { data, error } = await api.get<any[]>(`/users?espaco_id=${spaceId}`);
+    const { data, error } = await api.get<any[]>(`/usuarios?espacoId=${spaceId}`);
     return { data: data || [], error };
   },
 

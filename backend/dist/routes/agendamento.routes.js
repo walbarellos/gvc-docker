@@ -1,8 +1,5 @@
-"use strict";
-Object.defineProperty(exports, "__esModule", { value: true });
-exports.agendamentoRoutes = agendamentoRoutes;
-const client_1 = require("@prisma/client");
-const prisma = new client_1.PrismaClient();
+import { PrismaClient } from '@prisma/client';
+const prisma = new PrismaClient();
 function parseDate(value) {
     if (!value)
         return null;
@@ -12,18 +9,19 @@ function parseDate(value) {
         const d = new Date(value);
         if (!isNaN(d.getTime()))
             return d;
-        const parts = value.split('-');
-        if (parts.length === 3) {
-            const year = parseInt(parts[0], 10);
-            const month = parseInt(parts[1], 10) - 1;
-            const day = parseInt(parts[2], 10);
-            const d2 = new Date(year, month, day);
-            if (!isNaN(d2.getTime()))
-                return d2;
-        }
     }
     return null;
 }
+const agendamentoStatusMap = {
+    'Pendente': 'pendente',
+    'pendente': 'pendente',
+    'Aprovado': 'aprovado',
+    'aprovado': 'aprovado',
+    'Rejeitado': 'rejeitado',
+    'rejeitado': 'rejeitado',
+    'Cancelado': 'cancelado',
+    'cancelado': 'cancelado',
+};
 function mapAgendamentoFields(data) {
     if (!data)
         return data;
@@ -139,15 +137,23 @@ function mapAgendamentoFields(data) {
         mapped.status = data.status || 'pendente';
     return mapped;
 }
-async function agendamentoRoutes(app) {
+export async function agendamentoRoutes(app) {
     // Listar (com filtros)
     app.get('/', { preHandler: [app.authenticate] }, async (request) => {
         const { espaco_id, status, data_inicio, data_fim, limit } = request.query;
         const where = {};
         if (espaco_id)
             where.espacoId = espaco_id;
-        if (status)
-            where.status = status;
+        // Handle multiple status values (e.g., status=pendente,aprovado)
+        if (status) {
+            if (status.includes(',')) {
+                const statuses = status.split(',').map((s) => agendamentoStatusMap[s.trim()] || s.trim());
+                where.status = { in: statuses };
+            }
+            else {
+                where.status = agendamentoStatusMap[status] || status;
+            }
+        }
         if (data_inicio)
             where.data_pretendida = { gte: new Date(data_inicio) };
         if (data_fim)
@@ -185,6 +191,15 @@ async function agendamentoRoutes(app) {
         const data = mapAgendamentoFields(request.body);
         return prisma.agendamento.update({ where: { id }, data });
     });
+    // Deletar
+    app.delete('/:id', { preHandler: [app.authenticate] }, async (request, reply) => {
+        if (!['coordenador', 'administrador'].includes(request.user.perfil)) {
+            return reply.status(403).send({ error: 'Apenas coordenador pode excluir' });
+        }
+        const { id } = request.params;
+        await prisma.agendamento.delete({ where: { id } });
+        return { success: true };
+    });
     // Atualizar status
     app.patch('/:id', { preHandler: [app.authenticate] }, async (request, reply) => {
         const { id } = request.params;
@@ -214,22 +229,14 @@ async function agendamentoRoutes(app) {
             data: { status: 'aprovado', resposta_coordenador: resposta, coordenador_id: request.user.id, respondido_em: new Date() },
         });
     });
-    // Rejeitar
-    app.put('/:id/reject', { preHandler: [app.authenticate] }, async (request, reply) => {
-        if (!['coordenador', 'administrador'].includes(request.user.perfil)) {
-            return reply.status(403).send({ error: 'Apenas coordenador pode rejeitar' });
-        }
-        const { id } = request.params;
-        const { resposta } = request.body;
-        return prisma.agendamento.update({
-            where: { id },
-            data: { status: 'rejeitado', resposta_coordenador: resposta, coordenador_id: request.user.id, respondido_em: new Date() },
-        });
-    });
     // Dashboard stats
     app.get('/dashboard', { preHandler: [app.authenticate] }, async (request) => {
+        const { espaco_id } = request.query;
         const where = {};
-        if (request.user.perfil !== 'administrador') {
+        if (espaco_id) {
+            where.espacoId = espaco_id;
+        }
+        else if (request.user.perfil !== 'administrador') {
             where.espacoId = request.user.espacoId;
         }
         const [total, pendentes, aprovados, rejeitados, cancelados] = await Promise.all([

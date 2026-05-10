@@ -1,5 +1,6 @@
 import type { FastifyInstance } from 'fastify';
 import { PrismaClient } from '@prisma/client';
+import { createVisitorSchema, updateVisitorSchema, sendValidationError } from '../schemas/index.js';
 
 const prisma = new PrismaClient();
 
@@ -78,18 +79,28 @@ export async function visitorRoutes(app: FastifyInstance) {
   });
 
   // Criar
-  app.post('/', { preHandler: [app.authenticate] }, async (request: any) => {
-    const data = mapVisitorFields(request.body);
+  app.post('/', { preHandler: [app.authenticate] }, async (request: any, reply: any) => {
+    const validation = createVisitorSchema.safeParse(request.body);
+    
+    if (!validation.success) {
+      return sendValidationError(reply, validation.error);
+    }
+    
+    const data = mapVisitorFields(validation.data);
     const visitor = await prisma.visitor.create({ data });
     return visitor;
   });
 
   // Atualizar
-  app.put('/:id', { preHandler: [app.authenticate] }, async (request: any) => {
+  app.put('/:id', { preHandler: [app.authenticate] }, async (request: any, reply: any) => {
+    const validation = updateVisitorSchema.safeParse(request.body);
+    
+    if (!validation.success) {
+      return sendValidationError(reply, validation.error);
+    }
+    
     const { id } = request.params;
-    console.log('PUT visitor - body:', JSON.stringify(request.body));
-    const data = mapVisitorFields(request.body);
-    console.log('PUT visitor - mapped:', JSON.stringify(data));
+    const data = mapVisitorFields(validation.data);
     const visitor = await prisma.visitor.update({ where: { id }, data });
     return visitor;
   });

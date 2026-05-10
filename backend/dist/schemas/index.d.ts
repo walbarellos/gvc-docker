@@ -1,0 +1,447 @@
+import { z } from 'zod';
+import type { FastifyReply } from 'fastify';
+export interface ValidationResult<T> {
+    success: boolean;
+    data?: T;
+    error?: {
+        statusCode: number;
+        message: string;
+        details?: z.ZodIssue[];
+    };
+}
+export declare function validateBody<T>(schema: z.ZodSchema<T>, body: unknown): ValidationResult<T>;
+export declare function sendValidationError(reply: FastifyReply, error: z.ZodError): FastifyReply<import("fastify").RawServerDefault, import("http").IncomingMessage, import("http").ServerResponse<import("http").IncomingMessage>, import("fastify").RouteGenericInterface, unknown, import("fastify").FastifySchema, import("fastify").FastifyTypeProviderDefault, unknown>;
+export declare const createVisitorSchema: z.ZodObject<{
+    full_name: z.ZodString;
+    cpf: z.ZodOptional<z.ZodString>;
+    passport: z.ZodOptional<z.ZodString>;
+    is_foreigner: z.ZodDefault<z.ZodOptional<z.ZodBoolean>>;
+    gender: z.ZodOptional<z.ZodEnum<["masculino", "feminino", "outro", "prefiro_nao_dizer"]>>;
+    birth_date: z.ZodOptional<z.ZodString>;
+    email: z.ZodOptional<z.ZodString>;
+    phone: z.ZodOptional<z.ZodString>;
+    address: z.ZodOptional<z.ZodString>;
+    category: z.ZodOptional<z.ZodString>;
+    photo_url: z.ZodOptional<z.ZodString>;
+}, "strip", z.ZodTypeAny, {
+    full_name: string;
+    is_foreigner: boolean;
+    email?: string | undefined;
+    cpf?: string | undefined;
+    passport?: string | undefined;
+    gender?: "masculino" | "feminino" | "outro" | "prefiro_nao_dizer" | undefined;
+    birth_date?: string | undefined;
+    phone?: string | undefined;
+    address?: string | undefined;
+    category?: string | undefined;
+    photo_url?: string | undefined;
+}, {
+    full_name: string;
+    email?: string | undefined;
+    cpf?: string | undefined;
+    passport?: string | undefined;
+    is_foreigner?: boolean | undefined;
+    gender?: "masculino" | "feminino" | "outro" | "prefiro_nao_dizer" | undefined;
+    birth_date?: string | undefined;
+    phone?: string | undefined;
+    address?: string | undefined;
+    category?: string | undefined;
+    photo_url?: string | undefined;
+}>;
+export declare const updateVisitorSchema: z.ZodObject<{
+    full_name: z.ZodOptional<z.ZodString>;
+    cpf: z.ZodOptional<z.ZodOptional<z.ZodString>>;
+    passport: z.ZodOptional<z.ZodOptional<z.ZodString>>;
+    is_foreigner: z.ZodOptional<z.ZodDefault<z.ZodOptional<z.ZodBoolean>>>;
+    gender: z.ZodOptional<z.ZodOptional<z.ZodEnum<["masculino", "feminino", "outro", "prefiro_nao_dizer"]>>>;
+    birth_date: z.ZodOptional<z.ZodOptional<z.ZodString>>;
+    email: z.ZodOptional<z.ZodOptional<z.ZodString>>;
+    phone: z.ZodOptional<z.ZodOptional<z.ZodString>>;
+    address: z.ZodOptional<z.ZodOptional<z.ZodString>>;
+    category: z.ZodOptional<z.ZodOptional<z.ZodString>>;
+    photo_url: z.ZodOptional<z.ZodOptional<z.ZodString>>;
+}, "strip", z.ZodTypeAny, {
+    email?: string | undefined;
+    full_name?: string | undefined;
+    cpf?: string | undefined;
+    passport?: string | undefined;
+    is_foreigner?: boolean | undefined;
+    gender?: "masculino" | "feminino" | "outro" | "prefiro_nao_dizer" | undefined;
+    birth_date?: string | undefined;
+    phone?: string | undefined;
+    address?: string | undefined;
+    category?: string | undefined;
+    photo_url?: string | undefined;
+}, {
+    email?: string | undefined;
+    full_name?: string | undefined;
+    cpf?: string | undefined;
+    passport?: string | undefined;
+    is_foreigner?: boolean | undefined;
+    gender?: "masculino" | "feminino" | "outro" | "prefiro_nao_dizer" | undefined;
+    birth_date?: string | undefined;
+    phone?: string | undefined;
+    address?: string | undefined;
+    category?: string | undefined;
+    photo_url?: string | undefined;
+}>;
+export declare const createVisitSchema: z.ZodObject<{
+    visitor_id: z.ZodOptional<z.ZodString>;
+    espaco_id: z.ZodNullable<z.ZodOptional<z.ZodString>>;
+    nome: z.ZodOptional<z.ZodString>;
+    perfil: z.ZodDefault<z.ZodEnum<["general", "estudante", "professor", "turista", "pesquisador", "cultural"]>>;
+    local: z.ZodNullable<z.ZodOptional<z.ZodString>>;
+    status: z.ZodDefault<z.ZodEnum<["ativo", "finalizado", "cancelado"]>>;
+    armario: z.ZodNullable<z.ZodOptional<z.ZodString>>;
+}, "strip", z.ZodTypeAny, {
+    perfil: "general" | "estudante" | "professor" | "turista" | "pesquisador" | "cultural";
+    status: "ativo" | "finalizado" | "cancelado";
+    nome?: string | undefined;
+    espaco_id?: string | null | undefined;
+    visitor_id?: string | undefined;
+    local?: string | null | undefined;
+    armario?: string | null | undefined;
+}, {
+    nome?: string | undefined;
+    perfil?: "general" | "estudante" | "professor" | "turista" | "pesquisador" | "cultural" | undefined;
+    espaco_id?: string | null | undefined;
+    status?: "ativo" | "finalizado" | "cancelado" | undefined;
+    visitor_id?: string | undefined;
+    local?: string | null | undefined;
+    armario?: string | null | undefined;
+}>;
+export declare const checkinSchema: z.ZodObject<{
+    visitorId: z.ZodString;
+    espacoId: z.ZodNullable<z.ZodString>;
+    perfil: z.ZodDefault<z.ZodEnum<["general", "estudante", "professor", "turista", "pesquisador", "cultural"]>>;
+    nome: z.ZodOptional<z.ZodString>;
+    local: z.ZodOptional<z.ZodString>;
+}, "strip", z.ZodTypeAny, {
+    perfil: "general" | "estudante" | "professor" | "turista" | "pesquisador" | "cultural";
+    espacoId: string | null;
+    visitorId: string;
+    nome?: string | undefined;
+    local?: string | undefined;
+}, {
+    espacoId: string | null;
+    visitorId: string;
+    nome?: string | undefined;
+    perfil?: "general" | "estudante" | "professor" | "turista" | "pesquisador" | "cultural" | undefined;
+    local?: string | undefined;
+}>;
+export declare const checkoutSchema: z.ZodObject<{
+    id: z.ZodString;
+}, "strip", z.ZodTypeAny, {
+    id: string;
+}, {
+    id: string;
+}>;
+export declare const createSpaceSchema: z.ZodObject<{
+    nome: z.ZodString;
+    email: z.ZodNullable<z.ZodOptional<z.ZodString>>;
+    endereco: z.ZodNullable<z.ZodOptional<z.ZodString>>;
+    municipio: z.ZodNullable<z.ZodOptional<z.ZodString>>;
+    horario_funcionamento: z.ZodNullable<z.ZodOptional<z.ZodString>>;
+    capacidade_visitantes: z.ZodNullable<z.ZodOptional<z.ZodNumber>>;
+    mensagem_boas_vindas: z.ZodNullable<z.ZodOptional<z.ZodString>>;
+    ativo: z.ZodDefault<z.ZodBoolean>;
+    perfil_armarios: z.ZodDefault<z.ZodBoolean>;
+    perfil_telecentro: z.ZodDefault<z.ZodBoolean>;
+    perfil_agendamento: z.ZodDefault<z.ZodBoolean>;
+    total_armarios: z.ZodNullable<z.ZodOptional<z.ZodNumber>>;
+    total_computadores: z.ZodNullable<z.ZodOptional<z.ZodNumber>>;
+    tempo_limite_computador: z.ZodNullable<z.ZodOptional<z.ZodNumber>>;
+    capacidade_agendamento: z.ZodNullable<z.ZodOptional<z.ZodNumber>>;
+}, "strip", z.ZodTypeAny, {
+    nome: string;
+    ativo: boolean;
+    perfil_armarios: boolean;
+    perfil_telecentro: boolean;
+    perfil_agendamento: boolean;
+    email?: string | null | undefined;
+    endereco?: string | null | undefined;
+    municipio?: string | null | undefined;
+    horario_funcionamento?: string | null | undefined;
+    capacidade_visitantes?: number | null | undefined;
+    mensagem_boas_vindas?: string | null | undefined;
+    total_armarios?: number | null | undefined;
+    total_computadores?: number | null | undefined;
+    tempo_limite_computador?: number | null | undefined;
+    capacidade_agendamento?: number | null | undefined;
+}, {
+    nome: string;
+    email?: string | null | undefined;
+    ativo?: boolean | undefined;
+    endereco?: string | null | undefined;
+    municipio?: string | null | undefined;
+    horario_funcionamento?: string | null | undefined;
+    capacidade_visitantes?: number | null | undefined;
+    mensagem_boas_vindas?: string | null | undefined;
+    perfil_armarios?: boolean | undefined;
+    perfil_telecentro?: boolean | undefined;
+    perfil_agendamento?: boolean | undefined;
+    total_armarios?: number | null | undefined;
+    total_computadores?: number | null | undefined;
+    tempo_limite_computador?: number | null | undefined;
+    capacidade_agendamento?: number | null | undefined;
+}>;
+export declare const updateSpaceSchema: z.ZodObject<{
+    nome: z.ZodOptional<z.ZodString>;
+    email: z.ZodOptional<z.ZodNullable<z.ZodOptional<z.ZodString>>>;
+    endereco: z.ZodOptional<z.ZodNullable<z.ZodOptional<z.ZodString>>>;
+    municipio: z.ZodOptional<z.ZodNullable<z.ZodOptional<z.ZodString>>>;
+    horario_funcionamento: z.ZodOptional<z.ZodNullable<z.ZodOptional<z.ZodString>>>;
+    capacidade_visitantes: z.ZodOptional<z.ZodNullable<z.ZodOptional<z.ZodNumber>>>;
+    mensagem_boas_vindas: z.ZodOptional<z.ZodNullable<z.ZodOptional<z.ZodString>>>;
+    ativo: z.ZodOptional<z.ZodDefault<z.ZodBoolean>>;
+    perfil_armarios: z.ZodOptional<z.ZodDefault<z.ZodBoolean>>;
+    perfil_telecentro: z.ZodOptional<z.ZodDefault<z.ZodBoolean>>;
+    perfil_agendamento: z.ZodOptional<z.ZodDefault<z.ZodBoolean>>;
+    total_armarios: z.ZodOptional<z.ZodNullable<z.ZodOptional<z.ZodNumber>>>;
+    total_computadores: z.ZodOptional<z.ZodNullable<z.ZodOptional<z.ZodNumber>>>;
+    tempo_limite_computador: z.ZodOptional<z.ZodNullable<z.ZodOptional<z.ZodNumber>>>;
+    capacidade_agendamento: z.ZodOptional<z.ZodNullable<z.ZodOptional<z.ZodNumber>>>;
+}, "strip", z.ZodTypeAny, {
+    email?: string | null | undefined;
+    nome?: string | undefined;
+    ativo?: boolean | undefined;
+    endereco?: string | null | undefined;
+    municipio?: string | null | undefined;
+    horario_funcionamento?: string | null | undefined;
+    capacidade_visitantes?: number | null | undefined;
+    mensagem_boas_vindas?: string | null | undefined;
+    perfil_armarios?: boolean | undefined;
+    perfil_telecentro?: boolean | undefined;
+    perfil_agendamento?: boolean | undefined;
+    total_armarios?: number | null | undefined;
+    total_computadores?: number | null | undefined;
+    tempo_limite_computador?: number | null | undefined;
+    capacidade_agendamento?: number | null | undefined;
+}, {
+    email?: string | null | undefined;
+    nome?: string | undefined;
+    ativo?: boolean | undefined;
+    endereco?: string | null | undefined;
+    municipio?: string | null | undefined;
+    horario_funcionamento?: string | null | undefined;
+    capacidade_visitantes?: number | null | undefined;
+    mensagem_boas_vindas?: string | null | undefined;
+    perfil_armarios?: boolean | undefined;
+    perfil_telecentro?: boolean | undefined;
+    perfil_agendamento?: boolean | undefined;
+    total_armarios?: number | null | undefined;
+    total_computadores?: number | null | undefined;
+    tempo_limite_computador?: number | null | undefined;
+    capacidade_agendamento?: number | null | undefined;
+}>;
+export declare const createUserSchema: z.ZodObject<{
+    nome: z.ZodString;
+    email: z.ZodString;
+    senha: z.ZodString;
+    perfil: z.ZodDefault<z.ZodEnum<["administrador", "coordenador", "funcionario", "monitor"]>>;
+    espacoId: z.ZodNullable<z.ZodOptional<z.ZodString>>;
+    ativo: z.ZodDefault<z.ZodBoolean>;
+}, "strip", z.ZodTypeAny, {
+    email: string;
+    nome: string;
+    senha: string;
+    perfil: "administrador" | "coordenador" | "monitor" | "funcionario";
+    ativo: boolean;
+    espacoId?: string | null | undefined;
+}, {
+    email: string;
+    nome: string;
+    senha: string;
+    perfil?: "administrador" | "coordenador" | "monitor" | "funcionario" | undefined;
+    espacoId?: string | null | undefined;
+    ativo?: boolean | undefined;
+}>;
+export declare const updateUserSchema: z.ZodObject<{
+    nome: z.ZodOptional<z.ZodString>;
+    email: z.ZodOptional<z.ZodString>;
+    senha: z.ZodOptional<z.ZodString>;
+    perfil: z.ZodOptional<z.ZodEnum<["administrador", "coordenador", "funcionario", "monitor"]>>;
+    espacoId: z.ZodOptional<z.ZodNullable<z.ZodString>>;
+    ativo: z.ZodOptional<z.ZodBoolean>;
+}, "strip", z.ZodTypeAny, {
+    email?: string | undefined;
+    nome?: string | undefined;
+    senha?: string | undefined;
+    perfil?: "administrador" | "coordenador" | "monitor" | "funcionario" | undefined;
+    espacoId?: string | null | undefined;
+    ativo?: boolean | undefined;
+}, {
+    email?: string | undefined;
+    nome?: string | undefined;
+    senha?: string | undefined;
+    perfil?: "administrador" | "coordenador" | "monitor" | "funcionario" | undefined;
+    espacoId?: string | null | undefined;
+    ativo?: boolean | undefined;
+}>;
+export declare const loginSchema: z.ZodObject<{
+    email: z.ZodString;
+    senha: z.ZodString;
+}, "strip", z.ZodTypeAny, {
+    email: string;
+    senha: string;
+}, {
+    email: string;
+    senha: string;
+}>;
+export declare const createAgendamentoSchema: z.ZodObject<{
+    espaco_id: z.ZodString;
+    solicitante_nome: z.ZodString;
+    solicitante_email: z.ZodString;
+    solicitante_telefone: z.ZodString;
+    solicitante_documento: z.ZodNullable<z.ZodOptional<z.ZodString>>;
+    tipo_solicitante: z.ZodEnum<["cpf", "cnpj", "estrangeiro"]>;
+    tipo_espaco: z.ZodEnum<["auditorio", "sala_estudos", "teatro", "filmoteca", "espaco_aberto", "visita_guiada"]>;
+    espaco_solicitado: z.ZodString;
+    data_pretendida: z.ZodString;
+    horario_inicio: z.ZodString;
+    horario_fim: z.ZodString;
+    numero_participantes: z.ZodNumber;
+    descricao_evento: z.ZodString;
+    natureza_evento: z.ZodString;
+    gratuito: z.ZodBoolean;
+    valor_ingresso: z.ZodNullable<z.ZodOptional<z.ZodNumber>>;
+    necessita_equipamentos: z.ZodNullable<z.ZodOptional<z.ZodString>>;
+    observacoes: z.ZodNullable<z.ZodOptional<z.ZodString>>;
+    termo_aceito: z.ZodEffects<z.ZodBoolean, boolean, boolean>;
+    responsabhilidade_evento: z.ZodEffects<z.ZodBoolean, boolean, boolean>;
+    danos_patrimonio: z.ZodEffects<z.ZodBoolean, boolean, boolean>;
+    respeito_lotacao: z.ZodEffects<z.ZodBoolean, boolean, boolean>;
+    autorizo_divulgacao: z.ZodDefault<z.ZodBoolean>;
+}, "strip", z.ZodTypeAny, {
+    espaco_id: string;
+    solicitante_nome: string;
+    solicitante_email: string;
+    solicitante_telefone: string;
+    tipo_solicitante: "cpf" | "cnpj" | "estrangeiro";
+    tipo_espaco: "auditorio" | "sala_estudos" | "teatro" | "filmoteca" | "espaco_aberto" | "visita_guiada";
+    espaco_solicitado: string;
+    data_pretendida: string;
+    horario_inicio: string;
+    horario_fim: string;
+    numero_participantes: number;
+    descricao_evento: string;
+    natureza_evento: string;
+    gratuito: boolean;
+    termo_aceito: boolean;
+    responsabhilidade_evento: boolean;
+    danos_patrimonio: boolean;
+    respeito_lotacao: boolean;
+    autorizo_divulgacao: boolean;
+    solicitante_documento?: string | null | undefined;
+    valor_ingresso?: number | null | undefined;
+    necessita_equipamentos?: string | null | undefined;
+    observacoes?: string | null | undefined;
+}, {
+    espaco_id: string;
+    solicitante_nome: string;
+    solicitante_email: string;
+    solicitante_telefone: string;
+    tipo_solicitante: "cpf" | "cnpj" | "estrangeiro";
+    tipo_espaco: "auditorio" | "sala_estudos" | "teatro" | "filmoteca" | "espaco_aberto" | "visita_guiada";
+    espaco_solicitado: string;
+    data_pretendida: string;
+    horario_inicio: string;
+    horario_fim: string;
+    numero_participantes: number;
+    descricao_evento: string;
+    natureza_evento: string;
+    gratuito: boolean;
+    termo_aceito: boolean;
+    responsabhilidade_evento: boolean;
+    danos_patrimonio: boolean;
+    respeito_lotacao: boolean;
+    solicitante_documento?: string | null | undefined;
+    valor_ingresso?: number | null | undefined;
+    necessita_equipamentos?: string | null | undefined;
+    observacoes?: string | null | undefined;
+    autorizo_divulgacao?: boolean | undefined;
+}>;
+export declare const updateAgendamentoSchema: z.ZodObject<{
+    espaco_id: z.ZodOptional<z.ZodString>;
+    solicitante_nome: z.ZodOptional<z.ZodString>;
+    solicitante_email: z.ZodOptional<z.ZodString>;
+    solicitante_telefone: z.ZodOptional<z.ZodString>;
+    solicitante_documento: z.ZodOptional<z.ZodNullable<z.ZodOptional<z.ZodString>>>;
+    tipo_solicitante: z.ZodOptional<z.ZodEnum<["cpf", "cnpj", "estrangeiro"]>>;
+    tipo_espaco: z.ZodOptional<z.ZodEnum<["auditorio", "sala_estudos", "teatro", "filmoteca", "espaco_aberto", "visita_guiada"]>>;
+    espaco_solicitado: z.ZodOptional<z.ZodString>;
+    data_pretendida: z.ZodOptional<z.ZodString>;
+    horario_inicio: z.ZodOptional<z.ZodString>;
+    horario_fim: z.ZodOptional<z.ZodString>;
+    numero_participantes: z.ZodOptional<z.ZodNumber>;
+    descricao_evento: z.ZodOptional<z.ZodString>;
+    natureza_evento: z.ZodOptional<z.ZodString>;
+    gratuito: z.ZodOptional<z.ZodBoolean>;
+    valor_ingresso: z.ZodOptional<z.ZodNullable<z.ZodOptional<z.ZodNumber>>>;
+    necessita_equipamentos: z.ZodOptional<z.ZodNullable<z.ZodOptional<z.ZodString>>>;
+    observacoes: z.ZodOptional<z.ZodNullable<z.ZodOptional<z.ZodString>>>;
+    termo_aceito: z.ZodOptional<z.ZodEffects<z.ZodBoolean, boolean, boolean>>;
+    responsabhilidade_evento: z.ZodOptional<z.ZodEffects<z.ZodBoolean, boolean, boolean>>;
+    danos_patrimonio: z.ZodOptional<z.ZodEffects<z.ZodBoolean, boolean, boolean>>;
+    respeito_lotacao: z.ZodOptional<z.ZodEffects<z.ZodBoolean, boolean, boolean>>;
+    autorizo_divulgacao: z.ZodOptional<z.ZodDefault<z.ZodBoolean>>;
+}, "strip", z.ZodTypeAny, {
+    espaco_id?: string | undefined;
+    solicitante_nome?: string | undefined;
+    solicitante_email?: string | undefined;
+    solicitante_telefone?: string | undefined;
+    solicitante_documento?: string | null | undefined;
+    tipo_solicitante?: "cpf" | "cnpj" | "estrangeiro" | undefined;
+    tipo_espaco?: "auditorio" | "sala_estudos" | "teatro" | "filmoteca" | "espaco_aberto" | "visita_guiada" | undefined;
+    espaco_solicitado?: string | undefined;
+    data_pretendida?: string | undefined;
+    horario_inicio?: string | undefined;
+    horario_fim?: string | undefined;
+    numero_participantes?: number | undefined;
+    descricao_evento?: string | undefined;
+    natureza_evento?: string | undefined;
+    gratuito?: boolean | undefined;
+    valor_ingresso?: number | null | undefined;
+    necessita_equipamentos?: string | null | undefined;
+    observacoes?: string | null | undefined;
+    termo_aceito?: boolean | undefined;
+    responsabhilidade_evento?: boolean | undefined;
+    danos_patrimonio?: boolean | undefined;
+    respeito_lotacao?: boolean | undefined;
+    autorizo_divulgacao?: boolean | undefined;
+}, {
+    espaco_id?: string | undefined;
+    solicitante_nome?: string | undefined;
+    solicitante_email?: string | undefined;
+    solicitante_telefone?: string | undefined;
+    solicitante_documento?: string | null | undefined;
+    tipo_solicitante?: "cpf" | "cnpj" | "estrangeiro" | undefined;
+    tipo_espaco?: "auditorio" | "sala_estudos" | "teatro" | "filmoteca" | "espaco_aberto" | "visita_guiada" | undefined;
+    espaco_solicitado?: string | undefined;
+    data_pretendida?: string | undefined;
+    horario_inicio?: string | undefined;
+    horario_fim?: string | undefined;
+    numero_participantes?: number | undefined;
+    descricao_evento?: string | undefined;
+    natureza_evento?: string | undefined;
+    gratuito?: boolean | undefined;
+    valor_ingresso?: number | null | undefined;
+    necessita_equipamentos?: string | null | undefined;
+    observacoes?: string | null | undefined;
+    termo_aceito?: boolean | undefined;
+    responsabhilidade_evento?: boolean | undefined;
+    danos_patrimonio?: boolean | undefined;
+    respeito_lotacao?: boolean | undefined;
+    autorizo_divulgacao?: boolean | undefined;
+}>;
+export declare const updateAgendamentoStatusSchema: z.ZodObject<{
+    status: z.ZodEnum<["aprovado", "rejeitado", "cancelado"]>;
+    resposta_coordenador: z.ZodOptional<z.ZodString>;
+}, "strip", z.ZodTypeAny, {
+    status: "cancelado" | "aprovado" | "rejeitado";
+    resposta_coordenador?: string | undefined;
+}, {
+    status: "cancelado" | "aprovado" | "rejeitado";
+    resposta_coordenador?: string | undefined;
+}>;
+//# sourceMappingURL=index.d.ts.map

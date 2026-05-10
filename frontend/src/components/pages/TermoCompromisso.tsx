@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { FileText, Printer, Download, ArrowLeft } from 'lucide-react';
+import { FileText, Printer, ArrowLeft } from 'lucide-react';
 
 interface TermoFormData {
   nome: string;

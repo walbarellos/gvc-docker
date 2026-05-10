@@ -1,23 +1,15 @@
 import { useState, useEffect } from 'react';
-import { 
-  Building, 
-  Database, 
-  ShieldCheck, 
-  Users,
-  MapPin,
-  Settings as SettingsIcon,
-  Download,
-  Trash2,
-  CheckCircle2,
-  AlertCircle,
-  Layout,
-  Activity,
-  Package
-} from 'lucide-react';
-import { supabase } from '../../lib/supabase';
 import { api } from '../../lib/api';
-import { motion, AnimatePresence } from 'motion/react';
-import { format } from 'date-fns';
+import { spaceService } from '../../services/spaceService';
+import { userService } from '../../services/userService';
+import { visitService } from '../../services/visitService';
+import { visitorService } from '../../services/visitorService';
+import { lockerService } from '../../services/lockerService';
+import { useAuth } from '../../contexts/AuthContext';
+import { AuditLog, Settings as SettingsIcon, Users, MapPin, Database, Bell, ChevronRight, FileDown } from 'lucide-react';
+import { motion } from 'motion/react';
+import UsersTab from '../settings/UsersTab';
+import AuditoriaTab from '../settings/AuditoriaTab';
 import SpacesTab from '../settings/SpacesTab';
 import UsersTab from '../settings/UsersTab';
 import AuditoriaTab from '../settings/AuditoriaTab';
@@ -84,9 +76,29 @@ export default function Settings() {
       };
 
       for (const table of tables) {
-        const { data, error } = await supabase.from(table).select('*');
-        if (error) {
-          console.error(`Erro ao exportar ${table}:`, error);
+        let data: any[] = [];
+        try {
+          if (table === 'visits') {
+            const result = await visitService.list();
+            data = result.data || [];
+          } else if (table === 'visitors') {
+            const result = await visitorService.listAll();
+            data = result.data || [];
+          } else if (table === 'usuarios') {
+            const result = await userService.list();
+            data = result.data || [];
+          } else if (table === 'espacos') {
+            const result = await spaceService.listAll();
+            data = result.data || [];
+          } else if (table === 'lockers') {
+            const result = await lockerService.list();
+            data = result.data || [];
+          } else if (table === 'configuracoes') {
+            const result = await api.get<any[]>('/configuracoes');
+            data = result.data || [];
+          }
+        } catch (err) {
+          console.error(`Erro ao exportar ${table}:`, err);
           continue;
         }
         allData[table] = data;
@@ -122,7 +134,7 @@ export default function Settings() {
           onClick={handleExportAll}
           className="flex items-center gap-2 px-6 py-2.5 bg-slate-900 text-white rounded-xl font-bold text-xs uppercase tracking-widest hover:bg-slate-800 transition-all shadow-lg shadow-slate-200"
         >
-          <Download size={16} /> Exportar Backup
+          <FileDown size={16} /> Exportar Backup
         </button>
       </div>
 

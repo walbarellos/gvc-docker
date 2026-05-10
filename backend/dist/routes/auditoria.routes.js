@@ -1,8 +1,5 @@
-"use strict";
-Object.defineProperty(exports, "__esModule", { value: true });
-exports.auditoriaRoutes = auditoriaRoutes;
-const client_1 = require("@prisma/client");
-const prisma = new client_1.PrismaClient();
+import { PrismaClient } from '@prisma/client';
+const prisma = new PrismaClient();
 function mapAuditoriaFields(data) {
     if (!data)
         return data;
@@ -23,7 +20,7 @@ function mapAuditoriaFields(data) {
         mapped.createdAt = data.createdAt;
     return mapped;
 }
-async function auditoriaRoutes(app) {
+export async function auditoriaRoutes(app) {
     // Listar todos
     app.get('/', { preHandler: [app.authenticate] }, async (request) => {
         const { limit } = request.query;

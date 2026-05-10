@@ -88,10 +88,8 @@ export async function spaceRoutes(app: FastifyInstance) {
     if (request.user.perfil !== 'administrador') {
       return reply.status(403).send({ error: 'Apenas administrador pode criar espaço' });
     }
-    console.log('POST /spaces - body:', JSON.stringify(request.body));
     const body = Array.isArray(request.body) ? request.body[0] : request.body;
     const data = mapSpaceFields(body);
-    console.log('POST /spaces - mapped:', JSON.stringify(data));
     return prisma.espaco.create({ data });
   });
 

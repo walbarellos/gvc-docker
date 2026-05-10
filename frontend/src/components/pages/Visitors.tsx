@@ -1,5 +1,4 @@
 import { useState, useEffect, useCallback } from 'react';
-import { supabase } from '../../lib/supabase';
 import { api } from '../../lib/api';
 import { visitService } from '../../services/visitService';
 import { visitorService } from '../../services/visitorService';
@@ -83,16 +82,6 @@ const mapped = (data || []).map((d: any) => ({
     if (isAdmin) {
       fetchActiveVisits();
     }
-
-    const channel = supabase.channel('visitors-updates')
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'visitors' }, () => {
-        fetchVisitors();
-      })
-      .subscribe();
-
-    return () => {
-      supabase.removeChannel(channel);
-    };
   }, [isAdmin, fetchVisitors]);
 
   useEffect(() => {
@@ -106,7 +95,12 @@ const mapped = (data || []).map((d: any) => ({
   const handleDelete = async (id: string, name: string) => {
     if (confirm(`Tem certeza que deseja excluir o registro de ${name}?`)) {
       try {
-        await supabase.from('visitors').delete().eq('id', id);
+        const { error } = await visitorService.delete(id);
+        if (error) {
+          console.error("Erro ao deletar", error);
+        } else {
+          setVisitors(visitors.filter(v => v.id !== id));
+        }
       } catch (error) {
         console.error("Erro ao deletar", error);
       }
@@ -152,20 +146,20 @@ const mapped = (data || []).map((d: any) => ({
         // Erro da trigger (bloqueio)
         if (error.message.includes('já possui check-in ativo') || error.message.includes('60 minutos')) {
           // Buscar info do check-in ativo para mostrar
-          const { data: activeVisit } = await supabase
-            .from('visits')
-            .select('id, local, checkin')
-            .eq('visitor_id', visitor.id)
-            .eq('status', 'Ativo')
-            .limit(1);
+          const { data: activeVisits } = await visitService.list(undefined, { 
+            status: 'Ativo',
+            limit: 1 
+          });
           
-          if (activeVisit && activeVisit.length > 0) {
-            const diffMin = Math.floor((now.getTime() - new Date(activeVisit[0].checkin).getTime()) / 60000);
+          const activeVisit = activeVisits?.find(v => v.visitor_id === visitor.id);
+          
+          if (activeVisit) {
+            const diffMin = Math.floor((now.getTime() - new Date(activeVisit.checkin).getTime()) / 60000);
             setBlockedInfo({
               visitorName: visitor.fullName,
               cpf: visitor.cpf || 'Não informado',
-              currentSpace: activeVisit[0].local,
-              checkinTime: activeVisit[0].checkin,
+              currentSpace: activeVisit.local,
+              checkinTime: activeVisit.checkin,
               remainingMinutes: 60 - diffMin
             });
             setShowBlockedPopup(true);
@@ -248,11 +242,10 @@ const mapped = (data || []).map((d: any) => ({
 
   const fetchActiveVisits = async () => {
     try {
-      const { data } = await supabase
-        .from('visits')
-        .select('*')
-        .in('status', ['Ativo', 'active'])
-        .order('checkin', { ascending: false });
+      const { data } = await visitService.list(undefined, { 
+        status: 'Ativo,active',
+        order: 'desc'
+      });
       setActiveVisits(data || []);
     } catch (err) {
       console.error("Erro ao carregar visits ativas:", err);

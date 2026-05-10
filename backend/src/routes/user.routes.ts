@@ -5,9 +5,12 @@ import bcrypt from 'bcryptjs';
 const prisma = new PrismaClient();
 
 export async function userRoutes(app: FastifyInstance) {
-  // Listar todos
-  app.get('/', { preHandler: [app.authenticate] }, async () => {
-    return prisma.usuario.findMany({ orderBy: { nome: 'asc' } });
+  // Listar todos (com filtro opcional por espacoId)
+  app.get('/', { preHandler: [app.authenticate] }, async (request: any) => {
+    const { espacoId } = request.query;
+    const where: any = {};
+    if (espacoId) where.espacoId = espacoId;
+    return prisma.usuario.findMany({ where, orderBy: { nome: 'asc' } });
   });
 
   // Buscar por ID

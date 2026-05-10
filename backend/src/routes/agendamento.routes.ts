@@ -1,5 +1,5 @@
 import type { FastifyInstance } from 'fastify';
-import { PrismaClient } from '@prisma/client';
+import { PrismaClient, AgendamentoStatus } from '@prisma/client';
 
 const prisma = new PrismaClient();
 
@@ -9,17 +9,20 @@ function parseDate(value: any): Date | null {
   if (typeof value === 'string') {
     const d = new Date(value);
     if (!isNaN(d.getTime())) return d;
-    const parts = value.split('-');
-    if (parts.length === 3) {
-      const year = parseInt(parts[0], 10);
-      const month = parseInt(parts[1], 10) - 1;
-      const day = parseInt(parts[2], 10);
-      const d2 = new Date(year, month, day);
-      if (!isNaN(d2.getTime())) return d2;
-    }
   }
   return null;
 }
+
+const agendamentoStatusMap: Record<string, AgendamentoStatus> = {
+  'Pendente': 'pendente',
+  'pendente': 'pendente',
+  'Aprovado': 'aprovado',
+  'aprovado': 'aprovado',
+  'Rejeitado': 'rejeitado',
+  'rejeitado': 'rejeitado',
+  'Cancelado': 'cancelado',
+  'cancelado': 'cancelado',
+};
 
 function mapAgendamentoFields(data: any): any {
   if (!data) return data;
@@ -125,7 +128,17 @@ export async function agendamentoRoutes(app: FastifyInstance) {
     
     const where: any = {};
     if (espaco_id) where.espacoId = espaco_id;
-    if (status) where.status = status;
+    
+    // Handle multiple status values (e.g., status=pendente,aprovado)
+    if (status) {
+      if (status.includes(',')) {
+        const statuses = status.split(',').map((s: string) => agendamentoStatusMap[s.trim()] || s.trim());
+        where.status = { in: statuses };
+      } else {
+        where.status = agendamentoStatusMap[status] || status;
+      }
+    }
+    
     if (data_inicio) where.data_pretendida = { gte: new Date(data_inicio) };
     if (data_fim) where.data_pretendida = { ...where.data_pretendida, lte: new Date(data_fim) };
 
@@ -166,6 +179,16 @@ export async function agendamentoRoutes(app: FastifyInstance) {
     return prisma.agendamento.update({ where: { id }, data });
   });
 
+  // Deletar
+  app.delete('/:id', { preHandler: [app.authenticate] }, async (request: any, reply: any) => {
+    if (!['coordenador', 'administrador'].includes(request.user.perfil)) {
+      return reply.status(403).send({ error: 'Apenas coordenador pode excluir' });
+    }
+    const { id } = request.params;
+    await prisma.agendamento.delete({ where: { id } });
+    return { success: true };
+  });
+
   // Atualizar status
   app.patch('/:id', { preHandler: [app.authenticate] }, async (request: any, reply: any) => {
     const { id } = request.params;
@@ -193,29 +216,20 @@ export async function agendamentoRoutes(app: FastifyInstance) {
     }
     const { id } = request.params;
     const { resposta } = request.body as any;
-    return prisma.agendamento.update({
+return prisma.agendamento.update({
       where: { id },
       data: { status: 'aprovado', resposta_coordenador: resposta, coordenador_id: request.user.id, respondido_em: new Date() },
     });
-  });
+});
 
-  // Rejeitar
-  app.put('/:id/reject', { preHandler: [app.authenticate] }, async (request: any, reply: any) => {
-    if (!['coordenador', 'administrador'].includes(request.user.perfil)) {
-      return reply.status(403).send({ error: 'Apenas coordenador pode rejeitar' });
-    }
-    const { id } = request.params;
-    const { resposta } = request.body as any;
-    return prisma.agendamento.update({
-      where: { id },
-      data: { status: 'rejeitado', resposta_coordenador: resposta, coordenador_id: request.user.id, respondido_em: new Date() },
-    });
-  });
-
-  // Dashboard stats
+// Dashboard stats
   app.get('/dashboard', { preHandler: [app.authenticate] }, async (request: any) => {
+    const { espaco_id } = request.query as any;
+    
     const where: any = {};
-    if (request.user.perfil !== 'administrador') {
+    if (espaco_id) {
+      where.espacoId = espaco_id;
+    } else if (request.user.perfil !== 'administrador') {
       where.espacoId = request.user.espacoId;
     }
     

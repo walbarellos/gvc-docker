@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { motion } from 'motion/react';
 import { Building2, User, Mail, Phone, Lock, AlertCircle, Eye, EyeOff, ArrowLeft, CheckCircle } from 'lucide-react';
-import { supabase } from '../../lib/supabase';
+import { api } from '../../lib/api';
 
 interface CadastroForm {
   nome: string;
@@ -70,48 +70,32 @@ export default function CadastroPublico() {
 
     setLoading(true);
 
-    const { data: authData, error: authError } = await supabase.auth.signUp({
-      email: formData.email,
-      password: formData.senha,
-      options: {
-        data: {
-          nome: formData.nome,
-          telefone: formData.telefone,
-          cpf: formData.cpf,
-          tipo: formData.tipo,
-        },
-      },
-    });
-
-    if (authError) {
-      if (authError.message.includes('User already registered')) {
-        setError('Este email já está cadastrado. Faça login ou recupere sua senha.');
-      } else {
-        setError(authError.message);
-      }
-      setLoading(false);
-      return;
-    }
-
-    if (authData?.user) {
-      const { error: insertError } = await supabase.from('usuarios').insert({
-        auth_uid: authData.user.id,
+    try {
+      const { data, error } = await api.post<any>('/public/cadastro', {
         nome: formData.nome,
         email: formData.email,
-        perfil: 'publico',
         telefone: formData.telefone,
         cpf: formData.cpf,
-        ativo: true,
-        espaco_id: null
+        senha: formData.senha,
+        tipo: formData.tipo,
       });
 
-      if (insertError) {
-        console.error('Erro ao criar perfil de usuário:', insertError);
+      if (error) {
+        if (error.message.includes('already registered') || error.message.includes('já cadastrado')) {
+          setError('Este email já está cadastrado. Faça login ou recupere sua senha.');
+        } else {
+          setError(error.message || 'Erro ao realizar cadastro');
+        }
+        setLoading(false);
+        return;
       }
-    }
 
-    setSuccess(true);
-    setLoading(false);
+      setSuccess(true);
+      setLoading(false);
+    } catch (err: any) {
+      setError(err.message || 'Erro ao realizar cadastro');
+      setLoading(false);
+    }
   };
 
   if (success) {

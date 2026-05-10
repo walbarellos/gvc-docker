@@ -20,8 +20,10 @@ import {
   Smartphone,
 } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
-import { supabase } from '../../lib/supabase';
+import { api } from '../../lib/api';
 import { spaceService, Space } from '../../services/spaceService';
+import { agendamentoService } from '../../services/agendamentoService';
+import { assinaturaService } from '../../services/assinaturaService';
 import { useCreateAgendamento } from '../../hooks/useAgendamentos';
 import { usePublicAuth } from '../../contexts/PublicAuthContext';
 import { validateCPF, validateCNPJ, formatCPF, formatCNPJ, formatPhone } from '../../lib/validators';
@@ -453,16 +455,16 @@ if (parsed && (parsed.solicitante_nome || parsed.espaco_id)) {
     const intervaloMin = 10; // 10 minutos de folga
     
     // Busca agendamentos existentes no espaço, data e tipo de evento
-    const { data } = await supabase
-      .from('agendamentos')
-      .select('id, horario_inicio, horario_fim, espaco_solicitado, tipo_espaco, natureza_evento')
-      .eq('espaco_id', formData.espaco_id)
-      .eq('data_pretendida', formData.data_pretendida)
-      .neq('status', 'rejeitado')
-      .neq('status', 'cancelado');
+    const { data } = await api.get<any[]>(
+      `/agendamentos?espaco_id=${formData.espaco_id}&data_inicio=${formData.data_pretendida}&data_fim=${formData.data_pretendida}`
+    );
     
     // Verificar conflitos com 10min de folga, considerando mesmo tipo_espaco e natureza_evento
     const conflitosEncontrados = (data || []).filter((ag: any) => {
+      // Ignorar rejeitados e cancelados
+      if (ag.status === 'rejeitado' || ag.status === 'cancelado') {
+        return false;
+      }
       // Só conflita se for MESMO tipo de espaço e MESMA natureza do evento
       if (ag.tipo_espaco !== formData.tipo_espaco || ag.natureza_evento !== formData.natureza_evento) {
         return false;
@@ -551,15 +553,14 @@ try {
         }
       }
 
-      // Usar Edge Function para submissão pública
-      const { data, error: createError } = await supabase.functions.invoke('public-submit-agendamento', {
-        body: {
-          ...formData,
-          espaco_solicitado: selectedSpace?.nome || formData.espaco_solicitado,
-          valor_ingresso: formData.gratuito ? null : parseFloat(formData.valor_ingresso) || null,
-          session_id: draftService.getSessionId(),
-        }
-      });
+      // Criar agendamento via API pública
+      const agendamentoPayload = {
+        ...formData,
+        espaco_solicitado: selectedSpace?.nome || formData.espaco_solicitado,
+        valor_ingresso: formData.gratuito ? null : parseFloat(formData.valor_ingresso) || null,
+      };
+      
+      const { data, error: createError } = await agendamentoService.create(agendamentoPayload);
 
       if (createError) {
         console.error('Erro ao criar agendamento:', createError);
@@ -568,34 +569,19 @@ try {
         return;
       }
 
-      if (data?.error) {
-        setError(data.error);
+      if (!data) {
+        setError('Erro ao criar agendamento');
         setLoading(false);
         return;
       }
 
-      // Enviar email de confirmação (opcional)
-      if (data?.data) {
-        try {
-          await supabase.functions.invoke('send-agendamento-email', {
-            body: JSON.stringify({
-              tipo: 'confirmacao',
-              email_destino: formData.solicitante_email,
-              nome_destino: formData.solicitante_nome,
-              agendamento_id: data.data.id,
-              dados: {
-                espaco: selectedSpace?.nome,
-                data: new Date(formData.data_pretendida).toLocaleDateString('pt-BR'),
-                horario: `${formData.horario_inicio.slice(0, 5)} - ${formData.horario_fim.slice(0, 5)}`,
-              },
-            }),
-          });
-        } catch (e) {
-          console.error('Erro ao enviar email:', e);
-        }
+      // Enviar email de confirmação (opcional - placeholder)
+      if (data) {
+        // TODO: Implementar serviço de email via API
+        console.log('Agendamento criado:', data);
 
-        // Salvar assinatura digital blindada
-        if (data?.data?.id && assinaturaInfo) {
+        // Salvar assinatura digital
+        if (data?.id && assinaturaInfo) {
           try {
             const termoCompleto = JSON.stringify({
               termo_compromisso: formData.termo_aceito,
@@ -605,20 +591,20 @@ try {
             });
             const termoHash = await generateDocumentHash(termoCompleto);
 
-            await supabase.from('assinaturas_digitais').insert({
-              visitor_id: null,
-              nome_assinante: formData.solicitante_nome,
-              cpf_assinante: cpfDoc,
-              tipo_documento: 'agendamento',
-              documento_id: data.data.id,
-              documento_hash: assinaturaInfo.hash,
-              ip_publico: assinaturaInfo.ip,
-              user_agent: navigator.userAgent,
-              browser_fingerprint: JSON.stringify(assinaturaInfo.fingerprint),
-              cpf_validado: formData.tipo_solicitante === 'cpf' ? cpfValidation?.valid : null,
-              cpf_status: cpfValidation?.status || null,
-              termo_conteudo: termoCompleto,
-              termo_hash: termoHash,
+            await assinaturaService.create({
+              visitorId: null,
+              nomeAssinante: formData.solicitante_nome,
+              cpfAssinante: cpfDoc,
+              tipoDocumento: 'agendamento',
+              documentoId: data.id,
+              documentoHash: assinaturaInfo.hash,
+              ipPublico: assinaturaInfo.ip,
+              userAgent: navigator.userAgent,
+              browserFingerprint: JSON.stringify(assinaturaInfo.fingerprint),
+              cpfValidado: formData.tipo_solicitante === 'cpf' ? cpfValidation?.valid : null,
+              cpfStatus: cpfValidation?.status || null,
+              termoConteudo: termoCompleto,
+              termoHash: termoHash,
             });
           } catch (e) {
             console.error('Erro ao salvar assinatura:', e);

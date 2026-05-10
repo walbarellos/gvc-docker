@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { Bell } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
-import { supabase } from '../../lib/supabase';
+import { auditService } from '../../services/auditService';
 import { useAuth } from '../../contexts/AuthContext';
 
 export default function NotificationBell() {
@@ -17,11 +17,7 @@ export default function NotificationBell() {
     if (!isAdmin) return;
     
     const fetchNotifications = async () => {
-      const { data } = await supabase.from('auditoria')
-        .select('*')
-        .order('created_at', { ascending: false })
-        .limit(5);
-        
+      const { data } = await auditService.getRecent(5);
       if (data) {
         setNotifications(data);
         const lastRead = localStorage.getItem('gvc_last_read_audit') || '0';
@@ -31,15 +27,6 @@ export default function NotificationBell() {
     };
 
     fetchNotifications();
-
-    const channel = supabase.channel('auditoria-bell')
-      .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'auditoria' }, () => {
-        fetchNotifications();
-      }).subscribe();
-    
-    return () => {
-      supabase.removeChannel(channel);
-    };
   }, [isAdmin]);
   
   useEffect(() => {
