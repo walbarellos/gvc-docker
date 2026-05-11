@@ -3,17 +3,20 @@ import { PrismaClient, VisitStatus } from '@prisma/client';
 
 const prisma = new PrismaClient();
 
-const statusMap: Record<string, VisitStatus> = {
-  'Ativo': 'ativo',
-  'ativo': 'ativo',
-  'Concluido': 'finalizado',
-  'concluido': 'finalizado',
-  'Finalizado': 'finalizado',
-  'finalizado': 'finalizado',
-  'Cancelado': 'cancelado',
-  'cancelado': 'cancelado',
-  'Inativo': 'cancelado',
-  'inativo': 'cancelado',
+const statusMap: Record<string, VisitStatus | VisitStatus[]> = {
+  'Ativo': 'ativo' as VisitStatus,
+  'ativo': 'ativo' as VisitStatus,
+  'active': 'ativo' as VisitStatus,
+  'Excedido': 'ativo' as VisitStatus,
+  'excedido': 'ativo' as VisitStatus,
+  'Concluido': 'finalizado' as VisitStatus,
+  'concluido': 'finalizado' as VisitStatus,
+  'Finalizado': 'finalizado' as VisitStatus,
+  'finalizado': 'finalizado' as VisitStatus,
+  'Cancelado': 'cancelado' as VisitStatus,
+  'cancelado': 'cancelado' as VisitStatus,
+  'Inativo': 'cancelado' as VisitStatus,
+  'inativo': 'cancelado' as VisitStatus,
 };
 
 function parseDate(value: any): Date | null {
@@ -63,13 +66,19 @@ export async function visitRoutes(app: FastifyInstance) {
     const where: any = {};
     if (espaco_id) where.espacoId = espaco_id;
     
-    // Handle multiple status values (e.g., status=Ativo,Excedido)
+    // Handle multiple status values (e.g., status=Ativo,active)
     if (status) {
       if (status.includes(',')) {
-        const statuses = status.split(',').map((s: string) => statusMap[s.trim()] || s.trim());
-        where.status = { in: statuses };
+        const statuses = status.split(',')
+          .map((s: string) => statusMap[s.trim()] as VisitStatus)
+        if (statuses.length > 0) {
+          where.status = { in: statuses };
+        }
       } else {
-        where.status = statusMap[status] || status;
+        const mapped = statusMap[status] as VisitStatus;
+        if (mapped) {
+          where.status = mapped;
+        }
       }
     }
     
@@ -171,6 +180,10 @@ export async function visitRoutes(app: FastifyInstance) {
   app.post('/checkin', { preHandler: [app.authenticate] }, async (request: any, reply: any) => {
     const { visitorId, espacoId, perfil } = request.body as any;
     
+    if (request.user.role !== 'admin' && request.user.espacoId && request.user.espacoId !== espacoId) {
+      return reply.status(403).send({ error: 'Espaço não autorizado para este usuário' });
+    }
+    
     const existing = await prisma.visit.findFirst({
       where: {
         visitorId,
@@ -220,6 +233,7 @@ export async function visitRoutes(app: FastifyInstance) {
     
     const visits = await prisma.visit.findMany({
       where: { checkin: { gte: today } },
+      include: { visitor: true },
     });
     return visits;
   });

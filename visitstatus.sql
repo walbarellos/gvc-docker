@@ -1,0 +1,1 @@
+CREATE TYPE public."VisitStatus" AS ENUM ('ativo', 'finalizado', 'cancelado');
