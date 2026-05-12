@@ -42,7 +42,7 @@ export default function Sidebar({ onNewCheckIn }: SidebarProps) {
     { 
       icon: CalendarDays, 
       label: 'Agendamento', 
-      path: '/agendamento',
+      path: '/agendamento-interno',
       hidden: !spaceConfig?.perfilAgendamento && userData?.perfil !== 'administrador'
     },
     { icon: FileText, label: 'Relatórios', path: '/relatorios', hidden: !['coordenador', 'administrador'].includes(userData?.perfil || '') },

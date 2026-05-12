@@ -17,7 +17,7 @@ export async function createUser(request: FastifyRequest, reply: FastifyReply) {
   if (!['administrador', 'coordenador'].includes(admin?.perfil)) {
     return reply.status(403).send({ error: 'Sem permissão para criar usuários' });
   }
-
+  
   const {
     nome,
     email,
