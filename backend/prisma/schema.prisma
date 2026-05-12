@@ -318,6 +318,7 @@ model AgendamentoRascunho {
   termo_compromisso_assinado Boolean? @map("termo_compromisso_assinado")
   termo_compromisso_data   String?  @map("termo_compromisso_data")
   termo_compromisso_ip     String?  @map("termo_compromisso_ip")
+  termo_compromisso_arquivo String? @map("termo_compromisso_arquivo")
   current_step             Int?     @map("current_step")
   createdAt                DateTime @default(now()) @map("created_at")
   updatedAt                DateTime @default(now()) @map("updated_at")

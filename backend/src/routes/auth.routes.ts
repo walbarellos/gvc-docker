@@ -10,24 +10,39 @@ export async function authRoutes(app: FastifyInstance) {
   app.post('/login', async (request, reply) => {
     const { email, senha } = request.body as any;
     
-    console.log('Login attempt - email:', email, 'senha recebida:', senha ? 'sim' : 'não');
+    console.log('Login attempt - email:', email, 'senha recebida:', senha ? 'sim' : 'nao');
+    
+    if (!email || !senha) {
+      return reply.status(400).send({ error: 'Email e senha são obrigatórios' });
+    }
     
     const usuario = await prisma.usuario.findUnique({
       where: { email },
     });
     
-    console.log('Usuario found:', !!usuario, 'ativo:', usuario?.ativo);
-    console.log('Senha hash no DB:', usuario?.senha?.substring(0, 30));
-    
-    if (!usuario || !usuario.ativo) {
-      return reply.status(401).send({ error: 'Credenciais inválidas - usuario não encontrado ou inativo' });
+    if (!usuario) {
+      console.log('Usuario not found');
+      return reply.status(401).send({ error: 'Credenciais inválidas' });
     }
     
-    const valid = await bcrypt.compare(senha, usuario.senha || '');
-    console.log('bcrypt.compare result:', valid);
+    if (!usuario.ativo) {
+      console.log('Usuario inativo');
+      return reply.status(401).send({ error: 'Usuário inativo' });
+    }
     
-    if (!valid) {
-      return reply.status(401).send({ error: 'Credenciais inválidas - senha incorreta' });
+    console.log('Usuario found, checking password...');
+    console.log('Hash no DB:', usuario.senha?.substring(0, 30));
+    
+    try {
+      const valid = await bcrypt.compare(senha, usuario.senha || '');
+      console.log('bcrypt.compare result:', valid);
+      
+      if (!valid) {
+        return reply.status(401).send({ error: 'Credenciais inválidas' });
+      }
+    } catch (err) {
+      console.error('Erro no bcrypt:', err);
+      return reply.status(500).send({ error: 'Erro interno' });
     }
     
     const token = app.jwt.sign({

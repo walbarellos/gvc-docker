@@ -5,11 +5,9 @@ import { useAuth } from './contexts/AuthContext';
 import { PublicAuthProvider } from './contexts/PublicAuthContext';
 import { useAutoCheckout } from './hooks/useAutoCheckout';
 
-// Layout
 import Sidebar from './components/layout/Sidebar';
 import Header from './components/layout/Header';
 
-// Pages
 import Dashboard from './components/pages/Dashboard';
 import Visitors from './components/pages/Visitors';
 import Lockers from './components/pages/Lockers';
@@ -23,10 +21,28 @@ import LoginPublico from './components/pages/LoginPublico';
 import CadastroPublico from './components/pages/CadastroPublico';
 import TermoCompromisso from './components/pages/TermoCompromisso';
 
-// Components
 import CheckInModal from './components/modals/CheckInModal';
 import ErrorBoundary from './components/ErrorBoundary';
 import ProtectedRoute from './components/ProtectedRoute';
+
+function PublicRoutes() {
+  return (
+    <Routes>
+      <Route path="/gerenciamento" element={<Login />} />
+      <Route path="/login" element={<Navigate to="/gerenciamento" replace />} />
+      <Route path="/agendamento" element={<LoginPublico />} />
+      <Route path="/login-publico" element={<Navigate to="/agendamento" replace />} />
+      <Route path="/agendamento/cadastro" element={<CadastroPublico />} />
+      <Route path="/cadastro-publico" element={<Navigate to="/agendamento/cadastro" replace />} />
+      <Route path="/agendamento/formulario" element={<AgendamentoPublico />} />
+      <Route path="/agendamento-publico" element={<Navigate to="/agendamento/formulario" replace />} />
+      <Route path="/agendamento/termo" element={<TermoCompromisso />} />
+      <Route path="/termo-compromisso" element={<Navigate to="/agendamento/termo" replace />} />
+      <Route path="/" element={<Navigate to="/gerenciamento" replace />} />
+      <Route path="*" element={<Navigate to="/gerenciamento" replace />} />
+    </Routes>
+  );
+}
 
 function InternalRoutes({ onNewCheckIn }: { onNewCheckIn: () => void }) {
   const { userData } = useAuth();
@@ -55,14 +71,15 @@ function InternalRoutes({ onNewCheckIn }: { onNewCheckIn: () => void }) {
         <main className="pt-16 min-h-[calc(100vh-64px)] relative">
           <AnimatePresence mode="wait">
             <Routes>
-              <Route path="/" element={<ProtectedRoute><Dashboard /></ProtectedRoute>} />
+              <Route path="/" element={<Navigate to="/dashboard" replace />} />
+              <Route path="/dashboard" element={<ProtectedRoute><Dashboard /></ProtectedRoute>} />
               <Route path="/visitantes" element={<ProtectedRoute><Visitors /></ProtectedRoute>} />
               <Route path="/armarios" element={<ProtectedRoute><Lockers /></ProtectedRoute>} />
               <Route path="/telecentro" element={<ProtectedRoute><Telecentro /></ProtectedRoute>} />
-              <Route path="/agendamento" element={<ProtectedRoute><Agendamento /></ProtectedRoute>} />
+              <Route path="/agendamento-interno" element={<ProtectedRoute><Agendamento /></ProtectedRoute>} />
               <Route path="/relatorios" element={<ProtectedRoute requiredRole="coordenador"><Reports /></ProtectedRoute>} />
               <Route path="/configuracoes" element={<ProtectedRoute requiredRole="administrador"><SettingsPage /></ProtectedRoute>} />
-              <Route path="*" element={<Navigate to="/" replace />} />
+              <Route path="*" element={<Navigate to="/dashboard" replace />} />
             </Routes>
           </AnimatePresence>
         </main>
@@ -73,7 +90,7 @@ function InternalRoutes({ onNewCheckIn }: { onNewCheckIn: () => void }) {
 
 export default function App() {
   const [isCheckInOpen, setIsCheckInOpen] = useState(false);
-  const { user, loading, isSuperadmin, isCitizen } = useAuth();
+  const { user, loading, isAdmin } = useAuth();
 
   if (loading) {
     return (
@@ -86,36 +103,21 @@ export default function App() {
     );
   }
 
-  const isPublicUser = !user || isCitizen;
-
-  if (isPublicUser && !isSuperadmin) {
-    return (
-      <PublicAuthProvider>
-        <Router>
-          <Routes>
-            <Route path="/gerenciamento" element={<Login />} />
-            <Route path="/login" element={<Navigate to="/gerenciamento" replace />} />
-            <Route path="/agendamento" element={<LoginPublico />} />
-            <Route path="/login-publico" element={<Navigate to="/agendamento" replace />} />
-            <Route path="/agendamento/cadastro" element={<CadastroPublico />} />
-            <Route path="/cadastro-publico" element={<Navigate to="/agendamento/cadastro" replace />} />
-            <Route path="/agendamento/formulario" element={<AgendamentoPublico />} />
-            <Route path="/agendamento-publico" element={<Navigate to="/agendamento/formulario" replace />} />
-            <Route path="/agendamento/termo" element={<TermoCompromisso />} />
-            <Route path="/termo-compromisso" element={<Navigate to="/agendamento/termo" replace />} />
-            <Route path="/" element={<Navigate to="/gerenciamento" replace />} />
-            <Route path="*" element={<Navigate to="/login" replace />} />
-          </Routes>
-        </Router>
-      </PublicAuthProvider>
-    );
-  }
+  const isLoggedIn = !!user;
 
   return (
     <ErrorBoundary>
       <Router>
-        <InternalRoutes onNewCheckIn={() => setIsCheckInOpen(true)} />
-        <CheckInModal isOpen={isCheckInOpen} onClose={() => setIsCheckInOpen(false)} />
+        <AnimatePresence mode="wait">
+          {isLoggedIn ? (
+            <>
+              <InternalRoutes onNewCheckIn={() => setIsCheckInOpen(true)} />
+              <CheckInModal isOpen={isCheckInOpen} onClose={() => setIsCheckInOpen(false)} />
+            </>
+          ) : (
+            <PublicAuthProvider><PublicRoutes /></PublicAuthProvider>
+          )}
+        </AnimatePresence>
       </Router>
     </ErrorBoundary>
   );

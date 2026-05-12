@@ -36,7 +36,7 @@ export default function Login() {
         setError('Email ou senha incorretos.');
       } else if (data?.token) {
         setToken(data.token);
-        window.location.reload();
+        window.location.href = '/dashboard';
       }
     } catch (err: unknown) {
       console.error('Login error:', err);
