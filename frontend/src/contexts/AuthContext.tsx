@@ -32,7 +32,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       
       if (token) {
         try {
-          const { data, error } = await api.get<{ id: string; nome: string; email: string; perfil: string; espacoId: string; espacoNome: string }>('/auth/me');
+          const { data, error } = await api.get<{ id: string; nome: string; email: string; perfil: string; espacoId: string; espacoNome: string }>('/auth/sessao');
           
           if (data && !error) {
             setUser(data);
@@ -47,7 +47,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
             });
 
             if (data.espacoId && data.espacoId !== 'todos') {
-              const { data: sData } = await api.get<any>(`/spaces/${data.espacoId}`);
+              const { data: sData } = await api.get<any>(`/espacos/${data.espacoId}`);
               if (sData) {
                 setSpaceConfig(formatSpace(sData));
               }
@@ -101,11 +101,11 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     
     const pathMap: Record<string, string> = {
       '': 'painel',
-      'visitors': 'visitantes',
-      'lockers': 'armarios',
+      'visitantes': 'visitantes',
+      'armarios': 'armarios',
       'telecentro': 'telecentro',
       'agendamento': 'agendamento',
-      'reports': 'relatorios',
+      'relatorios': 'relatorios',
       'configuracoes': 'configuracoes'
     };
     
@@ -125,7 +125,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
   const logout = async () => {
     removeToken();
-    window.location.href = '/login';
+    window.location.href = '/gerenciamento';
   };
 
   return (

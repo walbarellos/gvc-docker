@@ -25,39 +25,39 @@ function buildQuery(filters?: LockerFilter): string {
 export const lockerService = {
   async list(filters?: LockerFilter) {
     const query = buildQuery(filters);
-    const { data, error } = await api.get<Locker[]>(`/lockers?${query}`);
+    const { data, error } = await api.get<Locker[]>(`/armarios?${query}`);
     return { data: data || [], error };
   },
 
   async getById(id: string) {
-    const { data, error } = await api.get<Locker>(`/lockers/${id}`);
+    const { data, error } = await api.get<Locker>(`/armarios/${id}`);
     return { data, error };
   },
 
   async create(locker: Omit<Locker, 'id'>) {
-    const { data, error } = await api.post<Locker>('/lockers', locker);
+    const { data, error } = await api.post<Locker>('/armarios', locker);
     return { data, error };
   },
 
   async update(id: string, updates: Partial<Locker>) {
-    const { data, error } = await api.put<Locker>(`/lockers/${id}`, updates);
+    const { data, error } = await api.put<Locker>(`/armarios/${id}`, updates);
     return { data, error };
   },
 
   async delete(id: string) {
-    const { error } = await api.delete(`/lockers/${id}`);
+    const { error } = await api.delete(`/armarios/${id}`);
     return { error };
   },
 
   async alocar(numero: string, visitorId: string, visitId: string, espacoId: string) {
-    const { data, error } = await api.post<Locker>('/lockers/alocar', {
+    const { data, error } = await api.post<Locker>('/armarios/alocar', {
       numero, visitorId, visitId, espacoId
     });
     return { data, error };
   },
 
   async desalocar(id: string) {
-    const { data, error } = await api.post<Locker>(`/lockers/${id}/desalocar`);
+    const { data, error } = await api.post<Locker>(`/armarios/${id}/desalocar`);
     return { data, error };
   }
 };

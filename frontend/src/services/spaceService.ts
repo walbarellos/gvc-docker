@@ -62,17 +62,17 @@ function mapSpace(data: any): Space {
 
 export const spaceService = {
   async list() {
-    const { data, error } = await api.get<Space[]>('/spaces?ativo=true&order=nome');
+    const { data, error } = await api.get<Space[]>('/espacos?ativo=true&order=nome');
     return { data: (data || []).map(mapSpace), error };
   },
 
   async listAll() {
-    const { data, error } = await api.get<Space[]>('/spaces?order=nome');
+    const { data, error } = await api.get<Space[]>('/espacos?order=nome');
     return { data: (data || []).map(mapSpace), error };
   },
 
   async getById(id: string) {
-    const { data, error } = await api.get<Space>(`/spaces/${id}`);
+    const { data, error } = await api.get<Space>(`/espacos/${id}`);
     return { data: data ? mapSpace(data) : null, error };
   },
 
@@ -82,22 +82,22 @@ export const spaceService = {
   },
 
   async create(space: Omit<Space, 'id'>) {
-    const { data, error } = await api.post<Space>('/spaces', space);
+    const { data, error } = await api.post<Space>('/espacos', space);
     return { data, error };
   },
 
   async update(id: string, updates: Partial<Space>) {
-    const { data, error } = await api.put<Space>(`/spaces/${id}`, updates);
+    const { data, error } = await api.put<Space>(`/espacos/${id}`, updates);
     return { data, error };
   },
 
   async deactivate(id: string) {
-    const { error } = await api.patch(`/spaces/${id}`, { ativo: false });
+    const { error } = await api.patch(`/espacos/${id}`, { ativo: false });
     return { error };
   },
 
   async delete(id: string) {
-    const { error } = await api.delete(`/spaces/${id}`);
+    const { error } = await api.delete(`/espacos/${id}`);
     return { error };
   }
 };

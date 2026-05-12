@@ -45,20 +45,20 @@ export const visitService = {
         order?: 'asc' | 'desc';
     }) {
         const query = buildVisitQuery(espacoId, filters);
-        const { data, error } = await api.get<VisitWithVisitor[]>(`/visits?${query}`);
+        const { data, error } = await api.get<VisitWithVisitor[]>(`/visitas?${query}`);
         return { data: data || [], error };
     },
 
     async listActive(espacoId: string) {
         const { data, error } = await api.get<VisitWithVisitor[]>(
-            `/visits?espaco_id=${espacoId}&status=Ativo,Excedido&order=checkin`
+            `/visitas?espaco_id=${espacoId}&status=Ativo,Excedido&order=checkin`
         );
         return { data: data || [], error };
     },
 
     async listHistory(espacoId: string, limit = 50) {
         const { data, error } = await api.get<VisitWithVisitor[]>(
-            `/visits?espaco_id=${espacoId}&limit=${limit}&order=checkin`
+            `/visitas?espaco_id=${espacoId}&limit=${limit}&order=checkin`
         );
         return { data: data || [], error };
     },
@@ -66,7 +66,7 @@ export const visitService = {
     async countToday(espacoId: string) {
         const today = new Date().toISOString().split('T')[0];
         const { data, error } = await api.get<{ count: number }[]>(
-            `/visits/count?espaco_id=${espacoId}&date=${today}`
+            `/visitas/count?espaco_id=${espacoId}&date=${today}`
         );
         return { count: data?.[0]?.count || 0, error };
     },
@@ -76,22 +76,22 @@ export const visitService = {
             checkin_gte: startDate,
             checkin_lte: endDate
         });
-        const { data, error } = await api.get<VisitWithVisitor[]>(`/visits?${query}`);
+        const { data, error } = await api.get<VisitWithVisitor[]>(`/visitas?${query}`);
         return { count: data?.length || 0, error };
     },
 
     async checkin(payload: { visitorId: string, espacoId: string | null, perfil: string, nome?: string, local?: string }) {
-        const { data, error } = await api.post<VisitWithVisitor>('/visits/checkin', payload);
+        const { data, error } = await api.post<VisitWithVisitor>('/visitas/checkin', payload);
         return { data, error };
     },
 
     async checkout(id: string) {
-        const { data, error } = await api.post<VisitWithVisitor>(`/visits/checkout/${id}`);
+        const { data, error } = await api.post<VisitWithVisitor>(`/visitas/checkout/${id}`);
         return { data, error };
     },
 
     async undoCheckin(id: string) {
-        const { error } = await api.delete(`/visits/${id}`);
+        const { error } = await api.delete(`/visitas/${id}`);
         return { error };
     }
 };

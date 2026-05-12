@@ -9,7 +9,7 @@ export function useAutoCheckout() {
         oneHourAgo.setHours(oneHourAgo.getHours() - 1);
         
         const { data: exceededVisits, error: fetchError } = await api.get<any[]>(
-          `/visits?status=Ativo&checkin=lt.${oneHourAgo.toISOString()}`
+          `/visitas?status=Ativo&checkin=lt.${oneHourAgo.toISOString()}`
         );
 
         if (fetchError) {
@@ -26,7 +26,7 @@ export function useAutoCheckout() {
 
         for (const visit of exceededVisits) {
           try {
-            await api.put(`/visits/${visit.id}`, {
+            await api.put(`/visitas/${visit.id}`, {
               status: 'Excedido',
               checkout: now
             });

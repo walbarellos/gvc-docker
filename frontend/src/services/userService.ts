@@ -27,7 +27,7 @@ function buildQuery(filters?: UserFilter): string {
 }
 
 export const userService = {
-  async list(filters?: UserFilter) {
+async list(filters?: UserFilter) {
     const query = buildQuery(filters);
     const { data, error } = await api.get<User[]>(`/usuarios?${query}`);
     return { data: data || [], error };

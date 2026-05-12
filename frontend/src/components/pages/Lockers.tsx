@@ -64,7 +64,7 @@ export default function Lockers() {
 
     const fetchLockers = async () => {
       const query = espacoId ? `?espacoId=${espacoId}` : '';
-      const { data, error } = await api.get<any[]>(`/lockers${query}`);
+      const { data, error } = await api.get<any[]>(`/armarios${query}`);
 
       if (error) {
         console.error("Erro ao carregar armários:", error);
@@ -158,7 +158,7 @@ export default function Lockers() {
     try {
       // Verificar se visitante tem check-in ativo
       const { data: activeCheckIn } = await api.get<any[]>(
-        `/visits?visitorId=${visitor.id}&status=Ativo&espacoId=${targetEspacoId || ''}`
+        `/visitas?visitorId=${visitor.id}&status=Ativo&espacoId=${targetEspacoId || ''}`
       );
 
       if (!activeCheckIn || activeCheckIn.length === 0) {
@@ -172,7 +172,7 @@ export default function Lockers() {
 
       if (targetEspacoId) {
         const { data: existing } = await api.get<any[]>(
-          `/lockers?espacoId=${targetEspacoId}&visitorId=${visitor.id}&status=occupied`
+          `/armarios?espacoId=${targetEspacoId}&visitorId=${visitor.id}&status=occupied`
         );
 
         if (existing && existing.length > 0) {
@@ -185,7 +185,7 @@ export default function Lockers() {
         }
       }
 
-      await api.post('/lockers', {
+      await api.post('/armarios', {
         number: selectedLocker.number,
         status: 'occupied',
         visitor_id: visitor.id,
@@ -206,7 +206,7 @@ export default function Lockers() {
 
   const releaseLocker = async (locker: Locker) => {
     try {
-      await api.delete(`/lockers/${locker.id}`);
+      await api.delete(`/armarios/${locker.id}`);
       
       setToast({ message: `Armário ${locker.number} liberado com sucesso!`, type: 'success' });
       setTimeout(() => setToast(null), 3000);

@@ -50,8 +50,8 @@ export async function authRoutes(app: FastifyInstance) {
     };
   });
 
-  // Meus dados
-  app.get('/me', { preHandler: [app.authenticate] }, async (request: any, reply) => {
+  // Sessão atual
+  app.get('/sessao', { preHandler: [app.authenticate] }, async (request: any, reply) => {
     const usuario = await prisma.usuario.findUnique({
       where: { id: request.user.id },
     });

@@ -29,7 +29,7 @@ export default function Settings() {
 
   useEffect(() => {
     const fetchStats = async () => {
-      const { data: spacesData } = await api.get<any[]>('/spaces');
+      const { data: spacesData } = await api.get<any[]>('/espacos');
       const { count: usersCount } = await supabase.from('usuarios').select('*', { count: 'exact', head: true });
 
       if (spacesData) {

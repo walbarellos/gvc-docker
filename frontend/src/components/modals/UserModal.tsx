@@ -43,7 +43,7 @@ export default function UserModal({ isOpen, onClose, userToEdit }: UserModalProp
 
   useEffect(() => {
     const fetchEspacos = async () => {
-      const { data } = await api.get<any[]>('/spaces');
+      const { data } = await api.get<any[]>('/espacos');
       if (data) {
         setEspacos(data);
       }

@@ -48,4 +48,29 @@ export async function lockerRoutes(app: FastifyInstance) {
     await prisma.locker.delete({ where: { id } });
     return { success: true };
   });
+
+  // Alocar armário
+  app.post('/alocar', { preHandler: [app.authenticate] }, async (request: any) => {
+    const { numero, visitorId, visitId, espacoId } = request.body as any;
+    const locker = await prisma.locker.create({
+      data: {
+        number: parseInt(numero),
+        status: 'Ocupado',
+        espacoId,
+        visitorId,
+        visitId,
+      }
+    });
+    return locker;
+  });
+
+  // Desalocar armário
+  app.post('/:id/desalocar', { preHandler: [app.authenticate] }, async (request: any) => {
+    const { id } = request.params;
+    const locker = await prisma.locker.update({
+      where: { id },
+      data: { status: 'Livre', visitorId: null, visitId: null }
+    });
+    return locker;
+  });
 }

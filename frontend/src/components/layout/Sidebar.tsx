@@ -26,11 +26,11 @@ export default function Sidebar({ onNewCheckIn }: SidebarProps) {
 
   const navItems = [
     { icon: LayoutDashboard, label: 'Painel', path: '/' },
-    { icon: Users, label: 'Visitantes', path: '/visitors' },
+    { icon: Users, label: 'Visitantes', path: '/visitantes' },
     { 
       icon: LockIcon, 
       label: 'Armários', 
-      path: '/lockers',
+      path: '/armarios',
       hidden: spaceConfig && !spaceConfig.perfilArmarios && userData?.perfil !== 'administrador'
     },
     { 
@@ -45,7 +45,7 @@ export default function Sidebar({ onNewCheckIn }: SidebarProps) {
       path: '/agendamento',
       hidden: !spaceConfig?.perfilAgendamento && userData?.perfil !== 'administrador'
     },
-    { icon: FileText, label: 'Relatórios', path: '/reports', hidden: !['coordenador', 'administrador'].includes(userData?.perfil || '') },
+    { icon: FileText, label: 'Relatórios', path: '/relatorios', hidden: !['coordenador', 'administrador'].includes(userData?.perfil || '') },
     { icon: SettingsIcon, label: 'Configurações', path: '/configuracoes' }
   ].filter(item => {
     if (item.hidden) return false;

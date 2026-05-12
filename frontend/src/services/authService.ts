@@ -39,7 +39,7 @@ export const authService = {
     async getSession() {
         const token = getTokenStored();
         if (token) {
-            const { data } = await api.get<{ id: string; nome: string; email: string; perfil: string }>('/auth/me');
+            const { data } = await api.get<{ id: string; nome: string; email: string; perfil: string }>('/auth/sessao');
             if (data) {
                 return { session: { access_token: token, user: data }, error: null };
             }

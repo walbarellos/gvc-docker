@@ -56,11 +56,11 @@ function InternalRoutes({ onNewCheckIn }: { onNewCheckIn: () => void }) {
           <AnimatePresence mode="wait">
             <Routes>
               <Route path="/" element={<ProtectedRoute><Dashboard /></ProtectedRoute>} />
-              <Route path="/visitors" element={<ProtectedRoute><Visitors /></ProtectedRoute>} />
-              <Route path="/lockers" element={<ProtectedRoute><Lockers /></ProtectedRoute>} />
+              <Route path="/visitantes" element={<ProtectedRoute><Visitors /></ProtectedRoute>} />
+              <Route path="/armarios" element={<ProtectedRoute><Lockers /></ProtectedRoute>} />
               <Route path="/telecentro" element={<ProtectedRoute><Telecentro /></ProtectedRoute>} />
               <Route path="/agendamento" element={<ProtectedRoute><Agendamento /></ProtectedRoute>} />
-              <Route path="/reports" element={<ProtectedRoute requiredRole="coordenador"><Reports /></ProtectedRoute>} />
+              <Route path="/relatorios" element={<ProtectedRoute requiredRole="coordenador"><Reports /></ProtectedRoute>} />
               <Route path="/configuracoes" element={<ProtectedRoute requiredRole="administrador"><SettingsPage /></ProtectedRoute>} />
               <Route path="*" element={<Navigate to="/" replace />} />
             </Routes>

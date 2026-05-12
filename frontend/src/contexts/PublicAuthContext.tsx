@@ -27,7 +27,7 @@ export function PublicAuthProvider({ children }: { children: React.ReactNode }) 
   useEffect(() => {
     const token = getTokenStored();
     if (token) {
-      api.get<{ id: string; nome: string; email: string }>('/auth/me').then(({ data }) => {
+      api.get<{ id: string; nome: string; email: string }>('/auth/sessao').then(({ data }) => {
         if (data) {
           setUser({
             id: data.id,

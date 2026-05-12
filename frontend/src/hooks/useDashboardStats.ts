@@ -115,7 +115,7 @@ async function fetchChartData(spaceId: string): Promise<ChartData[]> {
     const end = new Date(day.setHours(23, 59, 59, 999)).toISOString();
 
     const { data } = await api.get<{ count: number }[]>(
-      `/visits/count?espaco_id=${spaceId}&checkin=gte.${start}&checkin=lte.${end}`
+      `/visitas/count?espaco_id=${spaceId}&checkin=gte.${start}&checkin=lte.${end}`
     );
 
     days.push({

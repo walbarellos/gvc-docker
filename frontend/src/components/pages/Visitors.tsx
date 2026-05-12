@@ -86,7 +86,7 @@ const mapped = (data || []).map((d: any) => ({
 
   useEffect(() => {
     if (userData?.espacoId === 'todos') {
-      api.get<any[]>('/spaces').then(({ data }) => {
+      api.get<any[]>('/espacos').then(({ data }) => {
         if (data) setSpaces(data);
       });
     }

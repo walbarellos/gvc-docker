@@ -177,7 +177,7 @@ export default function Telecentro() {
     try {
       // Verificar se visitante tem check-in ativo
       const { data: activeVisits } = await api.get<any[]>(
-        `/visits?visitorId=${visitante.id}&status=Ativo&espacoId=${targetEspacoId || ''}`
+        `/visitas?visitorId=${visitante.id}&status=Ativo&espacoId=${targetEspacoId || ''}`
       );
 
       if (!activeVisits || activeVisits.length === 0) {
