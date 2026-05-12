@@ -57,11 +57,11 @@ export const createVisitorSchema = z.object({
   is_foreigner: z.boolean().optional().default(false),
   gender: z.enum(['masculino', 'feminino', 'outro', 'prefiro_nao_dizer']).optional(),
   birth_date: z.string().optional(),
-  email: z.string().email('Email inválido').optional(),
+  email: z.string().email('Email inválido').optional().or(z.literal('')),
   phone: z.string().optional(),
   address: z.string().optional(),
   category: z.string().optional(),
-  photo_url: z.string().url('URL inválida').optional(),
+  photo_url: z.string().url('URL inválida').optional().or(z.literal('')),
 });
 
 export const updateVisitorSchema = createVisitorSchema.partial();

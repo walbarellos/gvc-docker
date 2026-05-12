@@ -80,13 +80,16 @@ export async function visitorRoutes(app: FastifyInstance) {
 
   // Criar
   app.post('/', { preHandler: [app.authenticate] }, async (request: any, reply: any) => {
+    console.log('Visitor create - data received:', JSON.stringify(request.body));
     const validation = createVisitorSchema.safeParse(request.body);
     
     if (!validation.success) {
+      console.log('Visitor validation error:', JSON.stringify(validation.error.issues));
       return sendValidationError(reply, validation.error);
     }
     
     const data = mapVisitorFields(validation.data);
+    console.log('Visitor data after mapping:', JSON.stringify(data));
     const visitor = await prisma.visitor.create({ data });
     return visitor;
   });
