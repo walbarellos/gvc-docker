@@ -14,6 +14,53 @@ interface SpaceModalProps {
   onSave?: () => void;
 }
 
+interface HorarioDia {
+  ativo: boolean;
+  inicio: string;
+  fim: string;
+}
+
+interface HorariosFuncionamento {
+  seg: HorarioDia;
+  ter: HorarioDia;
+  qua: HorarioDia;
+  qui: HorarioDia;
+  sex: HorarioDia;
+  sab: HorarioDia;
+  dom: HorarioDia;
+}
+
+const DIAS_SEMANA = [
+  { key: 'seg', label: 'Seg' },
+  { key: 'ter', label: 'Ter' },
+  { key: 'qua', label: 'Qua' },
+  { key: 'qui', label: 'Qui' },
+  { key: 'sex', label: 'Sex' },
+  { key: 'sab', label: 'Sáb' },
+  { key: 'dom', label: 'Dom' },
+] as const;
+
+const TIPOS_ESPACO = [
+  { key: 'hasAuditorio', qtdKey: 'qtdAuditorio', label: 'Auditório', icon: '🎭' },
+  { key: 'hasSalaEstudos', qtdKey: 'qtdSalaEstudos', label: 'Sala de Estudos', icon: '📚' },
+  { key: 'hasTeatro', qtdKey: 'qtdTeatro', label: 'Teatro', icon: '🎪' },
+  { key: 'hasFilmoteca', qtdKey: 'qtdFilmoteca', label: 'Filmoteca', icon: '🎬' },
+  { key: 'hasEspacoAberto', qtdKey: 'qtdEspacoAberto', label: 'Espaço Aberto', icon: '🌳' },
+  { key: 'hasVisitaGuiada', qtdKey: 'qtdVisitaGuiada', label: 'Visita Guiada', icon: '🚶' },
+] as const;
+
+const criarHorarioVazio = (): HorarioDia => ({ ativo: false, inicio: '07:00', fim: '18:00' });
+
+const criarHorariosDefault = (): HorariosFuncionamento => ({
+  seg: criarHorarioVazio(),
+  ter: criarHorarioVazio(),
+  qua: criarHorarioVazio(),
+  qui: criarHorarioVazio(),
+  sex: criarHorarioVazio(),
+  sab: criarHorarioVazio(),
+  dom: criarHorarioVazio(),
+});
+
 const MUNICIPARIOS_ACRE = [
   "Acrelândia", "Assis Brasil", "Brasiléia", "Bujari", "Capixaba", 
   "Cruzeiro do Sul", "Epitaciolândia", "Feijó", "Jordão", "Mâncio Lima", 
@@ -33,7 +80,7 @@ const SpaceModal: React.FC<SpaceModalProps> = ({ isOpen, onClose, spaceToEdit, o
     email: '',
     endereco: '',
     municipio: '',
-    horarioFuncionamento: 'Seg-Sex: 8h-18h, Sáb: 8h-12h',
+    horarios: criarHorariosDefault(),
     capacidadeVisitantes: 100,
     mensagemBoasVindas: '',
     tempoLimiteExcedido: 4,
@@ -61,12 +108,27 @@ const SpaceModal: React.FC<SpaceModalProps> = ({ isOpen, onClose, spaceToEdit, o
 
   useEffect(() => {
     if (spaceToEdit) {
+      let horariosParseados = criarHorariosDefault();
+      
+      if (spaceToEdit.horario_funcionamento || spaceToEdit.horarioFuncionamento) {
+        try {
+          const horarioStr = spaceToEdit.horario_funcionamento || spaceToEdit.horarioFuncionamento;
+          if (typeof horarioStr === 'string') {
+            horariosParseados = JSON.parse(horarioStr);
+          } else if (typeof horarioStr === 'object') {
+            horariosParseados = horarioStr as HorariosFuncionamento;
+          }
+        } catch {
+          horariosParseados = criarHorariosDefault();
+        }
+      }
+      
       setFormData({
         nome: spaceToEdit.nome || '',
         email: spaceToEdit.email || '',
         endereco: spaceToEdit.endereco || '',
         municipio: spaceToEdit.municipio || '',
-        horarioFuncionamento: spaceToEdit.horario_funcionamento || spaceToEdit.horarioFuncionamento || 'Seg-Sex: 8h-18h, Sáb: 8h-12h',
+        horarios: horariosParseados,
         capacidadeVisitantes: spaceToEdit.capacidade_visitantes || spaceToEdit.capacidadeVisitantes || 100,
         mensagemBoasVindas: spaceToEdit.mensagem_boas_vindas || spaceToEdit.mensagemBoasVindas || '',
         tempoLimiteExcedido: spaceToEdit.tempo_limite_excedido || spaceToEdit.tempoLimiteExcedido || 4,
@@ -98,7 +160,7 @@ const SpaceModal: React.FC<SpaceModalProps> = ({ isOpen, onClose, spaceToEdit, o
         email: '',
         endereco: '',
         municipio: '',
-        horarioFuncionamento: 'Seg-Sex: 8h-18h, Sáb: 8h-12h',
+        horarios: criarHorariosDefault(),
         capacidadeVisitantes: 100,
         mensagemBoasVindas: '',
         tempoLimiteExcedido: 4,
@@ -133,6 +195,19 @@ const SpaceModal: React.FC<SpaceModalProps> = ({ isOpen, onClose, spaceToEdit, o
     );
   }, [municipioSearch]);
 
+  const handleHorarioChange = (dia: keyof HorariosFuncionamento, campo: keyof HorarioDia, valor: string | boolean) => {
+    setFormData(prev => ({
+      ...prev,
+      horarios: {
+        ...prev.horarios,
+        [dia]: {
+          ...prev.horarios[dia],
+          [campo]: valor
+        }
+      }
+    }));
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!formData.nome || !formData.email || !formData.endereco || !formData.municipio) {
@@ -143,6 +218,13 @@ const SpaceModal: React.FC<SpaceModalProps> = ({ isOpen, onClose, spaceToEdit, o
       return alert('O total de armários deve ser entre 5 e 50.');
     }
 
+    for (const dia of DIAS_SEMANA) {
+      const horario = formData.horarios[dia.key as keyof HorariosFuncionamento];
+      if (horario.ativo && horario.inicio && horario.fim && horario.inicio >= horario.fim) {
+        return alert(`O horário de ${dia.label} está inválido: o início deve ser menor que o fim.`);
+      }
+    }
+
     setLoading(true);
     try {
       const dataToSave = {
@@ -150,30 +232,30 @@ const SpaceModal: React.FC<SpaceModalProps> = ({ isOpen, onClose, spaceToEdit, o
         email: formData.email,
         endereco: formData.endereco,
         municipio: formData.municipio,
-        horario_funcionamento: formData.horarioFuncionamento,
+        horario_funcionamento: JSON.stringify(formData.horarios),
         capacidade_visitantes: formData.capacidadeVisitantes,
-        mensagem_boas_vindas: formData.mensagemBoasVindas,
+        mensagem_boas_vindas: formData.mensagemBoasVindas || null,
         tempo_limite_excedido: formData.tempoLimiteExcedido,
         ativo: formData.ativo,
         perfil_armarios: formData.perfilArmarios,
         perfil_telecentro: formData.perfilTelecentro,
         perfil_agendamento: formData.perfilAgendamento,
-        total_armarios: formData.totalArmarios,
-        total_computadores: formData.totalComputadores,
-        tempo_limite_computador: formData.tempoLimiteComputador,
-        capacidade_agendamento: formData.capacidadeAgendamento,
-        has_auditorio: formData.hasAuditorio,
-        qtd_auditorio: formData.qtdAuditorio,
-        has_sala_estudos: formData.hasSalaEstudos,
-        qtd_sala_estudos: formData.qtdSalaEstudos,
-        has_teatro: formData.hasTeatro,
-        qtd_teatro: formData.qtdTeatro,
-        has_filmoteca: formData.hasFilmoteca,
-        qtd_filmoteca: formData.qtdFilmoteca,
-        has_espaco_aberto: formData.hasEspacoAberto,
-        qtd_espaco_aberto: formData.qtdEspacoAberto,
-        has_visita_guiada: formData.hasVisitaGuiada,
-        qtd_visita_guiada: formData.qtdVisitaGuiada
+        total_armarios: formData.perfilArmarios ? formData.totalArmarios : null,
+        total_computadores: formData.perfilTelecentro ? formData.totalComputadores : null,
+        tempo_limite_computador: formData.perfilTelecentro ? formData.tempoLimiteComputador : null,
+        capacidade_agendamento: formData.perfilAgendamento ? formData.capacidadeAgendamento : null,
+        has_auditorio: formData.perfilAgendamento && formData.hasAuditorio,
+        qtd_auditorio: formData.perfilAgendamento && formData.hasAuditorio ? formData.qtdAuditorio : null,
+        has_sala_estudos: formData.perfilAgendamento && formData.hasSalaEstudos,
+        qtd_sala_estudos: formData.perfilAgendamento && formData.hasSalaEstudos ? formData.qtdSalaEstudos : null,
+        has_teatro: formData.perfilAgendamento && formData.hasTeatro,
+        qtd_teatro: formData.perfilAgendamento && formData.hasTeatro ? formData.qtdTeatro : null,
+        has_filmoteca: formData.perfilAgendamento && formData.hasFilmoteca,
+        qtd_filmoteca: formData.perfilAgendamento && formData.hasFilmoteca ? formData.qtdFilmoteca : null,
+        has_espaco_aberto: formData.perfilAgendamento && formData.hasEspacoAberto,
+        qtd_espaco_aberto: formData.perfilAgendamento && formData.hasEspacoAberto ? formData.qtdEspacoAberto : null,
+        has_visita_guiada: formData.perfilAgendamento && formData.hasVisitaGuiada,
+        qtd_visita_guiada: formData.perfilAgendamento && formData.hasVisitaGuiada ? formData.qtdVisitaGuiada : null
       };
 
       if (spaceToEdit) {
@@ -440,39 +522,43 @@ const SpaceModal: React.FC<SpaceModalProps> = ({ isOpen, onClose, spaceToEdit, o
                     <label className="block text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-3">
                       Tipos de Espaços Disponíveis (para agendamento)
                     </label>
-                    <div className="space-y-2">
-                      {[
-                        { key: 'hasAuditorio', qtdKey: 'qtdAuditorio', label: '🎭 Auditório' },
-                        { key: 'hasSalaEstudos', qtdKey: 'qtdSalaEstudos', label: '📚 Sala de Estudos' },
-                        { key: 'hasTeatro', qtdKey: 'qtdTeatro', label: '🎬 Teatro' },
-                        { key: 'hasFilmoteca', qtdKey: 'qtdFilmoteca', label: '🎥 Filmoteca/Cinema' },
-                        { key: 'hasEspacoAberto', qtdKey: 'qtdEspacoAberto', label: '🌳 Espaço Aberto' },
-                        { key: 'hasVisitaGuiada', qtdKey: 'qtdVisitaGuiada', label: '🎓 Visita Guiada' }
-                      ].map((item) => (
-                        <div key={item.key} className="flex items-center gap-3 p-3 bg-white border border-slate-200 rounded-lg">
-                          <input 
-                            type="checkbox" 
-                            checked={formData[item.key as keyof typeof formData] as boolean}
-                            onChange={e => setFormData({...formData, [item.key]: e.target.checked})}
-                            className="w-4 h-4 rounded border-slate-300 text-amber-600 focus:ring-amber-500"
-                          />
-                          <span className="text-xs font-medium text-slate-700 w-40">{item.label}</span>
-                          {formData[item.key as keyof typeof formData] && (
-                            <div className="flex items-center gap-1">
-                              <span className="text-[10px] text-slate-500 whitespace-nowrap">Capacidade Total:</span>
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                      {TIPOS_ESPACO.map(item => {
+                        const isAtivado = formData[item.key as keyof typeof formData] as boolean;
+                        return (
+                          <div 
+                            key={item.key} 
+                            className={`flex items-center gap-3 p-4 rounded-xl border transition-all ${isAtivado ? 'bg-white border-amber-300 shadow-sm' : 'bg-slate-50 border-slate-100'}`}
+                          >
+                            <label className="relative inline-flex items-center cursor-pointer shrink-0">
                               <input 
-                                type="number" 
-                                min="0"
-                                value={formData[item.qtdKey as keyof typeof formData] as number}
-                                onChange={e => setFormData({...formData, [item.qtdKey]: Number(e.target.value)})}
-                                placeholder="0"
-                                className="w-16 bg-slate-50 border border-slate-200 rounded py-1.5 px-2 text-xs text-center focus:ring-2 focus:ring-amber-200 outline-none"
+                                type="checkbox" 
+                                checked={isAtivado}
+                                onChange={e => setFormData({...formData, [item.key]: e.target.checked})}
+                                className="sr-only peer"
                               />
-                              <span className="text-[10px] text-slate-400">lugares</span>
+                              <div className="w-9 h-5 bg-slate-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-amber-500"></div>
+                            </label>
+                            <div className="flex items-center gap-2 flex-1 min-w-0">
+                              <span className="text-lg shrink-0">{item.icon}</span>
+                              <span className="text-xs font-medium text-slate-700 truncate">{item.label}</span>
                             </div>
-                          )}
-                        </div>
-                      ))}
+                            {isAtivado && (
+                              <div className="flex items-center gap-1 shrink-0">
+                                <input 
+                                  type="number" 
+                                  min="0"
+                                  value={formData[item.qtdKey as keyof typeof formData] as number}
+                                  onChange={e => setFormData({...formData, [item.qtdKey]: Number(e.target.value)})}
+                                  placeholder="0"
+                                  className="w-14 bg-white border border-slate-200 rounded py-1.5 px-2 text-xs text-center focus:ring-2 focus:ring-amber-200 outline-none"
+                                />
+                                <span className="text-[10px] text-slate-400 whitespace-nowrap">lugares</span>
+                              </div>
+                            )}
+                          </div>
+                        );
+                      })}
                     </div>
                   </div>
                 )}
@@ -488,47 +574,131 @@ const SpaceModal: React.FC<SpaceModalProps> = ({ isOpen, onClose, spaceToEdit, o
                 <h3 className="text-sm font-bold text-slate-800 uppercase tracking-wider">Configurações Gerais</h3>
               </div>
 
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div>
-                  <label className="block text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1.5 px-1">Horário de Funcionamento</label>
-                  <div className="relative">
-                    <input 
-                      type="text" 
-                      value={formData.horarioFuncionamento}
-                      onChange={e => setFormData({...formData, horarioFuncionamento: e.target.value})}
-                      placeholder="Seg-Sex: 8h-18h"
-                      className="w-full bg-slate-50 border border-slate-200 rounded-xl py-3 px-4 pl-10 outline-none focus:ring-2 focus:ring-primary/20 transition-all font-sans"
-                    />
-                    <Clock size={16} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400" />
+              <div className="space-y-6">
+                {/* Horário de Funcionamento */}
+                <div className="bg-slate-50/50 border border-slate-100 rounded-2xl p-5">
+                  <label className="block text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-3">
+                    <Clock size={14} className="inline mr-1" />
+                    Horário de Funcionamento
+                  </label>
+                  <div className="grid grid-cols-2 sm:grid-cols-4 md:grid-cols-7 gap-3">
+                    {DIAS_SEMANA.map(dia => {
+                      const horario = formData.horarios[dia.key as keyof HorariosFuncionamento];
+                      return (
+                        <div 
+                          key={dia.key} 
+                          className={`p-3 rounded-xl border transition-all ${horario.ativo ? 'bg-white border-amber-200 shadow-sm' : 'bg-slate-50 border-slate-100'}`}
+                        >
+                          <div className="flex items-center gap-2 mb-2">
+                            <input 
+                              type="checkbox" 
+                              checked={horario.ativo}
+                              onChange={e => handleHorarioChange(dia.key as keyof HorariosFuncionamento, 'ativo', e.target.checked)}
+                              className="w-4 h-4 rounded border-slate-300 text-amber-600 focus:ring-amber-500"
+                            />
+                            <span className="text-xs font-bold text-slate-600">{dia.label}</span>
+                          </div>
+                          {horario.ativo && (
+                            <div className="space-y-2 mt-2 pt-2 border-t border-slate-100">
+                              <div>
+                                <label className="text-[9px] text-slate-400 uppercase">Início</label>
+                                <input 
+                                  type="time" 
+                                  value={horario.inicio}
+                                  onChange={e => handleHorarioChange(dia.key as keyof HorariosFuncionamento, 'inicio', e.target.value)}
+                                  className="w-full bg-white border border-slate-200 rounded-lg py-1.5 px-2 text-xs focus:ring-2 focus:ring-amber-200 outline-none"
+                                />
+                              </div>
+                              <div>
+                                <label className="text-[9px] text-slate-400 uppercase">Fim</label>
+                                <input 
+                                  type="time" 
+                                  value={horario.fim}
+                                  onChange={e => handleHorarioChange(dia.key as keyof HorariosFuncionamento, 'fim', e.target.value)}
+                                  className="w-full bg-white border border-slate-200 rounded-lg py-1.5 px-2 text-xs focus:ring-2 focus:ring-amber-200 outline-none"
+                                />
+                              </div>
+                            </div>
+                          )}
+                        </div>
+                      );
+                    })}
                   </div>
                 </div>
 
-                <div>
-                  <label className="block text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1.5 px-1">Capacidade de Visitantes</label>
-                  <div className="relative">
+                {/* Capacidade de Visitantes */}
+                <div className="bg-slate-50/50 border border-slate-100 rounded-2xl p-5">
+                  <label className="block text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-3">
+                    <Users size={14} className="inline mr-1" />
+                    Capacidade de Visitantes
+                  </label>
+                  <div className="flex items-center gap-4">
                     <input 
-                      type="number" 
+                      type="range" 
+                      min="0"
+                      max="1000"
+                      step="10"
                       value={formData.capacidadeVisitantes}
                       onChange={e => setFormData({...formData, capacidadeVisitantes: Number(e.target.value)})}
-                      className="w-full bg-slate-50 border border-slate-200 rounded-xl py-3 px-4 pl-10 outline-none focus:ring-2 focus:ring-primary/20 transition-all font-sans"
+                      className="flex-1 h-2 bg-slate-200 rounded-lg appearance-none cursor-pointer accent-amber-500"
                     />
-                    <Users size={16} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400" />
+                    <div className="flex items-center gap-2 min-w-[100px]">
+                      <span className="text-lg font-bold text-slate-700">{formData.capacidadeVisitantes}</span>
+                      <span className="text-xs text-slate-400">visitantes</span>
+                    </div>
+                  </div>
+                  <div className="flex justify-between mt-2">
+                    <span className="text-[10px] text-slate-400">0</span>
+                    <span className="text-[10px] text-slate-400">500</span>
+                    <span className="text-[10px] text-slate-400">1000</span>
                   </div>
                 </div>
 
-                
-
-                <div className="md:col-span-2">
-                  <label className="block text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1.5 px-1">Mensagem de Boas-Vindas</label>
+                {/* Mensagem de Boas-Vindas */}
+                <div className="bg-slate-50/50 border border-slate-100 rounded-2xl p-5">
+                  <div className="flex items-center justify-between mb-2">
+                    <label className="block text-[10px] font-bold text-slate-400 uppercase tracking-widest">
+                      <Info size={14} className="inline mr-1" />
+                      Mensagem de Boas-Vindas
+                    </label>
+                    <span className={`text-[10px] ${formData.mensagemBoasVindas.length > 500 ? 'text-red-500' : 'text-slate-400'}`}>
+                      {formData.mensagemBoasVindas.length}/500
+                    </span>
+                  </div>
                   <textarea 
                     value={formData.mensagemBoasVindas}
-                    onChange={e => setFormData({...formData, mensagemBoasVindas: e.target.value})}
-                    placeholder="Ex: Bem-vindo ao espaço!"
+                    onChange={e => {
+                      if (e.target.value.length <= 500) {
+                        setFormData({...formData, mensagemBoasVindas: e.target.value});
+                      }
+                    }}
+                    placeholder={formData.nome ? `Bem-vindo ao ${formData.nome}!` : 'Bem-vindo ao espaço cultural!'}
+                    maxLength={500}
                     className="w-full bg-slate-50 border border-slate-200 rounded-xl py-3 px-4 outline-none focus:ring-2 focus:ring-primary/20 transition-all font-sans min-h-[100px]"
                   />
+                  {formData.mensagemBoasVindas && (
+                    <div className="mt-3 p-3 bg-white border border-slate-200 rounded-lg">
+                      <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-2">Preview</p>
+                      <div className="text-sm text-slate-700 leading-relaxed whitespace-pre-wrap">
+                        {formData.mensagemBoasVindas.split(/(\*\*.*?\*\*|\*.*?\*|\[.*?\]\(.*?\))/g).map((parte, i) => {
+                          if (parte.startsWith('**') && parte.endsWith('**')) {
+                            return <strong key={i}>{parte.slice(2, -2)}</strong>;
+                          }
+                          if (parte.startsWith('*') && parte.endsWith('*')) {
+                            return <em key={i}>{parte.slice(1, -1)}</em>;
+                          }
+                          if (parte.startsWith('[') && parte.includes('](')) {
+                            const match = parte.match(/\[(.*?)\]\((.*?)\)/);
+                            if (match) return <a key={i} href={match[2]} className="text-blue-600 underline" target="_blank" rel="noopener noreferrer">{match[1]}</a>;
+                          }
+                          return parte;
+                        })}
+                      </div>
+                    </div>
+                  )}
                 </div>
 
-                <div className="md:col-span-2 flex items-center gap-3 py-2">
+                <div className="flex items-center gap-3 py-2">
                    <label className="relative inline-flex items-center cursor-pointer">
                     <input 
                       type="checkbox" 

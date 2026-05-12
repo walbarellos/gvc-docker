@@ -24,10 +24,21 @@ export async function auditoriaRoutes(app: FastifyInstance) {
   // Listar todos
   app.get('/', { preHandler: [app.authenticate] }, async (request: any) => {
     const { limit } = request.query as any;
-    return prisma.auditoria.findMany({
+    const logs = await prisma.auditoria.findMany({
       orderBy: { createdAt: 'desc' },
       take: limit ? parseInt(limit) : 50,
     });
+    
+    // Mapear campos para formato snake_case (como no banco)
+    return logs.map(log => ({
+      id: log.id,
+      usuario: log.usuario,
+      perfil: log.perfil,
+      acao: log.acao,
+      detalhes: log.detalhes,
+      entidade_id: log.entidadeId,
+      created_at: log.createdAt
+    }));
   });
 
   // Criar (sem auth para logs automáticos)

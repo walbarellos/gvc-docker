@@ -13,6 +13,19 @@ export async function userRoutes(app: FastifyInstance) {
     return prisma.usuario.findMany({ where, orderBy: { nome: 'asc' } });
   });
 
+  // Buscar por email (para validação de unicidade)
+  app.get('/email/:email', async (request: any, reply: any) => {
+    const { email } = request.params;
+    const usuario = await prisma.usuario.findUnique({
+      where: { email },
+      select: { id: true, email: true, nome: true }
+    });
+    if (!usuario) {
+      return reply.status(404).send({ exists: false });
+    }
+    return { exists: true, usuario };
+  });
+
   // Buscar por ID
   app.get('/:id', { preHandler: [app.authenticate] }, async (request: any) => {
     const { id } = request.params;
@@ -37,11 +50,37 @@ export async function userRoutes(app: FastifyInstance) {
       return reply.status(403).send({ error: 'Apenas administrador pode atualizar usuários' });
     }
     const { id } = request.params;
-    const { senha, ...data } = request.body as any;
+    const body = request.body as any;
+    
+    const { senha, espaco_id, espaco_nome, ativo, ...rest } = body;
+    
+    const updateData: any = {
+      nome: rest.nome,
+      email: rest.email,
+      perfil: rest.perfil,
+      espacoNome: espaco_nome || null,
+      ativo: ativo !== undefined ? ativo : true
+    };
+    
     if (senha) {
-      data.senha = await bcrypt.hash(senha, 10);
+      updateData.senha = await bcrypt.hash(senha, 10);
     }
-    return prisma.usuario.update({ where: { id }, data });
+    
+    if (espaco_id && espaco_id !== null && espaco_id !== 'null') {
+      updateData.espaco = { connect: { id: espaco_id } };
+    } else {
+      updateData.espaco = { disconnect: true };
+    }
+    
+    try {
+      return await prisma.usuario.update({ 
+        where: { id }, 
+        data: updateData 
+      });
+    } catch (error: any) {
+      console.error('Erro no update:', error);
+      return reply.status(500).send({ error: error.message });
+    }
   });
 
   // Deletar

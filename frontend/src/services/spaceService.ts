@@ -3,15 +3,19 @@ import { api } from '../lib/api';
 export interface Space {
   id?: string;
   nome: string;
+  email?: string;
+  endereco?: string;
   municipio?: string;
   horarioFuncionamento?: string;
+  capacidadeVisitantes?: number;
+  mensagemBoasVindas?: string;
+  ativo?: boolean;
+  tempoLimiteExcedido?: number;
   perfilArmarios?: boolean;
   perfilArmariosQuantidade?: number;
   perfilTelecentro?: boolean;
   perfilAgendamento?: boolean;
-  mensagemBoasVindas?: string;
-  ativo?: boolean;
-  capacidadeVisitantes?: number;
+  totalArmarios?: number;
   totalComputadores?: number;
   tempoLimiteComputador?: number;
   capacidadeAgendamento?: number;
@@ -33,15 +37,19 @@ function mapSpace(data: any): Space {
   return {
     id: data.id,
     nome: data.nome,
+    email: data.email,
+    endereco: data.endereco,
     municipio: data.municipio,
     horarioFuncionamento: data.horario_funcionamento,
+    capacidadeVisitantes: data.capacidade_visitantes,
+    mensagemBoasVindas: data.mensagem_boas_vindas,
+    ativo: data.ativo,
+    tempoLimiteExcedido: data.tempo_limite_excedido,
     perfilArmarios: data.perfil_armarios,
     perfilArmariosQuantidade: data.perfil_armarios_quantidade,
     perfilTelecentro: data.perfil_telecentro,
     perfilAgendamento: data.perfil_agendamento,
-    mensagemBoasVindas: data.mensagem_boas_vindas,
-    ativo: data.ativo,
-    capacidadeVisitantes: data.capacidade_visitantes,
+    totalArmarios: data.total_armarios,
     totalComputadores: data.total_computadores,
     tempoLimiteComputador: data.tempo_limite_computador,
     capacidadeAgendamento: data.capacidade_agendamento,

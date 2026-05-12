@@ -31,6 +31,17 @@ const UsersTab: React.FC = () => {
     fetchUsers();
   }, []);
 
+  const refreshUsers = async () => {
+    const { data, error } = await userService.list();
+    if (data && !error) {
+      setUsers(data.map(d => ({
+        ...d,
+        espacoId: d.espacoId,
+        espaco_nome: d.espaco_nome
+      })));
+    }
+  };
+
   const confirmDelete = async () => {
     if (!userToDelete) return;
     
@@ -172,6 +183,7 @@ const UsersTab: React.FC = () => {
         isOpen={isModalOpen}
         onClose={() => setIsModalOpen(false)}
         userToEdit={userToEdit}
+        onSave={refreshUsers}
       />
 
       <ConfirmModal 

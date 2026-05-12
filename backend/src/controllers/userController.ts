@@ -46,6 +46,13 @@ export async function createUser(request: FastifyRequest, reply: FastifyReply) {
   // Hash da senha
   const hashedSenha = await bcrypt.hash(senha, 10);
 
+  // Buscar nome do espaço se espaco_id for fornecido
+  let espacoNome = null;
+  if (espaco_id) {
+    const espaco = await prisma.espaco.findUnique({ where: { id: espaco_id }, select: { nome: true } });
+    espacoNome = espaco?.nome || 'Espaço Desconhecido';
+  }
+
   // Criar usuário
   const usuario = await prisma.usuario.create({
     data: {
@@ -54,6 +61,7 @@ export async function createUser(request: FastifyRequest, reply: FastifyReply) {
       senha: hashedSenha,
       perfil,
       espacoId: espaco_id || null,
+      espacoNome: espacoNome,
       ativo: true,
     },
     select: {

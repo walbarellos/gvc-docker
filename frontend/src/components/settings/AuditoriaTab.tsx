@@ -1,13 +1,33 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { auditService } from '../../services/auditService';
 import { format } from 'date-fns';
-import { Activity, Clock } from 'lucide-react';
+import { Activity, Clock, RefreshCw } from 'lucide-react';
 import { useAuth } from '../../contexts/AuthContext';
 
 const AuditoriaTab: React.FC = () => {
   const { isCoordinator } = useAuth();
   const [logs, setLogs] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
+  const [lastFetch, setLastFetch] = useState<Date | null>(null);
+
+  const fetchLogs = useCallback(async () => {
+    if (!isCoordinator) return;
+    
+    setLoading(true);
+    const { data, error } = await auditService.getRecent(50);
+    if (data) {
+      // Remover duplicatas baseado no ID
+      const uniqueLogs = data.filter((log, index, self) => 
+        index === self.findIndex(l => l.id === log.id)
+      );
+      setLogs(uniqueLogs.map(d => ({
+        ...d,
+        entidadeId: d.entidade_id
+      })));
+      setLastFetch(new Date());
+    }
+    setLoading(false);
+  }, [isCoordinator]);
 
   useEffect(() => {
     if (!isCoordinator) {
@@ -15,19 +35,15 @@ const AuditoriaTab: React.FC = () => {
       return;
     }
 
-    const fetchLogs = async () => {
-      const { data, error } = await auditService.getRecent(50);
-      if (data) {
-        setLogs(data.map(d => ({
-          ...d,
-          entidadeId: d.entidade_id
-        })));
-      }
-      setLoading(false);
-    };
-
     fetchLogs();
-  }, [isCoordinator]);
+
+    // Auto-refresh a cada 30 segundos
+    const interval = setInterval(() => {
+      fetchLogs();
+    }, 30000);
+
+    return () => clearInterval(interval);
+  }, [isCoordinator, fetchLogs]);
 
   if (!isCoordinator) {
     return (
@@ -58,9 +74,18 @@ const AuditoriaTab: React.FC = () => {
 
   return (
     <div className="space-y-6 text-left">
-      <div>
-        <h3 className="text-xl font-bold text-slate-900">Log de Auditoria</h3>
-        <p className="text-slate-500 text-sm">Rastreamento das últimas 50 ações administrativas realizadas no sistema.</p>
+      <div className="flex justify-between items-center">
+        <div>
+          <h3 className="text-xl font-bold text-slate-900">Log de Auditoria</h3>
+          <p className="text-slate-500 text-sm">Rastreamento das últimas 50 ações administrativas realizadas no sistema.</p>
+        </div>
+        <button 
+          onClick={fetchLogs}
+          className="flex items-center gap-2 px-4 py-2 bg-slate-100 hover:bg-slate-200 rounded-lg text-xs font-bold text-slate-600 transition-colors"
+        >
+          <RefreshCw size={14} />
+          Atualizar
+        </button>
       </div>
 
       <div className="bg-white border border-slate-200 rounded-2xl overflow-hidden shadow-sm">
@@ -82,7 +107,7 @@ const AuditoriaTab: React.FC = () => {
                   <td className="px-6 py-4">
                     <div className="flex items-center gap-2 text-xs text-slate-600 font-medium">
                       <Clock size={12} className="text-slate-400" />
-                      {log.created_at ? format(new Date(log.created_at), 'dd/MM/yyyy HH:mm:ss') : 'Processando...'}
+                      {log.created_at ? format(new Date(log.created_at), 'dd/MM/yyyy HH:mm:ss') : 'Data não disponível'}
                     </div>
                   </td>
                   <td className="px-6 py-4">

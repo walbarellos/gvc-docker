@@ -10,9 +10,10 @@ interface UserModalProps {
   isOpen: boolean;
   onClose: () => void;
   userToEdit?: any;
+  onSave?: () => void;
 }
 
-export default function UserModal({ isOpen, onClose, userToEdit }: UserModalProps) {
+export default function UserModal({ isOpen, onClose, userToEdit, onSave }: UserModalProps) {
   const { userData: currentAdmin } = useAuth();
   const [formData, setFormData] = useState({
     nome: '',
@@ -101,11 +102,24 @@ export default function UserModal({ isOpen, onClose, userToEdit }: UserModalProp
     setLoading(true);
     try {
       if (!userToEdit || userToEdit.email !== formData.email) {
-        const { data: existing } = await api.get<any[]>(`/usuarios?email=${formData.email}`);
-        if (existing && existing.length > 0) {
-          alert("Este email já está sendo utilizado por outro usuário no banco de dados.");
-          setLoading(false);
-          return;
+        // Verificar se email já existe no banco
+        const token = localStorage.getItem('gvc_token');
+        const response = await fetch(`${import.meta.env.VITE_API_URL || 'http://localhost:3001/api'}/usuarios/email/${encodeURIComponent(formData.email)}`, {
+          headers: token ? { 'Authorization': `Bearer ${token}` } : {}
+        });
+        
+        if (response.ok) {
+          const data = await response.json();
+          if (data.exists) {
+            alert("Este email já está sendo utilizado por outro usuário no banco de dados.");
+            setLoading(false);
+            return;
+          }
+        } else if (response.status === 404) {
+          // 404 significa que o email não existe - pode continuar
+        } else {
+          // Outro erro - continuar com cautela
+          console.error('Erro ao verificar email:', response.status);
         }
       }
 
@@ -134,13 +148,15 @@ export default function UserModal({ isOpen, onClose, userToEdit }: UserModalProp
         } else if (changePassword) {
           alert("Atenção: A atualização de senha para outros usuários requer permissão de administrador no servidor.");
         }
+        
+        if (onSave) onSave();
       } else {
     const { data: responseData, error: fnError } = await api.post('/auth/create-user', {
         email: formData.email,
         senha: formData.senha,
         nome: formData.nome,
         perfil: formData.perfil,
-        espacoId: formData.espacoId
+        espaco_id: formData.espacoId && formData.espacoId !== 'todos' ? formData.espacoId : null
     });
 
         if (fnError || responseData?.error) {
@@ -155,6 +171,7 @@ export default function UserModal({ isOpen, onClose, userToEdit }: UserModalProp
         }
       }
       
+      if (onSave) onSave();
       onClose();
     } catch (error: any) {
       console.error(error);
