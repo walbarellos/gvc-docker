@@ -51,14 +51,13 @@ export async function lockerRoutes(app: FastifyInstance) {
 
   // Alocar armário
   app.post('/alocar', { preHandler: [app.authenticate] }, async (request: any) => {
-    const { numero, visitorId, visitId, espacoId } = request.body as any;
+    const { numero, visitorId, espacoId } = request.body as any;
     const locker = await prisma.locker.create({
       data: {
         number: parseInt(numero),
         status: 'Ocupado',
         espacoId,
         visitorId,
-        visitId,
       }
     });
     return locker;
@@ -69,7 +68,7 @@ export async function lockerRoutes(app: FastifyInstance) {
     const { id } = request.params;
     const locker = await prisma.locker.update({
       where: { id },
-      data: { status: 'Livre', visitorId: null, visitId: null }
+      data: { status: 'Livre', visitorId: null }
     });
     return locker;
   });

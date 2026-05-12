@@ -63,17 +63,6 @@ export enum OperationType {
   WRITE = 'write',
 }
 
-export interface FirestoreErrorInfo {
-  error: string;
-  operationType: OperationType;
-  path: string | null;
-  authInfo: {
-    userId?: string | null;
-    email?: string | null;
-    emailVerified?: boolean | null;
-    isAnonymous?: boolean | null;
-  }
-}
 
 export type UserRole = 'administrador' | 'coordenador' | 'funcionario' | 'monitor' | 'cidadao';
 

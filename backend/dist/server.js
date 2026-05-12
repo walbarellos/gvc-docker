@@ -41,15 +41,15 @@ app.get('/', async () => ({ message: 'GVC API - Sistema de Gestão de Visitantes
 // Rotas
 app.register(authRoutes, { prefix: '/auth' });
 app.register(publicRoutes, { prefix: '/public' });
-app.register(visitorRoutes, { prefix: '/visitors' });
-app.register(visitRoutes, { prefix: '/visits' });
-app.register(spaceRoutes, { prefix: '/spaces' });
+app.register(visitorRoutes, { prefix: '/visitantes' });
+app.register(visitRoutes, { prefix: '/visitas' });
+app.register(spaceRoutes, { prefix: '/espacos' });
 app.register(agendamentoRoutes, { prefix: '/agendamentos' });
 app.register(dashboardRoutes, { prefix: '/dashboard' });
-app.register(lockerRoutes, { prefix: '/lockers' });
+app.register(lockerRoutes, { prefix: '/armarios' });
 app.register(computadorRoutes, { prefix: '/computadores' });
 app.register(auditoriaRoutes, { prefix: '/auditoria' });
-app.register(assinaturaRoutes, { prefix: '/assinaturas_digitais' });
+app.register(assinaturaRoutes, { prefix: '/assinaturas' });
 app.register(userRoutes, { prefix: '/usuarios' });
 app.register(configuracaoRoutes, { prefix: '/configuracoes' });
 // Startup

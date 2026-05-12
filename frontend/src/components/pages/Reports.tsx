@@ -187,10 +187,8 @@ export default function Reports() {
       const visitorIds = [...new Set((visitsData || []).map(v => v.visitor_id))];
 
       // Buscar dados dos visitantes
-      const { data: visitorsData } = await supabase
-        .from('visitors')
-        .select('id, gender, birth_date')
-        .in('id', visitorIds);
+      const { data: allVisitorsRaw } = await api.get<{id: string; gender: string; birth_date: string}[]>('/visitantes');
+      const visitorsData = (allVisitorsRaw || []).filter(v => visitorIds.includes(v.id));
 
       if (!visitorsData) {
         setLoadingCharts(false);
@@ -358,11 +356,10 @@ export default function Reports() {
     // Dados do Telecentro
     let telecentroData: any[] = [];
     try {
-      let query = supabase.from('computadores').select('*');
-      if (filterLocation && filterLocation !== 'Todos os Locais' && filterLocation !== 'todos') {
-        query = query.eq('espaco_id', filterLocation);
-      }
-      const { data: comps } = await query;
+      const telecentroEspacoId = (filterLocation && filterLocation !== 'Todos os Locais' && filterLocation !== 'todos')
+        ? filterLocation
+        : undefined;
+      const { data: comps } = await computadorService.list({ espacoId: telecentroEspacoId });
 
       if (comps && comps.length > 0) {
         const startDatetime = new Date(startDate + 'T00:00:00').toISOString();

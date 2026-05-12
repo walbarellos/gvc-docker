@@ -163,8 +163,8 @@ export default function Agendamento() {
     const { error } = await updateStatus(id, status, resposta);
     if (!error) {
       refetch();
-      const supabaseFn = supabase.functions.invoke('send-agendamento-email', {
-        body: JSON.stringify({
+      try {
+        await api.post('/agendamentos/notificar', {
           tipo: status === 'aprovado' ? 'aprovacao' : 'rejeicao',
           email_destino: selectedAgendamento?.solicitante_email,
           nome_destino: selectedAgendamento?.solicitante_nome,
@@ -175,8 +175,10 @@ export default function Agendamento() {
             horario: `${formatTime(selectedAgendamento?.horario_inicio || '')} - ${formatTime(selectedAgendamento?.horario_fim || '')}`,
             motivo: resposta,
           },
-        }),
-      });
+        });
+      } catch (emailError) {
+        console.error('Erro ao enviar notificação:', emailError);
+      }
     }
     setSelectedAgendamento(null);
   };
@@ -186,10 +188,7 @@ export default function Agendamento() {
       return;
     }
     
-    const { error } = await supabase
-      .from('agendamentos')
-      .delete()
-      .eq('id', id);
+    const { error } = await api.delete(`/agendamentos/${id}`);
     
     if (!error) {
       refetch();

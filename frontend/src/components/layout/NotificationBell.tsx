@@ -54,6 +54,7 @@ export default function NotificationBell() {
       <button 
         onClick={handleOpen}
         type="button"
+        aria-label="Notificações"
         className="text-slate-400 hover:text-primary transition-colors p-2 hover:bg-slate-50 rounded-full relative"
       >
         <Bell size={20} />

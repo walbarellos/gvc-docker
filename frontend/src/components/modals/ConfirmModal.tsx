@@ -40,12 +40,15 @@ const ConfirmModal: React.FC<ConfirmModalProps> = ({
           animate={{ scale: 1, opacity: 1, y: 0 }}
           exit={{ scale: 0.95, opacity: 0, y: 20 }}
           className="relative w-full max-w-sm bg-white rounded-3xl shadow-2xl overflow-hidden p-6 text-center"
+          role="dialog"
+          aria-modal="true"
+          aria-labelledby="confirm-modal-title"
         >
           <div className="w-16 h-16 bg-red-50 text-red-500 rounded-full flex items-center justify-center mx-auto mb-4">
             <AlertTriangle size={32} />
           </div>
           
-          <h2 className="text-xl font-display font-bold text-slate-900 mb-2">{title}</h2>
+          <h2 id="confirm-modal-title" className="text-xl font-display font-bold text-slate-900 mb-2">{title}</h2>
           
           <div className="bg-slate-50 rounded-xl p-4 mb-4">
             <p className="text-slate-600 text-sm mb-1">{message}</p>

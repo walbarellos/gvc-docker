@@ -1,27 +1,10 @@
-import { OperationType, FirestoreErrorInfo } from '../types';
 
-export function handleFirestoreError(error: unknown, operationType: OperationType, path: string | null) {
-  const errInfo: FirestoreErrorInfo = {
-    error: error instanceof Error ? error.message : String(error),
-    authInfo: {
-      userId: null,
-      email: null,
-      emailVerified: null,
-      isAnonymous: null,
-    },
-    operationType,
-    path
-  }
-  const errorString = JSON.stringify(errInfo);
-  console.error('Database Error: ', errorString);
-  throw new Error(errorString);
-}
 
 /**
- * Normaliza um documento de visita do Supabase (ou Firebase antigo) para um formato padrão.
+ * Normaliza um documento de visita da API para um formato padrão.
  */
 export function normalizarVisita(doc: any) {
-  const data = doc.data ? doc.data() : doc;
+  const data = doc;
   const id = doc.id || data.id;
 
   // Normalização de Nome

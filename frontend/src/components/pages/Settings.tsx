@@ -6,15 +6,13 @@ import { visitService } from '../../services/visitService';
 import { visitorService } from '../../services/visitorService';
 import { lockerService } from '../../services/lockerService';
 import { useAuth } from '../../contexts/AuthContext';
-import { AuditLog, Settings as SettingsIcon, Users, MapPin, Database, Bell, ChevronRight, FileDown } from 'lucide-react';
-import { motion } from 'motion/react';
+import { Building, Users, Package, FileDown, Activity, CheckCircle2, AlertCircle } from 'lucide-react';
+import { motion, AnimatePresence } from 'motion/react';
+import { format } from 'date-fns';
 import UsersTab from '../settings/UsersTab';
 import AuditoriaTab from '../settings/AuditoriaTab';
 import SpacesTab from '../settings/SpacesTab';
-import UsersTab from '../settings/UsersTab';
-import AuditoriaTab from '../settings/AuditoriaTab';
 import { auditService } from '../../services/auditService';
-import { useAuth } from '../../contexts/AuthContext';
 
 export default function Settings() {
   const { userData: currentAdmin } = useAuth();
@@ -30,7 +28,8 @@ export default function Settings() {
   useEffect(() => {
     const fetchStats = async () => {
       const { data: spacesData } = await api.get<any[]>('/espacos');
-      const { count: usersCount } = await supabase.from('usuarios').select('*', { count: 'exact', head: true });
+      const { data: usersData } = await userService.list();
+      const usersCount = usersData?.length ?? 0;
 
       if (spacesData) {
         const active = (spacesData || []).filter(d => d.ativo !== false).length;
@@ -45,17 +44,10 @@ export default function Settings() {
 
     fetchStats();
 
-    const spacesChannel = supabase.channel('settings-spaces').on('postgres_changes', { event: '*', schema: 'public', table: 'espacos' }, () => {
-      fetchStats();
-    }).subscribe();
-
-    const usersChannel = supabase.channel('settings-users').on('postgres_changes', { event: '*', schema: 'public', table: 'usuarios' }, () => {
-      fetchStats();
-    }).subscribe();
+    const interval = setInterval(fetchStats, 30000);
 
     return () => {
-      supabase.removeChannel(spacesChannel);
-      supabase.removeChannel(usersChannel);
+      clearInterval(interval);
     };
   }, []);
 

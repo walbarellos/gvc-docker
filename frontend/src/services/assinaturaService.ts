@@ -88,6 +88,23 @@ export const registrarAssinaturaDigital = async (dados: AssinaturaData): Promise
   }
 };
 
+
+export interface AssinaturaCreateParams {
+  visitorId: string;
+  nomeAssinante: string;
+  cpfAssinante: string;
+  tipoDocumento: string;
+  documentoId: string;
+  documentoHash: string;
+  ipPublico?: string;
+  userAgent?: string;
+  browserFingerprint?: string;
+  cpfValidado: boolean;
+  cpfStatus: string;
+  termoConteudo?: string;
+  termoHash?: string;
+}
+
 export const assinaturaService = {
   async create(params: AssinaturaCreateParams) {
     const assinaturaData = {

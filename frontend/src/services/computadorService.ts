@@ -2,9 +2,21 @@ import { api } from '../lib/api';
 
 export interface Computador {
   id: string;
-  espacoId: string;
-  nome: string;
+  numero: number;
+  espacoId?: string;
+  espaco_id?: string;
+  espacoNome?: string;
+  espaco_nome?: string;
+  nome?: string;
   status: string;
+  usuarioId?: string;
+  usuario_id?: string;
+  usuarioNome?: string;
+  usuario_nome?: string;
+  horarioInicio?: string;
+  horario_inicio?: string;
+  horarioLimite?: string;
+  horario_limite?: string;
   tempo_usado?: number;
   tempo_limite?: number;
   ultima_atualizacao?: string;

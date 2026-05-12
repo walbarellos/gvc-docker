@@ -115,16 +115,22 @@ export default function AgendamentoDetalhesModal({
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
       <div className="absolute inset-0 bg-black/50 backdrop-blur-sm" onClick={onClose} />
-      <div className="relative w-full max-w-3xl max-h-[90vh] overflow-y-auto bg-white rounded-3xl shadow-2xl">
+      <div 
+        className="relative w-full max-w-3xl max-h-[90vh] overflow-y-auto bg-white rounded-3xl shadow-2xl"
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="agendamento-detalhes-title"
+      >
         <div className="sticky top-0 bg-white border-b border-slate-100 px-8 py-6 flex items-center justify-between rounded-t-3xl">
           <div>
-            <h2 className="text-2xl font-display font-bold text-slate-900">Detalhes do Agendamento</h2>
+            <h2 id="agendamento-detalhes-title" className="text-2xl font-display font-bold text-slate-900">Detalhes do Agendamento</h2>
             <p className="text-slate-500 text-sm mt-1">
               Solicitação #{agendamento.id.slice(0, 8).toUpperCase()}
             </p>
           </div>
           <button
             onClick={onClose}
+            aria-label="Fechar modal"
             className="p-2 hover:bg-slate-100 rounded-xl transition-colors"
           >
             <X size={24} className="text-slate-500" />

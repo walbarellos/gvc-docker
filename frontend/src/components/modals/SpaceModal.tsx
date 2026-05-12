@@ -219,15 +219,18 @@ const SpaceModal: React.FC<SpaceModalProps> = ({ isOpen, onClose, spaceToEdit, o
           animate={{ scale: 1, opacity: 1, y: 0 }}
           exit={{ scale: 0.95, opacity: 0, y: 20 }}
           className="relative w-full max-w-3xl bg-white rounded-3xl shadow-2xl flex flex-col max-h-[90vh]"
+          role="dialog"
+          aria-modal="true"
+          aria-labelledby="space-modal-title"
         >
           <div className="p-6 border-b border-slate-100 flex items-center justify-between shrink-0">
             <div>
-              <h2 className="text-xl font-display font-bold text-slate-900">
+              <h2 id="space-modal-title" className="text-xl font-display font-bold text-slate-900">
                 {spaceToEdit ? `Editar ${spaceToEdit.nome}` : 'Novo Espaço Cultural'}
               </h2>
               <p className="text-xs text-slate-500 font-medium mt-1">Configure as informações e limites desta unidade.</p>
             </div>
-            <button onClick={onClose} className="p-2 hover:bg-slate-50 rounded-full transition-colors">
+            <button onClick={onClose} aria-label="Fechar modal" className="p-2 hover:bg-slate-50 rounded-full transition-colors">
               <X size={20} className="text-slate-400" />
             </button>
           </div>

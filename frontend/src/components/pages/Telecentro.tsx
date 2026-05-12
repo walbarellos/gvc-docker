@@ -282,7 +282,7 @@ export default function Telecentro() {
     return "Em Uso";
   };
 
-  // ... (manter o JSX de retorno - está OK, só remover imports do supabase)
+  // Verificação de acesso e renderização
 
   if (!userData) return null;
 

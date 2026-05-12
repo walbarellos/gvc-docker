@@ -3,6 +3,9 @@ const prisma = new PrismaClient();
 const statusMap = {
     'Ativo': 'ativo',
     'ativo': 'ativo',
+    'active': 'ativo',
+    'Excedido': 'ativo',
+    'excedido': 'ativo',
     'Concluido': 'finalizado',
     'concluido': 'finalizado',
     'Finalizado': 'finalizado',
@@ -67,14 +70,20 @@ export async function visitRoutes(app) {
         const where = {};
         if (espaco_id)
             where.espacoId = espaco_id;
-        // Handle multiple status values (e.g., status=Ativo,Excedido)
+        // Handle multiple status values (e.g., status=Ativo,active)
         if (status) {
             if (status.includes(',')) {
-                const statuses = status.split(',').map((s) => statusMap[s.trim()] || s.trim());
-                where.status = { in: statuses };
+                const statuses = status.split(',')
+                    .map((s) => statusMap[s.trim()]);
+                if (statuses.length > 0) {
+                    where.status = { in: statuses };
+                }
             }
             else {
-                where.status = statusMap[status] || status;
+                const mapped = statusMap[status];
+                if (mapped) {
+                    where.status = mapped;
+                }
             }
         }
         // Handle checkin filters (PostgREST format: checkin=gte.2026-05-09 or checkin_gte=2026-05-09)
@@ -175,6 +184,9 @@ export async function visitRoutes(app) {
     // Check-in
     app.post('/checkin', { preHandler: [app.authenticate] }, async (request, reply) => {
         const { visitorId, espacoId, perfil } = request.body;
+        if (request.user.role !== 'admin' && request.user.espacoId && request.user.espacoId !== espacoId) {
+            return reply.status(403).send({ error: 'Espaço não autorizado para este usuário' });
+        }
         const existing = await prisma.visit.findFirst({
             where: {
                 visitorId,
@@ -217,6 +229,7 @@ export async function visitRoutes(app) {
         today.setHours(0, 0, 0, 0);
         const visits = await prisma.visit.findMany({
             where: { checkin: { gte: today } },
+            include: { visitor: true },
         });
         return visits;
     });

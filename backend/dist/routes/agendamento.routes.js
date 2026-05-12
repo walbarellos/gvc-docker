@@ -248,5 +248,75 @@ export async function agendamentoRoutes(app) {
         ]);
         return { total, pendentes, aprovados, rejeitados, cancelados };
     });
+    // Salvar rascunho
+    app.post('/rascunho', async (request) => {
+        const { session_id, ...rest } = request.body;
+        const existing = await prisma.agendamentoRascunho.findFirst({
+            where: { session_id }
+        });
+        if (existing) {
+            return prisma.agendamentoRascunho.update({
+                where: { id: existing.id },
+                data: rest
+            });
+        }
+        return prisma.agendamentoRascunho.create({
+            data: { session_id, ...rest }
+        });
+    });
+    // Carregar rascunho
+    app.get('/rascunho', async (request) => {
+        const { session_id } = request.query;
+        if (!session_id)
+            return [];
+        const rascunho = await prisma.agendamentoRascunho.findFirst({
+            where: { session_id }
+        });
+        return rascunho ? [rascunho] : [];
+    });
+    // Deletar rascunho
+    app.delete('/rascunho', async (request) => {
+        const { session_id } = request.query;
+        if (!session_id)
+            return { success: false };
+        await prisma.agendamentoRascunho.deleteMany({ where: { session_id } });
+        return { success: true };
+    });
+    // Verificar conflitos
+    app.get('/conflitos', { preHandler: [app.authenticate] }, async (request) => {
+        const { espaco_id, data, inicio, fim, exclude_id } = request.query;
+        const where = {
+            espacoId: espaco_id,
+            data_pretendida: new Date(data),
+            status: { in: ['pendente', 'aprovado'] }
+        };
+        if (exclude_id) {
+            where.id = { not: exclude_id };
+        }
+        const agendamentos = await prisma.agendamento.findMany({
+            where,
+            select: { horario_inicio: true, horario_fim: true }
+        });
+        return agendamentos.filter(a => {
+            const aStart = new Date(`2000-01-01T${inicio}`);
+            const aEnd = new Date(`2000-01-01T${fim}`);
+            const bStart = new Date(`2000-01-01T${a.horario_inicio}`);
+            const bEnd = new Date(`2000-01-01T${a.horario_fim}`);
+            return aStart < bEnd && aEnd > bStart;
+        });
+    });
+    // Horários disponíveis
+    app.get('/disponiveis', { preHandler: [app.authenticate] }, async (request) => {
+        const { espaco_id, inicio, fim } = request.query;
+        const agendamentos = await prisma.agendamento.findMany({
+            where: {
+                espacoId: espaco_id,
+                data_pretendida: { gte: new Date(inicio), lte: new Date(fim) },
+                status: { in: ['pendente', 'aprovado'] }
+            },
+            select: { data_pretendida: true, horario_inicio: true, horario_fim: true }
+        });
+        return agendamentos;
+    });
 }
 //# sourceMappingURL=agendamento.routes.js.map

@@ -40,5 +40,27 @@ export async function lockerRoutes(app) {
         await prisma.locker.delete({ where: { id } });
         return { success: true };
     });
+    // Alocar armário
+    app.post('/alocar', { preHandler: [app.authenticate] }, async (request) => {
+        const { numero, visitorId, espacoId } = request.body;
+        const locker = await prisma.locker.create({
+            data: {
+                number: parseInt(numero),
+                status: 'Ocupado',
+                espacoId,
+                visitorId,
+            }
+        });
+        return locker;
+    });
+    // Desalocar armário
+    app.post('/:id/desalocar', { preHandler: [app.authenticate] }, async (request) => {
+        const { id } = request.params;
+        const locker = await prisma.locker.update({
+            where: { id },
+            data: { status: 'Livre', visitorId: null }
+        });
+        return locker;
+    });
 }
 //# sourceMappingURL=locker.routes.js.map

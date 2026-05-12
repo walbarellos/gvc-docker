@@ -93,7 +93,7 @@ export default function Sidebar({ onNewCheckIn }: SidebarProps) {
         )}
       </div>
 
-      <nav className="flex-1 px-2 space-y-1 overflow-y-auto">
+      <nav aria-label="Menu principal" className="flex-1 px-2 space-y-1 overflow-y-auto">
         {navItems.map((item) => {
           const active = location.pathname === item.path || (location.pathname === '/' && item.path === '/painel');
           return (
@@ -146,6 +146,7 @@ export default function Sidebar({ onNewCheckIn }: SidebarProps) {
           href="http://10.24.18.20" 
           target="_blank" 
           rel="noopener noreferrer"
+          aria-label="Suporte Técnico (abre em nova guia)"
           className="w-full flex items-center gap-3 px-4 py-2.5 text-gray-400 hover:bg-gray-50 hover:text-gray-700 rounded-xl transition-colors text-sm font-medium group"
         >
           <HelpCircle size={18} />

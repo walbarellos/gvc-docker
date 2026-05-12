@@ -132,7 +132,7 @@ export default function UserModal({ isOpen, onClose, userToEdit }: UserModalProp
         if (changePassword && currentAdmin && currentAdmin.id === userToEdit.id) {
           await api.post('/auth/reset-password', { userId: userToEdit.id, senha: formData.senha });
         } else if (changePassword) {
-          alert("Atenção: A atualização de senha para outros usuários via painel pode exigir a Supabase Admin API.");
+          alert("Atenção: A atualização de senha para outros usuários requer permissão de administrador no servidor.");
         }
       } else {
     const { data: responseData, error: fnError } = await api.post('/auth/create-user', {
@@ -181,12 +181,15 @@ export default function UserModal({ isOpen, onClose, userToEdit }: UserModalProp
           animate={{ scale: 1, opacity: 1, y: 0 }}
           exit={{ scale: 0.95, opacity: 0, y: 20 }}
           className="relative w-full max-w-lg bg-white rounded-3xl shadow-2xl overflow-hidden my-8"
+          role="dialog"
+          aria-modal="true"
+          aria-labelledby="user-modal-title"
         >
           <div className="p-6 border-b border-slate-100 flex justify-between items-center bg-slate-50/50">
-            <h2 className="text-xl font-display font-bold text-slate-900">
+            <h2 id="user-modal-title" className="text-xl font-display font-bold text-slate-900">
               {userToEdit ? 'Editar Usuário' : 'Novo Usuário do Sistema'}
             </h2>
-            <button onClick={onClose} className="p-2 hover:bg-slate-200 rounded-full transition-all">
+            <button onClick={onClose} aria-label="Fechar modal" className="p-2 hover:bg-slate-200 rounded-full transition-all">
               <X size={20} className="text-slate-500" />
             </button>
           </div>

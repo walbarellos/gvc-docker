@@ -44,10 +44,5 @@ export const authService = {
                 return { session: { access_token: token, user: data }, error: null };
             }
         }
-        return { session: null, error: null };
     },
-
-    onAuthStateChange(_callback: (session: any) => void) {
-        return { data: { subscription: { unsubscribe: () => {} } } };
-    }
 };

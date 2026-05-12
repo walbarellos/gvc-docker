@@ -38,8 +38,8 @@ export async function authRoutes(app) {
             },
         };
     });
-    // Meus dados
-    app.get('/me', { preHandler: [app.authenticate] }, async (request, reply) => {
+    // Sessão atual
+    app.get('/sessao', { preHandler: [app.authenticate] }, async (request, reply) => {
         const usuario = await prisma.usuario.findUnique({
             where: { id: request.user.id },
         });

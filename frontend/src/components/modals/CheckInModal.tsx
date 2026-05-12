@@ -3,7 +3,6 @@ import { X, User, Globe, Heart, Mail, Phone, Camera, CheckCircle2 } from 'lucide
 import { motion } from 'motion/react';
 import { visitorService } from '../../services/visitorService';
 import { VisitorCategory, OperationType, Gender, Visitor } from '../../types';
-import { handleFirestoreError } from '../../lib/utils';
 import { validateCPF, formatCPF, formatPhone } from '../../lib/validators';
 
 interface CheckInModalProps {
@@ -200,7 +199,8 @@ export default function CheckInModal({ isOpen, onClose, visitorToEdit, onSuccess
         onClose();
       }, 1500);
     } catch (error) {
-      handleFirestoreError(error, OperationType.WRITE, 'visitors');
+      console.error('Erro ao salvar visitante:', error);
+      alert('Erro ao processar registro. Tente novamente.');
     } finally {
       setLoading(false);
     }
@@ -214,6 +214,9 @@ export default function CheckInModal({ isOpen, onClose, visitorToEdit, onSuccess
         initial={{ opacity: 0, scale: 0.95, y: 20 }}
         animate={{ opacity: 1, scale: 1, y: 0 }}
         className="bg-white w-full max-w-4xl rounded-2xl shadow-2xl overflow-hidden flex flex-col md:flex-row max-h-[calc(100vh-2rem)]"
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="checkin-modal-title"
       >
         {success ? (
           <div className="w-full py-20 flex flex-col items-center justify-center text-center">
@@ -228,14 +231,14 @@ export default function CheckInModal({ isOpen, onClose, visitorToEdit, onSuccess
             <div className="flex-1 p-8 overflow-y-auto">
               <div className="flex items-center justify-between mb-8">
                 <div>
-                  <h2 className="text-3xl font-display font-bold text-slate-900">
+                  <h2 id="checkin-modal-title" className="text-3xl font-display font-bold text-slate-900">
                     {visitorToEdit ? 'Editar Visitante' : 'Registrar Novo Visitante'}
                   </h2>
                   <p className="text-slate-500 text-sm">
                     {visitorToEdit ? 'Atualize as informações do registro.' : 'Complete o formulário abaixo para emitir um passe de acesso.'}
                   </p>
                 </div>
-                <button onClick={onClose} className="p-2 hover:bg-slate-100 rounded-full transition-colors">
+                <button onClick={onClose} aria-label="Fechar modal" className="p-2 hover:bg-slate-100 rounded-full transition-colors">
                   <X size={20} className="text-slate-400" />
                 </button>
               </div>
