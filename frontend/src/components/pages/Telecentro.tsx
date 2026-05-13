@@ -42,6 +42,7 @@ export default function Telecentro() {
   const [spaces, setSpaces] = useState<any[]>([]);
   const [selectedSpaceId, setSelectedSpaceId] = useState<string>('');
   const [tick, setTick] = useState(0);
+  const [refreshTrigger, setRefreshTrigger] = useState(0);
   
   const debouncedSearchTerm = useDebounce(searchTerm, 300);
 
@@ -111,7 +112,7 @@ export default function Telecentro() {
     fetchComputadores();
     const interval = setInterval(fetchComputadores, 30000);
     return () => clearInterval(interval);
-  }, [totalComputadoresCount, userData, selectedSpaceId, isGlobalAdmin]);
+  }, [totalComputadoresCount, userData, selectedSpaceId, isGlobalAdmin, refreshTrigger]);
 
   useEffect(() => {
     if (debouncedSearchTerm.length > 2) {
@@ -120,7 +121,10 @@ export default function Telecentro() {
         const filtered = (data || []).filter((v: any) => {
           const searchLower = debouncedSearchTerm.toLowerCase();
           const searchTokens = searchLower.split(/\s+/).filter(t => t.length > 0);
-          return searchTokens.length > 0 && searchTokens.every(token => (v.fullName || v.full_name || '').toLowerCase().includes(token));
+          return searchTokens.length > 0 && searchTokens.every(token => 
+            (v.fullName || v.full_name || '').toLowerCase().includes(token) ||
+            (v.cpf || '').replace(/\D/g, '').includes(token.replace(/\D/g, ''))
+          );
         });
         setSearchResults((filtered || []).map(v => ({ id: v.id, fullName: v.fullName || v.full_name, cpf: v.cpf })).slice(0, 5));
       });
@@ -157,6 +161,7 @@ export default function Telecentro() {
       setToast({ message: `Sessão iniciada no PC ${selectedComputador.numero}!`, type: 'success' });
       setIsSearchOpen(false);
       setSelectedComputador(null);
+      setRefreshTrigger(prev => prev + 1);
       setTimeout(() => setToast(null), 3000);
     } catch (error) {
       setToast({ message: "Erro ao iniciar sessão.", type: 'error' });
@@ -169,6 +174,7 @@ export default function Telecentro() {
     try {
       await api.delete(`/computadores/${pc.id}`);
       setToast({ message: `PC ${pc.numero} liberado!`, type: 'success' });
+      setRefreshTrigger(prev => prev + 1);
       setTimeout(() => setToast(null), 3000);
     } catch (error) {
       setToast({ message: "Erro ao liberar.", type: 'error' });

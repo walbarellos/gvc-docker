@@ -144,6 +144,9 @@ export async function visitRoutes(app: FastifyInstance) {
 
   // Atualizar visita (para Telecentro)
   app.put('/:id', { preHandler: [app.authenticate] }, async (request: any, reply: any) => {
+    if (!request.body || Object.keys(request.body).length === 0) {
+      request.body = {};
+    }
     const { id } = request.params;
     const data = mapVisitFields(request.body);
     
