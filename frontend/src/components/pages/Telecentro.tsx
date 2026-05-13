@@ -8,13 +8,14 @@ import {
   Monitor, 
   MonitorOff,
   Unlock,
+  Play,
+  Square,
   CheckCircle2,
   AlertCircle,
   Search,
   User,
   X,
-  Clock,
-  Zap
+  Clock
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import Footer from '../layout/PageFooter';
@@ -25,6 +26,7 @@ interface Computador {
   status: 'Livre' | 'Em Uso' | 'Excedido';
   usuarioId?: string;
   usuarioNome?: string;
+  horarioInicio?: string;
   horarioLimite?: string;
 }
 
@@ -39,8 +41,15 @@ export default function Telecentro() {
   const [toast, setToast] = useState<{ message: string; type: 'success' | 'error' } | null>(null);
   const [spaces, setSpaces] = useState<any[]>([]);
   const [selectedSpaceId, setSelectedSpaceId] = useState<string>('');
+  const [tick, setTick] = useState(0);
   
   const debouncedSearchTerm = useDebounce(searchTerm, 300);
+
+  // Timer para atualizar contagem regressiva
+  useEffect(() => {
+    const interval = setInterval(() => setTick(prev => prev + 1), 1000);
+    return () => clearInterval(interval);
+  }, []);
 
   useEffect(() => {
     const isGlobalUser = userData?.perfil === 'administrador' || userData?.perfil === 'coordenador';
@@ -85,7 +94,15 @@ export default function Telecentro() {
           const limite = existing.horarioLimite ? new Date(existing.horarioLimite) : null;
           status = (limite && agora > limite) ? 'Excedido' : 'Em Uso';
         }
-        fullList.push(existing ? { id: existing.id, numero: existing.numero, status, usuarioId: existing.usuarioId, usuarioNome: existing.usuarioNome || existing.usuario_nome, horarioLimite: existing.horarioLimite || existing.horario_limite } : { id: `temp-${i}`, numero: i, status: 'Livre' });
+        fullList.push(existing ? { 
+          id: existing.id, 
+          numero: existing.numero, 
+          status, 
+          usuarioId: existing.usuarioId, 
+          usuarioNome: existing.usuarioNome || existing.usuario_nome, 
+          horarioInicio: existing.horarioInicio || existing.horario_inicio,
+          horarioLimite: existing.horarioLimite || existing.horario_limite 
+        } : { id: `temp-${i}`, numero: i, status: 'Livre' });
       }
       setComputadores(fullList.sort((a, b) => a.numero - b.numero));
       setLoading(false);
@@ -159,7 +176,20 @@ export default function Telecentro() {
     }
   };
 
-  const formatarTempo = (horarioLimite: string | undefined) => {
+  // Calcula tempo decorrido desde o início
+  const calcularTempoDecorrido = (horarioInicio: string | undefined) => {
+    if (!horarioInicio) return null;
+    const agora = new Date();
+    const inicio = new Date(horarioInicio);
+    const diff = agora.getTime() - inicio.getTime();
+    if (diff < 0) return null;
+    const minutos = Math.floor(diff / 60000);
+    const segundos = Math.floor((diff % 60000) / 1000);
+    return { minutos, segundos, totalMinutos: minutos };
+  };
+
+  // Calcula tempo restante
+  const calcularTempoRestante = (horarioLimite: string | undefined) => {
     if (!horarioLimite) return '--:--';
     const agora = new Date();
     const limite = new Date(horarioLimite);
@@ -301,13 +331,14 @@ export default function Telecentro() {
       {/* Grid */}
       {loading ? (
         <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-5 gap-4">
-          {[...Array(10)].map((_, i) => <div key={i} className="h-40 bg-slate-100 animate-pulse rounded-2xl"></div>)}
+          {[...Array(10)].map((_, i) => <div key={i} className="h-48 bg-slate-100 animate-pulse rounded-2xl"></div>)}
         </div>
       ) : (
         <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-5 gap-4">
           {computadores.map((pc, idx) => {
             const isOcupado = pc.status !== 'Livre';
             const isExcedido = pc.status === 'Excedido';
+            const tempoDecorrido = isOcupado ? calcularTempoDecorrido(pc.horarioInicio) : null;
             
             return (
               <motion.div
@@ -324,31 +355,52 @@ export default function Telecentro() {
                   'border-slate-200 bg-white hover:border-primary hover:shadow-lg hover:shadow-primary/10'
                 }`}>
                   <div className="relative z-10 p-5">
-                    <div className="flex items-center justify-between mb-4">
-                      <div className={`w-12 h-12 rounded-xl flex items-center justify-center font-black text-xl ${
-                        isOcupado ? (isExcedido ? 'bg-red-500 text-white' : 'bg-amber-500 text-white') :
-                        'bg-slate-100 text-slate-600'
+                    {/* Ícone maior do computador */}
+                    <div className="flex items-center justify-center mb-4">
+                      <div className={`w-16 h-16 rounded-2xl flex items-center justify-center ${
+                        isOcupado 
+                          ? isExcedido 
+                            ? 'bg-red-500' 
+                            : 'bg-amber-500'
+                          : 'bg-gradient-to-br from-slate-100 to-slate-200'
                       }`}>
-                        {pc.numero}
+                        <Monitor size={36} className={isOcupado ? 'text-white' : 'text-slate-600'} />
                       </div>
-                      <div className={`w-3 h-3 rounded-full ${isExcedido ? 'bg-red-500 animate-pulse' : isOcupado ? 'bg-amber-500' : 'bg-emerald-400'}`} />
                     </div>
 
-                    <div className={`inline-flex items-center gap-2 px-3 py-1.5 rounded-lg text-xs font-bold mb-3 ${
+                    {/* Número do PC */}
+                    <div className="text-center mb-3">
+                      <span className={`text-2xl font-black ${isOcupado ? 'text-slate-800' : 'text-slate-400'}`}>
+                        PC {pc.numero}
+                      </span>
+                    </div>
+
+                    {/* Status Badge */}
+                    <div className={`inline-flex items-center justify-center gap-2 px-3 py-1.5 rounded-lg text-xs font-bold mb-3 w-full ${
                       isExcedido ? 'bg-red-100 text-red-700' : isOcupado ? 'bg-amber-100 text-amber-700' : 'bg-slate-100 text-slate-600'
                     }`}>
                       {isExcedido ? <AlertCircle size={12} /> : isOcupado ? <Monitor size={12} /> : <Monitor size={12} />}
                       {isExcedido ? 'Excedido' : isOcupado ? 'Em Uso' : 'Livre'}
                     </div>
 
+                    {/* Informações do usuário e cronômetro */}
                     {isOcupado && pc.usuarioNome && (
-                      <div className="space-y-2">
-                        <p className="text-sm font-bold text-slate-800 truncate">{pc.usuarioNome}</p>
-                        {pc.horarioLimite && (
-                          <div className={`flex items-center gap-2 px-3 py-2 rounded-lg ${isExcedido ? 'bg-red-100' : 'bg-slate-100'}`}>
-                            <Clock size={14} className={isExcedido ? 'text-red-600' : 'text-slate-500'} />
-                            <span className={`font-mono font-bold text-sm ${isExcedido ? 'text-red-700' : 'text-slate-700'}`}>
-                              {formatarTempo(pc.horarioLimite)}
+                      <div className="space-y-3">
+                        <p className="text-sm font-bold text-slate-800 text-center truncate">{pc.usuarioNome}</p>
+                        
+                        {/* Cronômetro de tempo decorrido */}
+                        {tempoDecorrido && (
+                          <div className={`flex items-center justify-center gap-2 px-4 py-3 rounded-xl ${
+                            isExcedido ? 'bg-red-100' : 'bg-slate-100'
+                          }`}>
+                            <Clock size={18} className={isExcedido ? 'text-red-600' : 'text-slate-600'} />
+                            <span className={`font-mono text-lg font-bold ${
+                              isExcedido ? 'text-red-700' : 'text-slate-700'
+                            }`}>
+                              {String(tempoDecorrido.minutos).padStart(2, '0')}:{String(tempoDecorrido.segundos).padStart(2, '0')}
+                            </span>
+                            <span className={`text-xs ${isExcedido ? 'text-red-500' : 'text-slate-400'}`}>
+                              / {limiteMaximoMinutos}min
                             </span>
                           </div>
                         )}
@@ -356,12 +408,13 @@ export default function Telecentro() {
                     )}
 
                     {!isOcupado && (
-                      <div className="py-4 text-center">
-                        <div className="w-10 h-10 mx-auto mb-2 bg-primary/10 rounded-full flex items-center justify-center">
-                          <Zap size={20} className="text-primary" />
-                        </div>
-                        <p className="text-xs text-slate-400">Clique para iniciar</p>
-                      </div>
+                      <button
+                        onClick={(e) => { e.stopPropagation(); handleComputadorClick(pc); }}
+                        className="w-full py-3 bg-primary text-white rounded-xl font-bold text-sm hover:bg-primary/90 transition-colors flex items-center justify-center gap-2"
+                      >
+                        <Play size={16} />
+                        INICIAR
+                      </button>
                     )}
                   </div>
 
@@ -369,12 +422,14 @@ export default function Telecentro() {
                     <div className="p-3 bg-white/80 border-t border-slate-100">
                       <button
                         onClick={(e) => { e.stopPropagation(); liberarComputador(pc); }}
-                        className={`w-full py-2 rounded-lg text-xs font-bold flex items-center justify-center gap-1 transition-all ${
-                          isExcedido ? 'bg-red-500 hover:bg-red-600 text-white' : 'bg-primary hover:bg-primary/90 text-white'
+                        className={`w-full py-3 rounded-lg text-sm font-bold flex items-center justify-center gap-2 transition-all ${
+                          isExcedido 
+                            ? 'bg-red-500 hover:bg-red-600 text-white' 
+                            : 'bg-slate-800 hover:bg-slate-900 text-white'
                         }`}
                       >
-                        <Unlock size={12} />
-                        Liberar
+                        <Square size={14} />
+                        ENCERRAR
                       </button>
                     </div>
                   )}

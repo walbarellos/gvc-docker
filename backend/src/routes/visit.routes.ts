@@ -209,7 +209,10 @@ export async function visitRoutes(app: FastifyInstance) {
   });
 
   // Check-out
-  app.post('/checkout/:id', { preHandler: [app.authenticate] }, async (request: any) => {
+  app.post('/checkout/:id', { preHandler: [app.authenticate] }, async (request: any, reply: any) => {
+    if (!request.body || Object.keys(request.body).length === 0) {
+      request.body = {};
+    }
     const { id } = request.params;
     const visit = await prisma.visit.update({
       where: { id },

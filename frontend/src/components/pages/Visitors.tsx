@@ -444,7 +444,10 @@ const mapped = (data || []).map((d: any) => ({
                       {visitor.birthDate ? (() => {
                         const d = new Date(visitor.birthDate);
                         if (isNaN(d.getTime())) return '-';
-                        return d.toLocaleDateString('pt-BR');
+                        // Criar data no timezone local para evitar diferença de dia
+                        const dateStr = visitor.birthDate.split('T')[0];
+                        const [year, month, day] = dateStr.split('-');
+                        return `${day}/${month}/${year}`;
                       })() : '-'}
                     </p>
                   </td>
