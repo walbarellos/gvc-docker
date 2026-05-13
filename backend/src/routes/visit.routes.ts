@@ -136,7 +136,7 @@ export async function visitRoutes(app: FastifyInstance) {
     const { id } = request.params;
     const visit = await prisma.visit.findUnique({ 
       where: { id }, 
-      include: { visitor: true } 
+      include: { visitor: true }
     });
     if (!visit) return { error: 'Visita não encontrada' };
     return visit;
@@ -151,13 +151,19 @@ export async function visitRoutes(app: FastifyInstance) {
     const data = mapVisitFields(request.body);
     
     try {
+      const existing = await prisma.visit.findUnique({ where: { id } });
+      if (!existing) {
+        return reply.status(404).send({ error: 'Visita não encontrada' });
+      }
+      
       const visit = await prisma.visit.update({
         where: { id },
         data
       });
       return visit;
-    } catch (error) {
-      return reply.status(400).send({ error: 'Erro ao atualizar visita' });
+    } catch (error: any) {
+      console.error('Erro ao atualizar visita:', error);
+      return reply.status(400).send({ error: error.message || 'Erro ao atualizar visita' });
     }
   });
 
@@ -187,22 +193,68 @@ export async function visitRoutes(app: FastifyInstance) {
       return reply.status(403).send({ error: 'Espaço não autorizado para este usuário' });
     }
     
-    const existing = await prisma.visit.findFirst({
+    const visitor = await prisma.visitor.findUnique({ where: { id: visitorId } });
+    if (!visitor) {
+      return reply.status(404).send({ error: 'Visitante não encontrado' });
+    }
+
+    // Verificar se já possui check-in ativo neste espaço
+    const existingInSpace = await prisma.visit.findFirst({
       where: {
         visitorId,
         espacoId,
         status: 'ativo',
-        checkin: { gte: new Date(Date.now() - 60 * 60 * 1000) },
       },
     });
 
-    if (existing) {
-      return reply.status(400).send({ error: 'Visitante já possui check-in ativo nos últimos 60 minutos' });
+    if (existingInSpace) {
+      const espaco = await prisma.espaco.findUnique({ where: { id: espacoId } });
+      const tempoLimite = espaco?.tempo_limite_excedido || 60; // minutos
+      const tempoDecorrido = Math.floor((Date.now() - existingInSpace.checkin.getTime()) / 60000);
+      const tempoRestante = Math.max(0, tempoLimite - tempoDecorrido);
+      
+      return reply.status(400).send({ 
+        error: `Visitante já possui check-in ativo neste espaço (${espaco?.nome || 'desconhecido'}).`,
+        detalhes: {
+          espacos: [{
+            nome: espaco?.nome || 'desconhecido',
+            checkin: existingInSpace.checkin,
+            tempoDecorrido,
+            tempoRestante,
+            minutosParaEncerrar: tempoRestante
+          }]
+        }
+      });
     }
 
-    const visitor = await prisma.visitor.findUnique({ where: { id: visitorId } });
-    if (!visitor) {
-      return reply.status(404).send({ error: 'Visitante não encontrado' });
+    // Verificar limite de check-ins por CPF no dia (baseado no perfil)
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    
+    const checkinsHoje = await prisma.visit.count({
+      where: {
+        visitorId,
+        checkin: { gte: today },
+      },
+    });
+
+    // Limite baseado no perfil do visitante
+    let limiteDiario = 2; // padrão para cidadãos
+    if (perfil === 'funcionario' || perfil === 'monitor') {
+      limiteDiario = 5;
+    } else if (perfil === 'coordenador' || perfil === 'administrador') {
+      limiteDiario = 10;
+    }
+
+    if (checkinsHoje >= limiteDiario) {
+      return reply.status(400).send({ 
+        error: `Limite de check-ins diários atingido para este perfil (${perfil}). Máximo: ${limiteDiario} por dia.`,
+        detalhes: {
+          checkinsHoje,
+          limiteDiario,
+          perfil
+        }
+      });
     }
 
     const visit = await prisma.visit.create({
@@ -217,11 +269,26 @@ export async function visitRoutes(app: FastifyInstance) {
       request.body = {};
     }
     const { id } = request.params;
-    const visit = await prisma.visit.update({
-      where: { id },
-      data: { checkout: new Date(), status: 'finalizado' },
-    });
-    return visit;
+    
+    const existingVisit = await prisma.visit.findUnique({ where: { id } });
+    if (!existingVisit) {
+      return reply.status(404).send({ error: 'Visita não encontrada' });
+    }
+    
+    if (existingVisit.status === 'finalizado') {
+      return reply.status(400).send({ error: 'Checkout já realizado anteriormente' });
+    }
+    
+    try {
+      const visit = await prisma.visit.update({
+        where: { id },
+        data: { checkout: new Date(), status: 'finalizado' },
+      });
+      return visit;
+    } catch (error: any) {
+      console.error('Erro no checkout:', error);
+      return reply.status(400).send({ error: error.message || 'Erro ao realizar checkout' });
+    }
   });
 
   // Visitas ativas do espaço
@@ -244,9 +311,57 @@ export async function visitRoutes(app: FastifyInstance) {
     return visits;
   });
 
+  // Verificar CPF - buscar check-ins ativos por CPF
+  app.get('/cpf/:cpf/active', { preHandler: [app.authenticate] }, async (request: any, reply: any) => {
+    const { cpf } = request.params;
+    
+    const visitors = await prisma.visitor.findMany({
+      where: { cpf: cpf.replace(/\D/g, '') },
+    });
+
+    if (visitors.length === 0) {
+      return reply.status(404).send({ error: 'Nenhum visitante encontrado com este CPF' });
+    }
+
+    const visitorIds = visitors.map(v => v.id);
+    
+    const activeVisits = await prisma.visit.findMany({
+      where: {
+        visitorId: { in: visitorIds },
+        status: 'ativo',
+      },
+      include: { 
+        visitor: true,
+        espaco: true,
+      },
+    });
+
+    // Calcular tempo restante para cada visita
+    const visitsWithTime = activeVisits.map(visit => {
+      const tempoLimite = visit.espaco?.tempo_limite_excedido || 60;
+      const tempoDecorrido = Math.floor((Date.now() - visit.checkin.getTime()) / 60000);
+      const tempoRestante = Math.max(0, tempoLimite - tempoDecorrido);
+      
+      return {
+        ...visit,
+        tempoDecorrido,
+        tempoRestante,
+        minutosParaEncerrar: tempoRestante,
+      };
+    });
+
+    return visitsWithTime;
+  });
+
   // Excluir visita (Undo Check-in)
   app.delete('/:id', { preHandler: [app.authenticate] }, async (request: any, reply: any) => {
     const { id } = request.params;
+    
+    const existingVisit = await prisma.visit.findUnique({ where: { id } });
+    if (!existingVisit) {
+      return reply.status(404).send({ error: 'Visita não encontrada' });
+    }
+    
     await prisma.visit.delete({ where: { id } });
     return { success: true };
   });

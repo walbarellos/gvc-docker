@@ -27,7 +27,6 @@ export function useAutoCheckout() {
         for (const visit of exceededVisits) {
           try {
             await api.put(`/visitas/${visit.id}`, {
-              status: 'Excedido',
               checkout: now
             });
           } catch (e) {

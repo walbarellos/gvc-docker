@@ -1,15 +1,29 @@
 -- ====================================================================
--- GVC - Schema Principal (sem RLS do Supabase)
+-- SCHEMA FINAL CONSOLIDADO - GVC (Gestão de Visitantes Culturais)
+-- ====================================================================
+-- Gerado automaticamente a partir dos arquivos SQL do projeto
+-- Data: 2026-05-13
 -- ====================================================================
 
--- EXTENSÕES
+-- ====================================================================
+-- 1. ENUMS
+-- ====================================================================
+CREATE TYPE IF NOT EXISTS public."PerfilUsuario" AS ENUM ('cidadao', 'monitor', 'funcionario', 'coordenador', 'administrador');
+CREATE TYPE IF NOT EXISTS public."ComputadorStatus" AS ENUM ('Livre', 'EmUso', 'Manutencao');
+CREATE TYPE IF NOT EXISTS public."LockerStatus" AS ENUM ('available', 'occupied', 'maintenance');
+CREATE TYPE IF NOT EXISTS public."AgendamentoStatus" AS ENUM ('pendente', 'confirmado', 'aprovado', 'rejeitado', 'cancelado', 'concluido');
+CREATE TYPE IF NOT EXISTS public."Gender" AS ENUM ('masculino', 'feminino', 'outro', 'nao_informar');
+CREATE TYPE IF NOT EXISTS public."VisitStatus" AS ENUM ('ativo', 'finalizado', 'cancelado');
+
+-- ====================================================================
+-- 2. TABLES
+-- ====================================================================
+
+-- Extensões
 CREATE EXTENSION IF NOT EXISTS "uuid-ossp";
 CREATE EXTENSION IF NOT EXISTS "pgcrypto";
 
--- ====================================================================
--- TABELAS
--- ====================================================================
-
+-- Visitantes
 CREATE TABLE IF NOT EXISTS visitors (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     full_name TEXT NOT NULL,
@@ -27,6 +41,7 @@ CREATE TABLE IF NOT EXISTS visitors (
     updated_at TIMESTAMPTZ DEFAULT now()
 );
 
+-- Espaços
 CREATE TABLE IF NOT EXISTS espacos (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     nome TEXT NOT NULL,
@@ -61,6 +76,7 @@ CREATE TABLE IF NOT EXISTS espacos (
     updated_at TIMESTAMPTZ DEFAULT now()
 );
 
+-- Usuários
 CREATE TABLE IF NOT EXISTS usuarios (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     auth_uid UUID,
@@ -75,6 +91,7 @@ CREATE TABLE IF NOT EXISTS usuarios (
     updated_at TIMESTAMPTZ DEFAULT now()
 );
 
+-- Visitas
 CREATE TABLE IF NOT EXISTS visits (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     visitor_id UUID REFERENCES visitors(id),
@@ -89,6 +106,7 @@ CREATE TABLE IF NOT EXISTS visits (
     created_at TIMESTAMPTZ DEFAULT now()
 );
 
+-- Computadores
 CREATE TABLE IF NOT EXISTS computadores (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     numero INTEGER NOT NULL,
@@ -101,6 +119,7 @@ CREATE TABLE IF NOT EXISTS computadores (
     espaco_nome TEXT
 );
 
+-- Armários (Lockers)
 CREATE TABLE IF NOT EXISTS lockers (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     number INTEGER NOT NULL,
@@ -111,6 +130,7 @@ CREATE TABLE IF NOT EXISTS lockers (
     updated_at TIMESTAMPTZ DEFAULT now()
 );
 
+-- Auditoria
 CREATE TABLE IF NOT EXISTS auditoria (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     usuario TEXT NOT NULL,
@@ -121,6 +141,7 @@ CREATE TABLE IF NOT EXISTS auditoria (
     created_at TIMESTAMPTZ DEFAULT now()
 );
 
+-- Configurações
 CREATE TABLE IF NOT EXISTS configuracoes (
     id TEXT PRIMARY KEY DEFAULT 'sistema',
     institution_name TEXT,
@@ -128,6 +149,7 @@ CREATE TABLE IF NOT EXISTS configuracoes (
     updated_at TIMESTAMPTZ DEFAULT now()
 );
 
+-- Agendamentos
 CREATE TABLE IF NOT EXISTS agendamentos (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     espaco_id UUID REFERENCES espacos(id),
@@ -173,6 +195,7 @@ CREATE TABLE IF NOT EXISTS agendamentos (
     user_agent TEXT
 );
 
+-- Agendamentos Rascunho
 CREATE TABLE IF NOT EXISTS agendamentos_rascunho (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     session_id TEXT NOT NULL,
@@ -211,6 +234,7 @@ CREATE TABLE IF NOT EXISTS agendamentos_rascunho (
     updated_at TIMESTAMPTZ DEFAULT now()
 );
 
+-- Documentos de Agendamento
 CREATE TABLE IF NOT EXISTS documentos_agendamento (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     agendamento_id UUID REFERENCES agendamentos(id) ON DELETE CASCADE,
@@ -220,6 +244,7 @@ CREATE TABLE IF NOT EXISTS documentos_agendamento (
     uploaded_at TIMESTAMPTZ DEFAULT now()
 );
 
+-- Log de Agendamentos
 CREATE TABLE IF NOT EXISTS log_agendamentos (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     agendamento_id UUID,
@@ -231,6 +256,7 @@ CREATE TABLE IF NOT EXISTS log_agendamentos (
     created_at TIMESTAMPTZ DEFAULT now()
 );
 
+-- Assinaturas Digitais
 CREATE TABLE IF NOT EXISTS assinaturas_digitais (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     visitor_id UUID REFERENCES visitors(id),
@@ -251,6 +277,42 @@ CREATE TABLE IF NOT EXISTS assinaturas_digitais (
     created_at TIMESTAMPTZ DEFAULT now(),
     updated_at TIMESTAMPTZ DEFAULT now()
 );
+
+-- ====================================================================
+-- 3. ALTERS (colunas, constraints, indexes)
+-- ====================================================================
+
+-- Alterar coluna status da tabela visits para usar o enum VisitStatus
+DO $$
+BEGIN
+    IF EXISTS (
+        SELECT 1 FROM information_schema.columns
+        WHERE table_name = 'visits'
+        AND column_name = 'status'
+        AND data_type = 'text'
+    ) THEN
+        ALTER TABLE visits ALTER COLUMN status DROP DEFAULT;
+        ALTER TABLE visits ALTER COLUMN status TYPE public."VisitStatus" USING status::text::public."VisitStatus";
+        ALTER TABLE visits ALTER COLUMN status SET DEFAULT 'ativo';
+    END IF;
+END
+$$;
+
+-- Alterar coluna status da tabela agendamentos para usar o enum AgendamentoStatus
+DO $$
+BEGIN
+    IF EXISTS (
+        SELECT 1 FROM information_schema.columns
+        WHERE table_name = 'agendamentos'
+        AND column_name = 'status'
+        AND data_type = 'text'
+    ) THEN
+        ALTER TABLE agendamentos ALTER COLUMN status DROP DEFAULT;
+        ALTER TABLE agendamentos ALTER COLUMN status TYPE public."AgendamentoStatus" USING status::text::public."AgendamentoStatus";
+        ALTER TABLE agendamentos ALTER COLUMN status SET DEFAULT 'pendente';
+    END IF;
+END
+$$;
 
 -- ====================================================================
 -- ÍNDICES
@@ -276,8 +338,10 @@ CREATE INDEX IF NOT EXISTS idx_assinaturas_data ON assinaturas_digitais(data_hor
 CREATE INDEX IF NOT EXISTS idx_assinaturas_hash ON assinaturas_digitais(documento_hash);
 
 -- ====================================================================
--- FUNÇÕES
+-- 4. FUNÇÕES E TRIGGERS
 -- ====================================================================
+
+-- Função para verificar conflito de agendamento
 CREATE OR REPLACE FUNCTION verificar_conflito_agendamento(
     p_espaco_id UUID, p_data DATE, p_inicio TIME, p_fim TIME, p_exclude_id UUID DEFAULT NULL
 ) RETURNS BOOLEAN AS $$
@@ -295,6 +359,7 @@ BEGIN
 END;
 $$ LANGUAGE plpgsql;
 
+-- Função para atualizar updated_at
 CREATE OR REPLACE FUNCTION update_agendamento_updated_at()
 RETURNS TRIGGER AS $$
 BEGIN
@@ -303,6 +368,7 @@ BEGIN
 END;
 $$ LANGUAGE plpgsql;
 
+-- Função para log de auditoria de agendamentos
 CREATE OR REPLACE FUNCTION log_agendamento_audit()
 RETURNS TRIGGER AS $$
 BEGIN
@@ -321,8 +387,9 @@ BEGIN
 END;
 $$ LANGUAGE plpgsql;
 
--- ====================================================================
--- TRIGGERS
--- ====================================================================
+-- Triggers (drop e recreate para evitar erros)
+DROP TRIGGER IF EXISTS trigger_update_agendamento_updated_at ON agendamentos;
 CREATE TRIGGER trigger_update_agendamento_updated_at BEFORE UPDATE ON agendamentos FOR EACH ROW EXECUTE FUNCTION update_agendamento_updated_at();
+
+DROP TRIGGER IF EXISTS trigger_log_agendamento_audit ON agendamentos;
 CREATE TRIGGER trigger_log_agendamento_audit AFTER UPDATE ON agendamentos FOR EACH ROW EXECUTE FUNCTION log_agendamento_audit();

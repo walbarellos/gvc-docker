@@ -92,3 +92,38 @@ export interface SpaceConfig {
   tempoLimiteComputador: number;
   capacidadeAgendamento: number;
 }
+
+export interface DashboardStats {
+  visitorsToday: number;
+  activeVisits: number;
+  occupiedLockers: number;
+  exceededVisits: number;
+  totalArmarios: number;
+}
+
+export interface ChartDataPoint {
+  name: string;
+  count: number;
+  fullDate: string;
+}
+
+export interface NormalizedVisit {
+  id: string;
+  visitorId: string | null;
+  nome: string;
+  perfil: string;
+  local: string;
+  status: string;
+  checkin: string | null;
+  checkout: string | null;
+  espacoId: string;
+}
+
+export interface StatCardProps {
+  label: string;
+  value: string;
+  icon: React.ReactNode;
+  color: 'blue' | 'emerald' | 'amber' | 'red';
+  desc?: string;
+  isAlert?: boolean;
+}

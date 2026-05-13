@@ -1,5 +1,7 @@
 
 
+import { format } from 'date-fns';
+
 /**
  * Normaliza um documento de visita da API para um formato padrão.
  */
@@ -50,4 +52,13 @@ export const traduzirPerfil = (p: string) => {
     'Funcionário': 'Funcionário'
   };
   return map[p] || p;
+};
+
+export const formatTime = (ts: string | number | Date | null | undefined): string => {
+  if (!ts) return '--:--';
+  try {
+    return format(new Date(ts), 'HH:mm');
+  } catch {
+    return '--:--';
+  }
 };

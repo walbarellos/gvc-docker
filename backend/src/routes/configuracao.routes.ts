@@ -16,6 +16,15 @@ export async function configuracaoRoutes(app: FastifyInstance) {
     return configs;
   });
 
+  app.get('/:id', { preHandler: [app.authenticate] }, async (request: any, reply: any) => {
+    const { id } = request.params;
+    const config = await prisma.configuracao.findUnique({ where: { id } });
+    if (!config) {
+      return reply.status(404).send({ error: 'Configuração não encontrada' });
+    }
+    return config;
+  });
+
   app.post('/', { preHandler: [app.authenticate] }, async (request: any) => {
     const data = request.body as any;
     const createData: any = {};

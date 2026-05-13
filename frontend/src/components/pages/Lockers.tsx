@@ -1,7 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useAuth } from '../../contexts/AuthContext';
-import { visitorService, Visitor } from '../../services/visitorService';
-import { visitService } from '../../services/visitService';
+import { visitorService } from '../../services/visitorService';
 import { spaceService } from '../../services/spaceService';
 import { api } from '../../lib/api';
 import { useDebounce } from '../../hooks/useDebounce';
@@ -13,8 +12,7 @@ import {
   AlertCircle,
   Search,
   User,
-  X,
-  ChevronDown
+  X
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import Footer from '../layout/PageFooter';
@@ -22,10 +20,10 @@ import Footer from '../layout/PageFooter';
 interface Locker {
   id: string;
   number: number;
-  status: 'available' | 'occupied' | 'maintenance';
+  status: 'Livre' | 'Ocupado' | 'Manutencao';
   visitorId?: string;
   visitorName?: string;
-  updatedAt?: any;
+  updatedAt?: string;
 }
 
 export default function Lockers() {
@@ -39,108 +37,91 @@ export default function Lockers() {
   const [toast, setToast] = useState<{ message: string; type: 'success' | 'error' } | null>(null);
   const [spaces, setSpaces] = useState<any[]>([]);
   const [selectedSpaceId, setSelectedSpaceId] = useState<string>('');
+  const [refreshTrigger, setRefreshTrigger] = useState(0);
   
   const debouncedSearchTerm = useDebounce(searchTerm, 300);
 
   useEffect(() => {
-    if (userData?.espacoId === 'todos') {
+    const isGlobalUser = userData?.perfil === 'administrador' || userData?.perfil === 'coordenador';
+    const hasGlobalAccess = !userData?.espacoId || userData?.espacoId === 'todos' || 
+      (userData?.espacoNome && userData.espacoNome.toLowerCase().includes('todos'));
+    
+    if (isGlobalUser && hasGlobalAccess) {
       spaceService.listAll().then(({ data }) => {
-        if (data) setSpaces(data);
+        if (data) {
+          const lockerSpaces = data.filter((s: any) => s.perfilArmarios === true);
+          setSpaces(lockerSpaces);
+          if (lockerSpaces.length === 1) {
+            setSelectedSpaceId(lockerSpaces[0].id);
+          }
+        }
       });
     }
   }, [userData]);
 
-  const totalLockersCount = spaceConfig?.totalArmarios || 20;
+  const isGlobalAdmin = (userData?.perfil === 'administrador' || userData?.perfil === 'coordenador') && 
+    (!userData.espacoId || userData.espacoId === 'todos' || 
+     (userData.espacoNome && userData.espacoNome.toLowerCase().includes('todos')));
+
+  const currentSpace = spaces.find(s => s.id === (selectedSpaceId || userData?.espacoId));
+  const totalLockersCount = currentSpace?.totalArmarios || spaceConfig?.totalArmarios || 20;
 
   useEffect(() => {
     if (!userData) return;
-
-    const isGlobalAdmin = userData.perfil === 'administrador' &&
-      (!userData.espacoId || userData.espacoId === 'todos');
-    
-    const espacoId = isGlobalAdmin 
-      ? (selectedSpaceId || null)
-      : userData.espacoId;
+    const espacoId = isGlobalAdmin ? (selectedSpaceId || null) : userData.espacoId;
 
     const fetchLockers = async () => {
       const query = espacoId ? `?espacoId=${espacoId}` : '';
-      const { data, error } = await api.get<any[]>(`/armarios${query}`);
-
-      if (error) {
-        console.error("Erro ao carregar armários:", error);
-        setLoading(false);
-        return;
-      }
+      const { data } = await api.get<any[]>(`/armarios${query}`);
 
       const fullList: Locker[] = [];
       for (let i = 1; i <= totalLockersCount; i++) {
         const existing = (data || []).find(l => l.number === i || l.number === i.toString());
-        fullList.push(
-          existing
-            ? { 
-                id: existing.id, 
-                number: existing.number, 
-                status: existing.status, 
-                visitorId: existing.visitor_id,
-                visitorName: existing.visitor_name,
-                updatedAt: existing.updated_at 
-              }
-            : { 
-                id: `temp-${i}`, 
-                number: i, 
-                status: 'available' 
-              }
-        );
+        let status: 'Livre' | 'Ocupado' | 'Manutencao' = 'Livre';
+        if (existing?.status === 'Ocupado' || existing?.status === 'occupied') {
+          status = 'Ocupado';
+        } else if (existing?.status === 'Manutencao' || existing?.status === 'maintenance') {
+          status = 'Manutencao';
+        }
+        fullList.push(existing ? { 
+          id: existing.id, 
+          number: existing.number, 
+          status, 
+          visitorId: existing.visitor_id || existing.visitorId, 
+          visitorName: existing.visitor_name || existing.visitorName,
+          updatedAt: existing.updated_at 
+        } : { id: `temp-${i}`, number: i, status: 'Livre' });
       }
       setLockers(fullList.sort((a, b) => a.number - b.number));
       setLoading(false);
     };
 
     fetchLockers();
-
-    // Atualizar a cada 30 segundos
     const interval = setInterval(fetchLockers, 30000);
     return () => clearInterval(interval);
-  }, [totalLockersCount, userData, selectedSpaceId]);
+  }, [totalLockersCount, userData, selectedSpaceId, isGlobalAdmin, refreshTrigger]);
 
   useEffect(() => {
     if (debouncedSearchTerm.length > 2) {
-      const searchVisitors = async () => {
-        const { data } = await visitorService.listAll();
+      visitorService.listAll().then(({ data }) => {
         if (!data) return;
-
         const filtered = (data || []).filter((v: any) => {
           const searchLower = debouncedSearchTerm.toLowerCase();
-          const cleanTokenSearch = searchLower.replace(/[^\d]/g, '');
           const searchTokens = searchLower.split(/\s+/).filter(t => t.length > 0);
-          
-          const nameMatches = searchTokens.length > 0 && searchTokens.every(token => 
-            (v.fullName || v.full_name || '').toLowerCase().includes(token)
+          return searchTokens.length > 0 && searchTokens.every(token => 
+            (v.fullName || v.full_name || '').toLowerCase().includes(token) ||
+            (v.cpf || '').replace(/\D/g, '').includes(token.replace(/\D/g, ''))
           );
-          
-          const cpfMatches = v.cpf && cleanTokenSearch && v.cpf.includes(cleanTokenSearch);
-          const passportMatches = v.passport && searchLower && v.passport.toLowerCase().includes(searchLower);
-          
-          return nameMatches || cpfMatches || passportMatches;
         });
-        
-        setSearchResults((filtered || []).map(v => ({
-          id: v.id,
-          fullName: v.fullName || v.full_name,
-          cpf: v.cpf,
-          passport: v.passport
-        })).slice(0, 5));
-      };
-      
-      searchVisitors();
+        setSearchResults((filtered || []).map(v => ({ id: v.id, fullName: v.fullName || v.full_name, cpf: v.cpf })).slice(0, 5));
+      });
     } else {
       setSearchResults([]);
     }
   }, [debouncedSearchTerm]);
 
   const handleLockerClick = (locker: Locker) => {
-    if (locker.status === 'occupied') return;
-    
+    if (locker.status !== 'Livre') return;
     setSelectedLocker(locker);
     setIsSearchOpen(true);
     setSearchTerm('');
@@ -149,45 +130,35 @@ export default function Lockers() {
   const assignLocker = async (visitor: any) => {
     if (!selectedLocker || !userData) return;
 
-    const isGlobalAdmin = userData.perfil === 'administrador' &&
-      (!userData.espacoId || userData.espacoId === 'todos');
-    const targetEspacoId = isGlobalAdmin
-      ? (selectedSpaceId || null)
-      : userData.espacoId;
+    const isGlobal = (userData?.perfil === 'administrador' || userData?.perfil === 'coordenador') && (!userData.espacoId || userData.espacoId === 'todos');
+    const targetEspacoId = isGlobal ? (selectedSpaceId || null) : userData.espacoId;
 
     try {
-      // Verificar se visitante tem check-in ativo
       const { data: activeCheckIn } = await api.get<any[]>(
         `/visitas?visitorId=${visitor.id}&status=Ativo&espacoId=${targetEspacoId || ''}`
       );
 
       if (!activeCheckIn || activeCheckIn.length === 0) {
-        setToast({
-          message: 'ERRO: Visitante não possui check-in ativo neste espaço.',
-          type: 'error'
-        });
-        setTimeout(() => setToast(null), 5000);
+        setToast({ message: 'ERRO: Visitante não possui check-in ativo neste espaço.', type: 'error' });
+        setTimeout(() => setToast(null), 4000);
         return;
       }
 
       if (targetEspacoId) {
         const { data: existing } = await api.get<any[]>(
-          `/armarios?espacoId=${targetEspacoId}&visitorId=${visitor.id}&status=occupied`
+          `/armarios?espacoId=${targetEspacoId}&visitorId=${visitor.id}&status=Ocupado`
         );
 
         if (existing && existing.length > 0) {
-          setToast({
-            message: `ERRO: Este visitante já possui o armário ${existing[0].number}`,
-            type: 'error'
-          });
-          setTimeout(() => setToast(null), 5000);
+          setToast({ message: `ERRO: Este visitante já possui o armário ${existing[0].number}`, type: 'error' });
+          setTimeout(() => setToast(null), 4000);
           return;
         }
       }
 
       await api.post('/armarios', {
         number: selectedLocker.number,
-        status: 'occupied',
+        status: 'Ocupado',
         visitor_id: visitor.id,
         visitor_name: visitor.fullName,
         espaco_id: targetEspacoId
@@ -196,59 +167,88 @@ export default function Lockers() {
       setToast({ message: `Armário ${selectedLocker.number} ocupado com sucesso!`, type: 'success' });
       setIsSearchOpen(false);
       setSelectedLocker(null);
+      setRefreshTrigger(prev => prev + 1);
       setTimeout(() => setToast(null), 3000);
-    } catch (error) {
+    } catch (error: any) {
       console.error(error);
-      setToast({ message: "Erro ao ocupar armário.", type: 'error' });
+      setToast({ message: error?.response?.data?.error || "Erro ao ocupar armário.", type: 'error' });
       setTimeout(() => setToast(null), 4000);
     }
   };
 
   const releaseLocker = async (locker: Locker) => {
+    if (locker.id.startsWith('temp-')) return;
     try {
       await api.delete(`/armarios/${locker.id}`);
-      
       setToast({ message: `Armário ${locker.number} liberado com sucesso!`, type: 'success' });
+      setRefreshTrigger(prev => prev + 1);
       setTimeout(() => setToast(null), 3000);
-    } catch (error) {
+    } catch (error: any) {
       console.error("Erro ao liberar armário:", error);
-      setToast({ message: "Erro ao liberar armário. Tente novamente.", type: 'error' });
+      setToast({ message: error?.response?.data?.error || "Erro ao liberar armário.", type: 'error' });
       setTimeout(() => setToast(null), 4000);
     }
   };
 
-  const getStatusColor = (status: string) => {
-    switch (status) {
-      case 'available': return 'bg-emerald-50 text-emerald-600 border-emerald-100';
-      case 'occupied': return 'bg-amber-50 text-amber-600 border-amber-100';
-      case 'maintenance': return 'bg-red-50 text-red-600 border-red-100';
-      default: return 'bg-gray-50 text-gray-400 border-gray-100';
-    }
-  };
+  if (!userData) return null;
 
-  if (!userData || (userData.perfil !== 'administrador' && spaceConfig && !spaceConfig.perfilArmarios)) {
+  if (!isGlobalAdmin && (!spaceConfig || !spaceConfig?.perfilArmarios)) {
     return (
       <div className="p-8 flex flex-col items-center justify-center min-h-[60vh] text-center">
         <div className="w-20 h-20 bg-amber-50 text-amber-500 rounded-full flex items-center justify-center mb-6">
-          <AlertCircle size={48} />
+          <Lock size={48} />
         </div>
         <h2 className="text-2xl font-display font-bold text-slate-900 mb-2">Módulo de Armários Desativado</h2>
-        <p className="text-slate-500 max-w-md mx-auto">
-          Este espaço cultural não possui o perfil de armários ativo. 
-          Entre em contato com o administrador para habilitar esta funcionalidade.
-        </p>
+        <p className="text-slate-500 max-w-md">Este espaço cultural não possui o perfil de armários ativo.</p>
       </div>
     );
   }
+
+  if (isGlobalAdmin && !selectedSpaceId && spaces.length > 0) {
+    return (
+      <div className="p-8 max-w-5xl mx-auto">
+        <div className="text-center mb-10">
+          <div className="inline-flex items-center gap-2 px-4 py-2 bg-amber-50 text-amber-700 rounded-full text-sm font-bold mb-4">
+            <Lock size={16} />
+            Selecione o Espaço
+          </div>
+          <h2 className="text-3xl font-display font-bold text-slate-900 mb-2">Qual espaço você vai gerenciar?</h2>
+          <p className="text-slate-500">Escolha uma unidade para acessar o módulo de armários</p>
+        </div>
+        
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+          {spaces.map((s, idx) => (
+            <motion.button
+              key={s.id}
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: idx * 0.1 }}
+              onClick={() => setSelectedSpaceId(s.id)}
+              className="group p-8 bg-white border-2 border-slate-200 rounded-3xl text-left hover:border-amber-400 hover:shadow-xl hover:shadow-amber-500/10 transition-all"
+            >
+              <div className="w-14 h-14 bg-amber-50 rounded-2xl flex items-center justify-center mb-5 group-hover:bg-amber-100 transition-colors">
+                <Lock size={28} className="text-amber-600" />
+              </div>
+              <h3 className="font-bold text-slate-900 text-xl mb-2">{s.nome}</h3>
+              <p className="text-slate-500 text-sm">{s.totalArmarios || 0} armários disponíveis</p>
+            </motion.button>
+          ))}
+        </div>
+      </div>
+    );
+  }
+
+  const ocupado = lockers.filter(l => l.status === 'Ocupado').length;
+  const livre = lockers.filter(l => l.status === 'Livre').length;
 
   return (
     <div className="p-8 max-w-7xl mx-auto">
       {toast && (
         <motion.div 
-          initial={{ opacity: 0, y: -20 }}
-          animate={{ opacity: 1, y: 0 }}
-          className={`fixed top-20 right-8 px-6 py-3 rounded-xl shadow-lg z-[200] flex items-center gap-3 text-white ${
-            toast.type === 'success' ? 'bg-emerald-600' : 'bg-red-600'
+          initial={{ opacity: 0, y: -20, x: '-50%' }}
+          animate={{ opacity: 1, y: 0, x: '-50%' }}
+          className={`fixed top-6 left-1/2 px-6 py-3 rounded-2xl shadow-2xl z-[200] flex items-center gap-3 ${
+            toast.type === 'success' ? 'bg-primary text-white' : 'bg-red-600 text-white'
           }`}
         >
           {toast.type === 'success' ? <CheckCircle2 size={20} /> : <AlertCircle size={20} />}
@@ -256,110 +256,167 @@ export default function Lockers() {
         </motion.div>
       )}
 
-      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-8">
-        <div>
-          <h1 className="text-3xl font-display font-bold text-gray-900">Gestão de Armários</h1>
-          <p className="text-gray-500 text-sm">Controle de ocupação e chaves para visitantes.</p>
+      {/* Header */}
+      <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-6 mb-10">
+        <div className="flex items-center gap-5">
+          {isGlobalAdmin && (
+            <button onClick={() => setSelectedSpaceId('')} className="p-3 bg-slate-100 hover:bg-slate-200 rounded-xl transition-colors">
+              <X size={20} className="text-slate-600" />
+            </button>
+          )}
+          <div className="w-16 h-16 bg-primary rounded-2xl flex items-center justify-center shadow-lg shadow-primary/20">
+            <Lock size={32} className="text-white" />
+          </div>
+          <div>
+            <h1 className="text-3xl font-display font-bold text-slate-900">{currentSpace?.nome || 'Armários'}</h1>
+            <p className="text-slate-500 text-sm mt-1">Gestão de armários e chaves</p>
+          </div>
         </div>
-        
-        {userData?.espacoId === 'todos' && (
-          <div className="flex items-center gap-2">
-            <label className="text-xs font-bold text-slate-400 uppercase tracking-widest">Espaço:</label>
-            <select 
-              value={selectedSpaceId} 
-              onChange={e => setSelectedSpaceId(e.target.value)}
-              className="bg-white border border-slate-200 rounded-lg px-4 py-2 text-sm focus:ring-2 focus:ring-primary/20 outline-none"
-            >
-              <option value="">Selecione um espaço</option>
-              {(spaces || []).map(s => (
-                <option key={s.id} value={s.id}>{s.nome}</option>
-              ))}
-            </select>
-          </div>
+
+        {isGlobalAdmin && selectedSpaceId && (
+          <button 
+            onClick={() => setSelectedSpaceId('')}
+            className="px-5 py-3 bg-primary text-white rounded-xl font-bold text-sm hover:bg-primary/90 transition-colors flex items-center gap-2"
+          >
+            <Lock size={16} />
+            Trocar Espaço
+          </button>
         )}
-        
-        <div className="flex gap-4">
-          <div className="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-emerald-50 border border-emerald-100 text-emerald-700 text-xs font-bold font-mono">
-            <CheckCircle2 size={14} />
-            {(lockers || []).filter(l => l.status === 'available').length} LIVRES
+
+        <div className="flex gap-3">
+          <div className="px-5 py-3 bg-emerald-50 border border-emerald-200 rounded-2xl">
+            <div className="flex items-center gap-3">
+              <div className="w-10 h-10 bg-emerald-100 rounded-xl flex items-center justify-center">
+                <LockOpen size={20} className="text-emerald-600" />
+              </div>
+              <div>
+                <p className="text-xs text-emerald-600 font-bold uppercase">Livres</p>
+                <p className="text-2xl font-bold text-slate-900">{livre}</p>
+              </div>
+            </div>
           </div>
-          <div className="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-amber-50 border border-amber-100 text-amber-700 text-xs font-bold font-mono">
-            <Lock size={14} />
-            {(lockers || []).filter(l => l.status === 'occupied').length} OCUPADOS
+          <div className="px-5 py-3 bg-amber-50 border border-amber-200 rounded-2xl">
+            <div className="flex items-center gap-3">
+              <div className="w-10 h-10 bg-amber-100 rounded-xl flex items-center justify-center">
+                <Lock size={20} className="text-amber-600" />
+              </div>
+              <div>
+                <p className="text-xs text-amber-600 font-bold uppercase">Ocupados</p>
+                <p className="text-2xl font-bold text-slate-900">{ocupado}</p>
+              </div>
+            </div>
+          </div>
+          <div className="px-5 py-3 bg-slate-50 border border-slate-200 rounded-2xl">
+            <div className="flex items-center gap-3">
+              <div className="w-10 h-10 bg-slate-100 rounded-xl flex items-center justify-center">
+                <Lock size={20} className="text-slate-600" />
+              </div>
+              <div>
+                <p className="text-xs text-slate-500 font-bold uppercase">Total</p>
+                <p className="text-2xl font-bold text-slate-900">{lockers.length}</p>
+              </div>
+            </div>
           </div>
         </div>
       </div>
 
+      {/* Grid */}
       {loading ? (
         <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-5 gap-4">
-          {[...Array(10)].map((_, i) => (
-             <div key={i} className="h-32 bg-gray-100 animate-pulse rounded-xl"></div>
-          ))}
+          {[...Array(10)].map((_, i) => <div key={i} className="h-48 bg-slate-100 animate-pulse rounded-2xl"></div>)}
         </div>
       ) : (
-        <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-5 gap-6">
-          {(lockers || []).map((locker) => (
-            <motion.div
-              key={locker.id}
-              whileHover={{ y: -4 }}
-              onClick={() => handleLockerClick(locker)}
-              className={`relative overflow-hidden cursor-pointer group bg-white p-6 rounded-2xl border-2 transition-all ${
-                locker.status === 'occupied' 
-                  ? 'border-amber-200 shadow-amber-900/5 shadow-lg' 
-                  : 'border-gray-100 hover:border-emerald-200 hover:shadow-emerald-900/5 hover:shadow-lg'
-              }`}
-            >
-              <div className="flex justify-between items-start mb-4">
-                <span className="text-[40px] font-display font-black text-gray-400 group-hover:text-primary transition-colors leading-none">
-                  {locker.number.toString().padStart(2, '0')}
-                </span>
-                {locker.status === 'occupied' ? (
-                  <div className="p-2 bg-amber-100 rounded-lg text-amber-600 shadow-inner">
-                    <Lock size={20} />
-                  </div>
-                ) : (
-                  <div className="p-2 bg-emerald-100 rounded-lg text-emerald-600 shadow-inner">
-                    <LockOpen size={20} />
-                  </div>
-                )}
-              </div>
+        <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-5 gap-4">
+          {lockers.map((locker, idx) => {
+            const isOcupado = locker.status === 'Ocupado';
+            const isManutencao = locker.status === 'Manutencao';
+            
+            return (
+              <motion.div
+                key={locker.id}
+                initial={{ opacity: 0, scale: 0.9 }}
+                animate={{ opacity: 1, scale: 1 }}
+                transition={{ delay: idx * 0.03 }}
+                onClick={() => !isOcupado && !isManutencao && handleLockerClick(locker)}
+                className={`relative ${isOcupado || isManutencao ? 'cursor-default' : 'cursor-pointer hover:-translate-y-1'}`}
+              >
+                <div className={`relative overflow-hidden rounded-2xl border-2 transition-all ${
+                  isManutencao 
+                    ? 'border-red-300 bg-gradient-to-br from-red-50 to-rose-50'
+                    : isOcupado 
+                      ? 'border-amber-400 bg-gradient-to-br from-amber-50 to-yellow-50'
+                      : 'border-slate-200 bg-white hover:border-primary hover:shadow-lg hover:shadow-primary/10'
+                }`}>
+                  <div className="relative z-10 p-5">
+                    {/* Ícone do armário */}
+                    <div className="flex items-center justify-center mb-4">
+                      <div className={`w-16 h-16 rounded-2xl flex items-center justify-center ${
+                        isOcupado 
+                          ? 'bg-amber-500'
+                          : isManutencao
+                            ? 'bg-red-500'
+                            : 'bg-gradient-to-br from-slate-100 to-slate-200'
+                      }`}>
+                        <Lock size={36} className={isOcupado || isManutencao ? 'text-white' : 'text-slate-600'} />
+                      </div>
+                    </div>
 
-              <div className="space-y-2">
-                <div className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[10px] font-bold uppercase tracking-wider ${getStatusColor(locker.status)}`}>
-                  <div className={`w-1.5 h-1.5 rounded-full ${
-                    locker.status === 'available' ? 'bg-emerald-500' : 'bg-amber-500'
-                  }`} />
-                  {locker.status === 'available' ? 'Livre' : 'Ocupado'}
+                    {/* Número do armário */}
+                    <div className="text-center mb-3">
+                      <span className={`text-2xl font-black ${isOcupado ? 'text-slate-800' : 'text-slate-400'}`}>
+                        {String(locker.number).padStart(2, '0')}
+                      </span>
+                    </div>
+
+                    {/* Status Badge */}
+                    <div className={`inline-flex items-center justify-center gap-2 px-3 py-1.5 rounded-lg text-xs font-bold mb-3 w-full ${
+                      isManutencao 
+                        ? 'bg-red-100 text-red-700' 
+                        : isOcupado 
+                          ? 'bg-amber-100 text-amber-700' 
+                          : 'bg-slate-100 text-slate-600'
+                    }`}>
+                      {isManutencao ? <AlertCircle size={12} /> : isOcupado ? <Lock size={12} /> : <LockOpen size={12} />}
+                      {isManutencao ? 'Manutenção' : isOcupado ? 'Ocupado' : 'Livre'}
+                    </div>
+
+                    {/* Informações do visitante */}
+                    {isOcupado && locker.visitorName && (
+                      <div className="space-y-2">
+                        <p className="text-sm font-bold text-slate-800 text-center truncate">{locker.visitorName}</p>
+                      </div>
+                    )}
+
+                    {!isOcupado && !isManutencao && (
+                      <button
+                        onClick={(e) => { e.stopPropagation(); handleLockerClick(locker); }}
+                        className="w-full py-3 bg-primary text-white rounded-xl font-bold text-sm hover:bg-primary/90 transition-colors flex items-center justify-center gap-2"
+                      >
+                        <Lock size={16} />
+                        OCUPAR
+                      </button>
+                    )}
+                  </div>
+
+                  {isOcupado && (
+                    <div className="p-3 bg-white/80 border-t border-slate-100">
+                      <button
+                        onClick={(e) => { e.stopPropagation(); releaseLocker(locker); }}
+                        className="w-full py-3 bg-slate-800 hover:bg-slate-900 text-white rounded-lg text-sm font-bold flex items-center justify-center gap-2 transition-all"
+                      >
+                        <Unlock size={14} />
+                        LIBERAR
+                      </button>
+                    </div>
+                  )}
                 </div>
-
-                {locker.status === 'occupied' && (
-                  <div className="mt-2">
-                    <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-0.5">Ocupado por:</p>
-                    <p className="text-xs font-bold text-gray-900 truncate">{locker.visitorName}</p>
-                  </div>
-                )}
-              </div>
-
-              {locker.status === 'occupied' && (
-                <div className="mt-4 pt-4 border-t border-amber-50">
-                   <button 
-                    type="button"
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      releaseLocker(locker);
-                    }}
-                    className="w-full py-3 bg-red-600 text-white rounded-xl text-[11px] font-bold uppercase transition-all hover:bg-red-700 active:scale-95 flex items-center justify-center gap-2 shadow-lg relative z-[70] cursor-pointer"
-                   >
-                     <Unlock size={14} /> Liberar Armário
-                   </button>
-                </div>
-              )}
-            </motion.div>
-          ))}
+              </motion.div>
+            );
+          })}
         </div>
       )}
 
-      {/* Visitor Search Modal */}
+      {/* Modal */}
       <AnimatePresence>
         {isSearchOpen && (
           <div className="fixed inset-0 z-[100] flex items-center justify-center p-4">
@@ -367,68 +424,68 @@ export default function Lockers() {
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
               exit={{ opacity: 0 }}
-              onClick={() => setIsSearchOpen(false)}
-              className="absolute inset-0 bg-slate-900/60 backdrop-blur-sm"
+              className="absolute inset-0 bg-slate-900/40 backdrop-blur-sm"
             />
             <motion.div 
-              initial={{ opacity: 0, scale: 0.95, y: 20 }}
+              initial={{ opacity: 0, scale: 0.9, y: 20 }}
               animate={{ opacity: 1, scale: 1, y: 0 }}
-              exit={{ opacity: 0, scale: 0.95, y: 20 }}
-              className="bg-white w-full max-w-lg rounded-2xl shadow-2xl overflow-hidden relative z-10"
+              exit={{ opacity: 0, scale: 0.9, y: 20 }}
+              className="relative bg-white w-full max-w-lg rounded-3xl shadow-2xl overflow-hidden"
             >
-              <div className="p-6 border-b border-gray-100 flex items-center justify-between">
-                <div>
-                  <h3 className="text-lg font-bold text-gray-900">Ocupar Armário {selectedLocker?.number}</h3>
-                  <p className="text-xs text-gray-500">Busque o visitante pelo nome ou CPF.</p>
+              <div className="p-6 bg-primary text-white">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <h3 className="text-xl font-bold">Ocupar Armário</h3>
+                    <p className="text-white/80 text-sm">Armário {selectedLocker?.number}</p>
+                  </div>
+                  <button onClick={() => setIsSearchOpen(false)} className="p-2 bg-white/20 hover:bg-white/30 rounded-full">
+                    <X size={20} />
+                  </button>
                 </div>
-                <button onClick={() => setIsSearchOpen(false)} className="p-2 hover:bg-gray-100 rounded-full">
-                  <X size={20} className="text-gray-400" />
-                </button>
               </div>
 
               <div className="p-6">
                 <div className="relative mb-6">
-                  <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400" size={18} />
+                  <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400" size={20} />
                   <input 
                     autoFocus
                     type="text" 
-                    placeholder="Nome ou CPF do visitante..." 
+                    placeholder="Buscar visitante..." 
                     value={searchTerm}
                     onChange={(e) => setSearchTerm(e.target.value)}
-                    className="w-full bg-gray-50 border border-gray-200 rounded-xl pl-12 pr-4 py-3 text-sm focus:ring-2 focus:ring-primary/20 outline-none"
+                    className="w-full bg-slate-50 border border-slate-200 rounded-xl pl-12 pr-4 py-4 text-sm focus:ring-2 focus:ring-primary/20 outline-none"
                   />
                 </div>
 
-                <div className="space-y-2">
-                  <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest px-1">Resultados</p>
+                <div className="space-y-2 max-h-64 overflow-y-auto">
                   {(searchResults || []).length > 0 ? (
                     (searchResults || []).map((visitor) => (
                       <button
                         key={visitor.id}
                         onClick={() => assignLocker(visitor)}
-                        className="w-full flex items-center gap-3 p-3 rounded-xl hover:bg-blue-50 border border-transparent hover:border-blue-100 transition-all text-left"
+                        className="w-full flex items-center gap-4 p-4 rounded-xl hover:bg-primary/5 border border-transparent hover:border-primary/20 transition-all text-left"
                       >
-                        <div className="w-10 h-10 rounded-full bg-blue-100 flex items-center justify-center text-primary">
-                          <User size={18} />
+                        <div className="w-12 h-12 bg-primary rounded-full flex items-center justify-center text-white font-bold">
+                          {visitor.fullName?.charAt(0) || '?'}
                         </div>
                         <div>
-                          <p className="text-sm font-bold text-gray-900">{visitor.fullName}</p>
-                          <p className="text-[10px] font-mono text-gray-400">{visitor.cpf || visitor.passport}</p>
+                          <p className="font-bold text-slate-900">{visitor.fullName}</p>
+                          <p className="text-xs text-slate-400">{visitor.cpf || 'Sem CPF'}</p>
                         </div>
                       </button>
                     ))
                   ) : searchTerm.length > 2 ? (
-                    <div className="p-8 text-center text-gray-400 text-sm italic">Nenhum visitante encontrado.</div>
+                    <div className="p-8 text-center text-slate-400">Nenhum visitante encontrado</div>
                   ) : (
-                    <div className="p-8 text-center text-gray-400 text-sm">Digite pelo menos 3 caracteres para buscar.</div>
+                    <div className="p-8 text-center text-slate-400">Digite para buscar</div>
                   )}
                 </div>
               </div>
 
-              <div className="p-6 bg-gray-50 border-t border-gray-100">
+              <div className="p-4 bg-slate-50 border-t border-slate-100">
                 <button 
                   onClick={() => setIsSearchOpen(false)}
-                  className="w-full py-3 text-sm font-bold text-gray-500 hover:text-gray-700 transition-colors"
+                  className="w-full py-4 bg-slate-200 text-slate-700 rounded-xl font-bold hover:bg-slate-300 transition-colors"
                 >
                   Cancelar
                 </button>

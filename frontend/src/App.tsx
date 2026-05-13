@@ -1,6 +1,7 @@
+import { Suspense } from 'react';
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
 import { AnimatePresence } from 'motion/react';
-import { useState, useEffect } from 'react';
+import { useState, useEffect, lazy } from 'react';
 import { useAuth } from './contexts/AuthContext';
 import { PublicAuthProvider } from './contexts/PublicAuthContext';
 import { useAutoCheckout } from './hooks/useAutoCheckout';
@@ -14,8 +15,6 @@ import Lockers from './components/pages/Lockers';
 import Telecentro from './components/pages/Telecentro';
 import Agendamento from './components/pages/Agendamento';
 import AgendamentoPublico from './components/pages/AgendamentoPublico';
-import Reports from './components/pages/Reports';
-import SettingsPage from './components/pages/Settings';
 import Login from './components/pages/Login';
 import LoginPublico from './components/pages/LoginPublico';
 import CadastroPublico from './components/pages/CadastroPublico';
@@ -24,6 +23,9 @@ import TermoCompromisso from './components/pages/TermoCompromisso';
 import CheckInModal from './components/modals/CheckInModal';
 import ErrorBoundary from './components/ErrorBoundary';
 import ProtectedRoute from './components/ProtectedRoute';
+
+const Reports = lazy(() => import('./components/pages/Reports'));
+const SettingsPage = lazy(() => import('./components/pages/Settings'));
 
 function PublicRoutes() {
   return (
@@ -63,6 +65,19 @@ function InternalRoutes({ onNewCheckIn }: { onNewCheckIn: () => void }) {
     }
   }, [userData]);
 
+  const RouteSuspense = ({ children }: { children: React.ReactNode }) => (
+    <Suspense fallback={
+      <div className="min-h-[calc(100vh-64px)] flex items-center justify-center">
+        <div className="flex flex-col items-center gap-4">
+          <div className="w-12 h-12 border-4 border-primary border-t-transparent rounded-full animate-spin"></div>
+          <p className="text-slate-400 font-bold text-xs uppercase tracking-widest animate-pulse">Carregando...</p>
+        </div>
+      </div>
+    }>
+      {children}
+    </Suspense>
+  );
+
   return (
     <div className="min-h-screen bg-surface font-sans selection:bg-primary/10 selection:text-primary">
       <Sidebar onNewCheckIn={onNewCheckIn} />
@@ -77,8 +92,16 @@ function InternalRoutes({ onNewCheckIn }: { onNewCheckIn: () => void }) {
               <Route path="/armarios" element={<ProtectedRoute><Lockers /></ProtectedRoute>} />
               <Route path="/telecentro" element={<ProtectedRoute><Telecentro /></ProtectedRoute>} />
               <Route path="/agendamento-interno" element={<ProtectedRoute><Agendamento /></ProtectedRoute>} />
-              <Route path="/relatorios" element={<ProtectedRoute requiredRole="coordenador"><Reports /></ProtectedRoute>} />
-              <Route path="/configuracoes" element={<ProtectedRoute requiredRole="administrador"><SettingsPage /></ProtectedRoute>} />
+              <Route path="/relatorios" element={
+                <ProtectedRoute requiredRole="coordenador">
+                  <RouteSuspense><Reports /></RouteSuspense>
+                </ProtectedRoute>
+              } />
+              <Route path="/configuracoes" element={
+                <ProtectedRoute requiredRole="administrador">
+                  <RouteSuspense><SettingsPage /></RouteSuspense>
+                </ProtectedRoute>
+              } />
               <Route path="*" element={<Navigate to="/dashboard" replace />} />
             </Routes>
           </AnimatePresence>
