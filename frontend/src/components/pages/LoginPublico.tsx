@@ -173,10 +173,10 @@ export default function LoginPublico() {
             
             <div className="text-center">
               <h1 className="font-display text-3xl font-black text-[#835425]">
-                Agendamento
+                Agendamento de Espaços Culturais
               </h1>
               <p className="text-xs text-[#755b00] uppercase tracking-[0.2em] font-semibold mt-1">
-                Espaços Culturais
+                FEM - Alagoas
               </p>
             </div>
             
@@ -199,7 +199,7 @@ export default function LoginPublico() {
             transition={{ duration: 0.6, delay: 0.2 }}
             className="flex items-center gap-2 mb-6 pb-4 border-b border-slate-200"
           >
-            {['Solicitar', 'Confirmar', 'Agendado'].map((passo, i) => (
+            {['Login', 'Formulário', 'Aguardar'].map((passo, i) => (
               <div key={passo} className="flex items-center gap-2 flex-1">
                 <div className={`w-7 h-7 rounded-full flex items-center justify-center text-xs font-bold ${
                   i === 0 ? 'bg-secondary text-white' : 'bg-slate-100 text-slate-400'

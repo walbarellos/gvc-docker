@@ -198,7 +198,7 @@ export default function Dashboard() {
                 <XAxis dataKey="name" axisLine={false} tickLine={false} tick={{ fontSize: 10, fontWeight: 700, fill: '#94a3b8' }} dy={10} />
                 <YAxis axisLine={false} tickLine={false} tick={{ fontSize: 10, fontWeight: 700, fill: '#94a3b8' }} />
                 <Tooltip cursor={{ fill: '#f8fafc' }} contentStyle={{ borderRadius: '12px', border: 'none', boxShadow: '0 10px 15px -3px rgb(0 0 0 / 0.1)' }} labelStyle={{ fontWeight: 800, color: '#1e293b', marginBottom: '4px' }} />
-                <Bar dataKey="count" radius={[6, 6, 0, 0]} barSize={40}>
+                <Bar dataKey="count" name="Visitantes" radius={[6, 6, 0, 0]} barSize={40}>
                   {(chartData || []).map((_, index) => (
                     <Cell key={`cell-${index}`} fill={index === chartData.length - 1 ? '#1e3a8a' : '#3b82f6'} />
                   ))}

@@ -35,11 +35,8 @@ function PublicRoutes() {
       <Route path="/agendamento" element={<LoginPublico />} />
       <Route path="/login-publico" element={<Navigate to="/agendamento" replace />} />
       <Route path="/agendamento/cadastro" element={<CadastroPublico />} />
-      <Route path="/cadastro-publico" element={<Navigate to="/agendamento/cadastro" replace />} />
       <Route path="/agendamento/formulario" element={<AgendamentoPublico />} />
-      <Route path="/agendamento-publico" element={<Navigate to="/agendamento/formulario" replace />} />
       <Route path="/agendamento/termo" element={<TermoCompromisso />} />
-      <Route path="/termo-compromisso" element={<Navigate to="/agendamento/termo" replace />} />
       <Route path="/" element={<Navigate to="/gerenciamento" replace />} />
       <Route path="*" element={<Navigate to="/gerenciamento" replace />} />
     </Routes>

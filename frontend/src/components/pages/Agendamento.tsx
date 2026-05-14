@@ -88,11 +88,12 @@ const naturezaLabels: Record<string, string> = {
 };
 
 const tipoEspacoLabels: Record<string, string> = {
-  auditorium: 'Auditório',
-  sala_reuniao: 'Sala de Reunião',
-  area_externa: 'Área Externa',
+  auditoria: 'Auditório',
+  sala_estudos: 'Sala de Estudos',
+  teatro: 'Teatro',
+  filmoteca: 'Filmoteca/Cinema',
+  espaco_aberto: 'Espaço Aberto',
   visita_guiada: 'Visita Guiada',
-  outro: 'Outro',
 };
 
 export default function Agendamento() {
@@ -220,7 +221,7 @@ export default function Agendamento() {
         </div>
         <div>
           <h1 className="text-4xl font-display font-bold text-gray-900">
-            Agendamento de Espaços
+            Agendamento de Espaços Culturais
           </h1>
           <p className="text-gray-500 mt-2 font-medium">
             Gerencie reservas de salas, auditórios e espaços multiuso.

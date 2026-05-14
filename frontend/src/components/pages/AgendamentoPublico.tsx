@@ -58,7 +58,7 @@ interface FormData {
   necessita_equipamentos: string;
   observacoes: string;
   termo_aceito: boolean;
-  responsabhilidade_evento: boolean;
+  responsabilidade_evento: boolean;
   danos_patrimonio: boolean;
   respeito_lotacao: boolean;
   autorizo_divulgacao: boolean;
@@ -459,14 +459,10 @@ if (parsed && (parsed.solicitante_nome || parsed.espaco_id)) {
       `/agendamentos?espaco_id=${formData.espaco_id}&data_inicio=${formData.data_pretendida}&data_fim=${formData.data_pretendida}`
     );
     
-    // Verificar conflitos com 10min de folga, considerando mesmo tipo_espaco e natureza_evento
+    // Verificar conflitos com 10min de folga
     const conflitosEncontrados = (data || []).filter((ag: any) => {
       // Ignorar rejeitados e cancelados
       if (ag.status === 'rejeitado' || ag.status === 'cancelado') {
-        return false;
-      }
-      // Só conflita se for MESMO tipo de espaço e MESMA natureza do evento
-      if (ag.tipo_espaco !== formData.tipo_espaco || ag.natureza_evento !== formData.natureza_evento) {
         return false;
       }
       
@@ -544,7 +540,7 @@ try {
       const selectedSpace = spaces.find((s) => s.id === formData.espaco_id);
 
       // Validar CPF na Receita Federal
-      if (formData.tipo_solicitante === 'cpf' && cpfDoc.length === 11) {
+      if (formData.tipo_solicitante === 'pessoa_fisica' && cpfDoc.length === 11) {
         cpfValidation = await validateCPFReceita(cpfDoc);
         if (!cpfValidation.valid) {
           setError(`CPF inválido: ${cpfValidation.message}. Verifique e tente novamente.`);
@@ -845,7 +841,7 @@ try {
               <CalendarDays size={28} />
             </div>
             <h1 className="text-3xl font-display font-bold bg-gradient-to-r from-indigo-600 to-purple-600 bg-clip-text text-transparent">
-              Agendamento de Espaços
+              Agendamento de Espaços Culturais
             </h1>
           </div>
           <p className="text-slate-500 text-sm mt-1">
@@ -1554,17 +1550,7 @@ try {
                     </span>
                   </label>
 
-                  <div className="flex items-center gap-2 text-xs text-slate-500 mt-4">
-                    <FileText className="w-4 h-4" />
-                    <a 
-                      href="/PORTARIA-169-2023.html"
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="text-indigo-600 hover:underline"
-                    >
-                      Ler a Portaria nº 169/2023 completa
-                    </a>
-                  </div>
+                  
                 </div>
               </div>
             )}

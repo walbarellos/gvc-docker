@@ -197,21 +197,25 @@ export async function visitRoutes(app: FastifyInstance) {
       return reply.status(404).send({ error: 'Visitante não encontrado' });
     }
 
-    // Verificar se o visitante já tem visita ATIVA em QUALQUER espaço
-    const existingVisit = await prisma.visit.findFirst({
+    // Verificar se o visitante já tem visita ATIVA no mesmo espaço OU em outro espaço (últimos 60 minutos)
+    const oneHourAgo = new Date(Date.now() - 60 * 60 * 1000);
+    
+    // Primeiro: verificar se já tem visita ativa NO MESMO espaço
+    const existingInSameSpace = await prisma.visit.findFirst({
       where: {
         visitorId,
+        espacoId,
         status: 'ativo',
       },
       include: {
         espaco: true
       }
     });
-
-    if (existingVisit) {
-      const espacoNome = existingVisit.espaco?.nome || 'desconhecido';
-      const tempoLimite = existingVisit.espaco?.tempo_limite_excedido || 60; // minutos
-      const tempoDecorrido = Math.floor((Date.now() - existingVisit.checkin.getTime()) / 60000);
+    
+    if (existingInSameSpace) {
+      const espacoNome = existingInSameSpace.espaco?.nome || 'desconhecido';
+      const tempoLimite = existingInSameSpace.espaco?.tempo_limite_excedido || 60; // minutos
+      const tempoDecorrido = Math.floor((Date.now() - existingInSameSpace.checkin.getTime()) / 60000);
       const tempoRestante = Math.max(0, tempoLimite - tempoDecorrido);
       
       return reply.status(400).send({ 
@@ -219,7 +223,39 @@ export async function visitRoutes(app: FastifyInstance) {
         detalhes: {
           espacos: [{
             nome: espacoNome,
-            checkin: existingVisit.checkin,
+            checkin: existingInSameSpace.checkin,
+            tempoDecorrido,
+            tempoRestante,
+            minutosParaEncerrar: tempoRestante
+          }]
+        }
+      });
+    }
+    
+    // Depois: verificar se já tem visita ativa EM OUTRO espaço (últimos 60 minutos)
+    const existingInOtherSpace = await prisma.visit.findFirst({
+      where: {
+        visitorId,
+        status: 'ativo',
+        checkin: { gte: oneHourAgo },
+      },
+      include: {
+        espaco: true
+      }
+    });
+
+    if (existingInOtherSpace) {
+      const espacoNome = existingInOtherSpace.espaco?.nome || 'desconhecido';
+      const tempoLimite = existingInOtherSpace.espaco?.tempo_limite_excedido || 60; // minutos
+      const tempoDecorrido = Math.floor((Date.now() - existingInOtherSpace.checkin.getTime()) / 60000);
+      const tempoRestante = Math.max(0, tempoLimite - tempoDecorrido);
+      
+      return reply.status(400).send({ 
+        error: `Visitante já está no espaço ${espacoNome} há ${tempoDecorrido} minutos. Tempo restante: ${tempoRestante} minutos.`,
+        detalhes: {
+          espacos: [{
+            nome: espacoNome,
+            checkin: existingInOtherSpace.checkin,
             tempoDecorrido,
             tempoRestante,
             minutosParaEncerrar: tempoRestante
@@ -288,7 +324,8 @@ export async function visitRoutes(app: FastifyInstance) {
       return visit;
     } catch (error: any) {
       console.error('Erro no checkout:', error);
-      return reply.status(400).send({ error: error.message || 'Erro ao realizar checkout' });
+      console.error('Existing visit status:', existingVisit?.status);
+      return reply.status(400).send({ error: error.message || 'Erro ao realizar checkout', details: error.message });
     }
   });
 

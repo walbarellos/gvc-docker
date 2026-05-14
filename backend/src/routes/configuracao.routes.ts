@@ -2,6 +2,11 @@ import type { FastifyInstance } from 'fastify';
 import { prisma } from '../lib/prisma.js';
 
 export async function configuracaoRoutes(app: FastifyInstance) {
+  app.get('/sistema', { preHandler: [app.authenticate] }, async () => {
+    const config = await prisma.configuracao.findFirst({ where: { id: 'sistema' } });
+    return config || { id: 'sistema', data: {} };
+  });
+
   app.get('/', { preHandler: [app.authenticate] }, async (request: any, reply: any) => {
     const { id } = request.query as any;
     
