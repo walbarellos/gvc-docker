@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { X, User, Globe, Heart, Mail, Phone, Camera, CheckCircle2 } from 'lucide-react';
 import { motion } from 'motion/react';
 import { visitorService } from '../../services/visitorService';
-import { VisitorCategory, OperationType, Gender, Visitor } from '../../types';
+import { VisitorCategory, Gender, Visitor } from '../../types';
 import { validateCPF, formatCPF, formatPhone } from '../../lib/validators';
 
 interface CheckInModalProps {
@@ -238,7 +238,12 @@ export default function CheckInModal({ isOpen, onClose, visitorToEdit, onSuccess
                     {visitorToEdit ? 'Atualize as informações do registro.' : 'Complete o formulário abaixo para emitir um passe de acesso.'}
                   </p>
                 </div>
-                <button onClick={onClose} aria-label="Fechar modal" className="p-2 hover:bg-slate-100 rounded-full transition-colors">
+                <button 
+                  onClick={onClose} 
+                  aria-label="Fechar modal" 
+                  className="p-2 hover:bg-slate-100 rounded-full transition-colors"
+                  title="Fechar"
+                >
                   <X size={20} className="text-slate-400" />
                 </button>
               </div>
@@ -251,8 +256,9 @@ export default function CheckInModal({ isOpen, onClose, visitorToEdit, onSuccess
                       <User size={18} />
                       <h3 className="font-bold uppercase text-[10px] tracking-widest">Informações Pessoais</h3>
                     </div>
-                    <label className="flex items-center gap-2 cursor-pointer group">
+                    <label htmlFor="isForeigner" className="flex items-center gap-2 cursor-pointer group">
                       <input
+                        id="isForeigner"
                         type="checkbox"
                         checked={formData.isForeigner}
                         onChange={e => setFormData({ ...formData, isForeigner: e.target.checked })}
@@ -264,8 +270,10 @@ export default function CheckInModal({ isOpen, onClose, visitorToEdit, onSuccess
                   </div>
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                     <div className="md:col-span-2">
-                      <label className="block text-xs font-bold text-slate-400 uppercase tracking-widest mb-1.5">Nome Completo *</label>
+                      <label htmlFor="fullName" className="block text-xs font-bold text-slate-400 uppercase tracking-widest mb-1.5">Nome Completo *</label>
                       <input
+                        id="fullName"
+                        name="fullName"
                         required
                         type="text"
                         value={formData.fullName}
@@ -278,8 +286,10 @@ export default function CheckInModal({ isOpen, onClose, visitorToEdit, onSuccess
                     <div>
                       {formData.isForeigner ? (
                         <>
-                          <label className="block text-xs font-bold text-slate-400 uppercase tracking-widest mb-1.5">Passaporte *</label>
+                          <label htmlFor="passport" className="block text-xs font-bold text-slate-400 uppercase tracking-widest mb-1.5">Passaporte *</label>
                           <input
+                            id="passport"
+                            name="passport"
                             required
                             type="text"
                             value={formData.passport}
@@ -291,8 +301,10 @@ export default function CheckInModal({ isOpen, onClose, visitorToEdit, onSuccess
                         </>
                       ) : (
                         <>
-                          <label className="block text-xs font-bold text-slate-400 uppercase tracking-widest mb-1.5">CPF *</label>
+                          <label htmlFor="cpf" className="block text-xs font-bold text-slate-400 uppercase tracking-widest mb-1.5">CPF *</label>
                           <input
+                            id="cpf"
+                            name="cpf"
                             required={!formData.isForeigner}
                             type="text"
                             value={formData.cpf}
@@ -305,8 +317,10 @@ export default function CheckInModal({ isOpen, onClose, visitorToEdit, onSuccess
                       )}
                     </div>
                     <div>
-                      <label className="block text-xs font-bold text-slate-400 uppercase tracking-widest mb-1.5">Data de Nascimento</label>
+                      <label htmlFor="birthDate" className="block text-xs font-bold text-slate-400 uppercase tracking-widest mb-1.5">Data de Nascimento</label>
                       <input
+                        id="birthDate"
+                        name="birthDate"
                         type="text"
                         value={formData.birthDate}
                         onChange={e => {
@@ -351,15 +365,20 @@ export default function CheckInModal({ isOpen, onClose, visitorToEdit, onSuccess
                   </div>
                   <div className="flex gap-4">
                     {[
-                      { id: Gender.MALE, label: 'Masculino' },
-                      { id: Gender.FEMALE, label: 'Feminino' }
+                      { id: Gender.MALE, label: 'Masculino', htmlId: 'gender-male' },
+                      { id: Gender.FEMALE, label: 'Feminino', htmlId: 'gender-female' }
                     ].map(g => (
-                      <label key={g.id} className={`flex-1 flex items-center justify-center gap-2 p-3 rounded-lg border cursor-pointer transition-all ${formData.gender === g.id ? 'bg-primary text-white border-primary shadow-md' : 'bg-slate-50 border-slate-200 text-slate-500 hover:bg-white'
-                        }`}>
+                      <label 
+                        key={g.id} 
+                        htmlFor={g.htmlId}
+                        className={`flex-1 flex items-center justify-center gap-2 p-3 rounded-lg border cursor-pointer transition-all ${formData.gender === g.id ? 'bg-primary text-white border-primary shadow-md' : 'bg-slate-50 border-slate-200 text-slate-500 hover:bg-white'
+                        }`}
+                      >
                         <input
+                          id={g.htmlId}
                           type="radio"
                           name="gender"
-                          className="hidden"
+                          className="sr-only"
                           checked={formData.gender === g.id}
                           onChange={() => setFormData({ ...formData, gender: g.id })}
                         />
@@ -377,8 +396,10 @@ export default function CheckInModal({ isOpen, onClose, visitorToEdit, onSuccess
                   </div>
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                     <div>
-                      <label className="block text-xs font-bold text-slate-400 uppercase tracking-widest mb-1.5">E-mail</label>
+                      <label htmlFor="visitorEmail" className="block text-xs font-bold text-slate-400 uppercase tracking-widest mb-1.5">E-mail</label>
                       <input
+                        id="visitorEmail"
+                        name="email"
                         type="email"
                         value={formData.email}
                         onChange={e => setFormData({ ...formData, email: e.target.value })}
@@ -387,8 +408,10 @@ export default function CheckInModal({ isOpen, onClose, visitorToEdit, onSuccess
                       />
                     </div>
                     <div>
-                      <label className="block text-xs font-bold text-slate-400 uppercase tracking-widest mb-1.5">Telefone *</label>
+                      <label htmlFor="phone" className="block text-xs font-bold text-slate-400 uppercase tracking-widest mb-1.5">Telefone *</label>
                       <input
+                        id="phone"
+                        name="phone"
                         required
                         type="tel"
                         value={formData.phone}
@@ -399,8 +422,10 @@ export default function CheckInModal({ isOpen, onClose, visitorToEdit, onSuccess
                       {errors.phone && <p className="text-[10px] text-red-500 font-bold mt-1 uppercase">{errors.phone}</p>}
                     </div>
                     <div className="md:col-span-2">
-                      <label className="block text-xs font-bold text-slate-400 uppercase tracking-widest mb-1.5">Endereço Completo</label>
+                      <label htmlFor="address" className="block text-xs font-bold text-slate-400 uppercase tracking-widest mb-1.5">Endereço Completo</label>
                       <textarea
+                        id="address"
+                        name="address"
                         rows={2}
                         value={formData.address}
                         onChange={e => setFormData({ ...formData, address: e.target.value })}
@@ -427,13 +452,18 @@ export default function CheckInModal({ isOpen, onClose, visitorToEdit, onSuccess
                   <h3 className="flex items-center gap-2 font-bold uppercase text-[10px] tracking-widest text-primary mb-4">Classificação</h3>
                   <div className="space-y-2">
                     {[
-                      { id: VisitorCategory.GENERAL, label: 'Público Geral', desc: 'Direitos de acesso padrão' },
-                      { id: VisitorCategory.STUDENT, label: 'Estudante', desc: 'Acesso a áreas educacionais' },
-                      { id: VisitorCategory.RESEARCHER, label: 'Pesquisador', desc: 'Acesso a arquivos e cofres' }
+                      { id: VisitorCategory.GENERAL, label: 'Público Geral', desc: 'Direitos de acesso padrão', htmlId: 'cat-general' },
+                      { id: VisitorCategory.STUDENT, label: 'Estudante', desc: 'Acesso a áreas educacionais', htmlId: 'cat-student' },
+                      { id: VisitorCategory.RESEARCHER, label: 'Pesquisador', desc: 'Acesso a arquivos e cofres', htmlId: 'cat-researcher' }
                     ].map(cat => (
-                      <label key={cat.id} className={`flex items-center gap-3 p-3 rounded-xl border transition-all cursor-pointer ${formData.category === cat.id ? 'bg-white border-primary shadow-sm' : 'border-slate-200 hover:bg-white'
-                        }`}>
+                      <label 
+                        key={cat.id} 
+                        htmlFor={cat.htmlId}
+                        className={`flex items-center gap-3 p-3 rounded-xl border transition-all cursor-pointer ${formData.category === cat.id ? 'bg-white border-primary shadow-sm' : 'border-slate-200 hover:bg-white'
+                        }`}
+                      >
                         <input
+                          id={cat.htmlId}
                           type="radio"
                           name="category"
                           checked={formData.category === cat.id}

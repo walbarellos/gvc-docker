@@ -59,7 +59,12 @@ export const CheckinBlockedPopup: React.FC<CheckinBlockedPopupProps> = ({ blocke
             </div>
             <span className="text-white font-semibold text-sm">Check-in Bloqueado</span>
           </div>
-          <button onClick={onClose} className="text-white/80 hover:text-white transition-colors">
+          <button 
+            onClick={onClose} 
+            className="text-white/80 hover:text-white transition-colors"
+            aria-label="Fechar aviso"
+            title="Fechar"
+          >
             <X className="w-5 h-5" />
           </button>
         </div>

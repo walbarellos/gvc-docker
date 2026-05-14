@@ -329,8 +329,10 @@ const SpaceModal: React.FC<SpaceModalProps> = ({ isOpen, onClose, spaceToEdit, o
               
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div className="md:col-span-2">
-                  <label className="block text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1.5 px-1">Nome do Espaço Cultural *</label>
+                  <label htmlFor="spaceNome" className="block text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1.5 px-1">Nome do Espaço Cultural *</label>
                   <input 
+                    id="spaceNome"
+                    name="nome"
                     type="text" 
                     value={formData.nome}
                     onChange={e => setFormData({...formData, nome: e.target.value.toUpperCase()})}
@@ -342,9 +344,11 @@ const SpaceModal: React.FC<SpaceModalProps> = ({ isOpen, onClose, spaceToEdit, o
                 </div>
 
                 <div>
-                  <label className="block text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1.5 px-1">Email Institucional *</label>
+                  <label htmlFor="spaceEmail" className="block text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1.5 px-1">Email Institucional *</label>
                   <div className="relative">
                     <input 
+                      id="spaceEmail"
+                      name="email"
                       type="email" 
                       value={formData.email}
                       onChange={e => setFormData({...formData, email: e.target.value})}
@@ -357,9 +361,11 @@ const SpaceModal: React.FC<SpaceModalProps> = ({ isOpen, onClose, spaceToEdit, o
                 </div>
 
                 <div className="relative">
-                  <label className="block text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1.5 px-1">Município *</label>
+                  <label htmlFor="municipio" className="block text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1.5 px-1">Município *</label>
                   <div className="relative">
                     <input 
+                      id="municipio"
+                      name="municipio"
                       type="text" 
                       value={municipioSearch}
                       onFocus={() => setShowMunicipioList(true)}
@@ -396,8 +402,10 @@ const SpaceModal: React.FC<SpaceModalProps> = ({ isOpen, onClose, spaceToEdit, o
                 </div>
 
                 <div className="md:col-span-2">
-                  <label className="block text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1.5 px-1">Endereço Completo *</label>
+                  <label htmlFor="endereco" className="block text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1.5 px-1">Endereço Completo *</label>
                   <input 
+                    id="endereco"
+                    name="endereco"
                     type="text" 
                     value={formData.endereco}
                     onChange={e => setFormData({...formData, endereco: e.target.value})}
@@ -427,13 +435,14 @@ const SpaceModal: React.FC<SpaceModalProps> = ({ isOpen, onClose, spaceToEdit, o
                     <div className={`p-4 rounded-xl border transition-all ${formData.perfilArmarios ? 'bg-white border-blue-200 shadow-sm' : 'bg-slate-50 border-slate-100'}`}>
                       <div className="flex items-start gap-3">
                         <input 
+                          id="perfilArmarios"
                           type="checkbox" 
                           checked={formData.perfilArmarios}
                           onChange={e => setFormData({...formData, perfilArmarios: e.target.checked})}
                           className="mt-1 w-4 h-4 rounded border-slate-300 text-blue-600 focus:ring-blue-500"
                         />
                         <div className="flex-1">
-                          <label className="font-bold text-slate-700 text-sm flex items-center gap-2">
+                          <label htmlFor="perfilArmarios" className="font-bold text-slate-700 text-sm flex items-center gap-2">
                             <Package size={14} className={formData.perfilArmarios ? 'text-blue-500' : 'text-slate-400'} />
                             Armários
                           </label>
@@ -441,8 +450,10 @@ const SpaceModal: React.FC<SpaceModalProps> = ({ isOpen, onClose, spaceToEdit, o
                           
                           {formData.perfilArmarios && (
                             <div className="mt-3 py-2 border-t border-slate-100">
-                              <label className="block text-[10px] font-bold text-slate-400 uppercase mb-1">Total de Armários (5-50)</label>
+                              <label htmlFor="totalArmarios" className="block text-[10px] font-bold text-slate-400 uppercase mb-1">Total de Armários (5-50)</label>
                               <input 
+                                id="totalArmarios"
+                                name="totalArmarios"
                                 type="number" 
                                 value={formData.totalArmarios}
                                 onChange={e => setFormData({...formData, totalArmarios: Number(e.target.value)})}
@@ -458,13 +469,14 @@ const SpaceModal: React.FC<SpaceModalProps> = ({ isOpen, onClose, spaceToEdit, o
                     <div className={`p-4 rounded-xl border transition-all ${formData.perfilTelecentro ? 'bg-white border-indigo-200 shadow-sm' : 'bg-slate-50 border-slate-100'}`}>
                       <div className="flex items-start gap-3">
                         <input 
+                          id="perfilTelecentro"
                           type="checkbox" 
                           checked={formData.perfilTelecentro}
                           onChange={e => setFormData({...formData, perfilTelecentro: e.target.checked})}
                           className="mt-1 w-4 h-4 rounded border-slate-300 text-indigo-600 focus:ring-indigo-500"
                         />
                         <div className="flex-1">
-                          <label className="font-bold text-slate-700 text-sm flex items-center gap-2">
+                          <label htmlFor="perfilTelecentro" className="font-bold text-slate-700 text-sm flex items-center gap-2">
                             <Monitor size={14} className={formData.perfilTelecentro ? 'text-indigo-500' : 'text-slate-400'} />
                             Telecentro
                           </label>
@@ -473,8 +485,10 @@ const SpaceModal: React.FC<SpaceModalProps> = ({ isOpen, onClose, spaceToEdit, o
                           {formData.perfilTelecentro && (
                             <div className="mt-3 py-2 border-t border-slate-100 grid grid-cols-2 gap-2">
                               <div>
-                                <label className="block text-[10px] font-bold text-slate-400 uppercase mb-1">Qtd IDs (5-30)</label>
+                                <label htmlFor="totalComputadores" className="block text-[10px] font-bold text-slate-400 uppercase mb-1">Qtd IDs (5-30)</label>
                                 <input 
+                                  id="totalComputadores"
+                                  name="totalComputadores"
                                   type="number" 
                                   value={formData.totalComputadores}
                                   onChange={e => setFormData({...formData, totalComputadores: Number(e.target.value)})}
@@ -482,8 +496,10 @@ const SpaceModal: React.FC<SpaceModalProps> = ({ isOpen, onClose, spaceToEdit, o
                                 />
                               </div>
                               <div>
-                                <label className="block text-[10px] font-bold text-slate-400 uppercase mb-1">Tempo (min)</label>
+                                <label htmlFor="tempoLimiteComputador" className="block text-[10px] font-bold text-slate-400 uppercase mb-1">Tempo (min)</label>
                                 <input 
+                                  id="tempoLimiteComputador"
+                                  name="tempoLimiteComputador"
                                   type="number" 
                                   value={formData.tempoLimiteComputador}
                                   onChange={e => setFormData({...formData, tempoLimiteComputador: Number(e.target.value)})}
@@ -500,13 +516,14 @@ const SpaceModal: React.FC<SpaceModalProps> = ({ isOpen, onClose, spaceToEdit, o
                     <div className={`p-4 rounded-xl border transition-all ${formData.perfilAgendamento ? 'bg-white border-amber-200 shadow-sm' : 'bg-slate-50 border-slate-100'}`}>
                       <div className="flex items-start gap-3">
                         <input 
+                          id="perfilAgendamento"
                           type="checkbox" 
                           checked={formData.perfilAgendamento}
                           onChange={e => setFormData({...formData, perfilAgendamento: e.target.checked})}
                           className="mt-1 w-4 h-4 rounded border-slate-300 text-amber-600 focus:ring-amber-500"
                         />
                         <div className="flex-1">
-                          <label className="font-bold text-slate-700 text-sm flex items-center gap-2">
+                          <label htmlFor="perfilAgendamento" className="font-bold text-slate-700 text-sm flex items-center gap-2">
                             <CalendarDays size={14} className={formData.perfilAgendamento ? 'text-amber-500' : 'text-slate-400'} />
                             Agendamento
                           </label>
@@ -634,6 +651,8 @@ const SpaceModal: React.FC<SpaceModalProps> = ({ isOpen, onClose, spaceToEdit, o
                   </label>
                   <div className="flex items-center gap-4">
                     <input 
+                      id="capacidadeVisitantes"
+                      name="capacidadeVisitantes"
                       type="range" 
                       min="0"
                       max="1000"
@@ -666,6 +685,8 @@ const SpaceModal: React.FC<SpaceModalProps> = ({ isOpen, onClose, spaceToEdit, o
                     </span>
                   </div>
                   <textarea 
+                    id="mensagemBoasVindas"
+                    name="mensagemBoasVindas"
                     value={formData.mensagemBoasVindas}
                     onChange={e => {
                       if (e.target.value.length <= 500) {
@@ -699,8 +720,9 @@ const SpaceModal: React.FC<SpaceModalProps> = ({ isOpen, onClose, spaceToEdit, o
                 </div>
 
                 <div className="flex items-center gap-3 py-2">
-                   <label className="relative inline-flex items-center cursor-pointer">
+                   <label htmlFor="espacoAtivo" className="relative inline-flex items-center cursor-pointer">
                     <input 
+                      id="espacoAtivo"
                       type="checkbox" 
                       className="sr-only peer"
                       checked={formData.ativo}

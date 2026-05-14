@@ -214,8 +214,10 @@ export default function UserModal({ isOpen, onClose, userToEdit, onSave }: UserM
           <form onSubmit={handleSubmit} className="p-6 space-y-4 text-left">
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div className="md:col-span-2">
-                <label className="block text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1.5 px-1">Nome Completo</label>
+                <label htmlFor="nome" className="block text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1.5 px-1">Nome Completo</label>
                 <input 
+                  id="nome"
+                  name="nome"
                   type="text"
                   required
                   value={formData.nome}
@@ -226,8 +228,10 @@ export default function UserModal({ isOpen, onClose, userToEdit, onSave }: UserM
               </div>
 
               <div className="md:col-span-2">
-                <label className="block text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1.5 px-1">Email (Login)</label>
+                <label htmlFor="email" className="block text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1.5 px-1">Email (Login)</label>
                 <input 
+                  id="email"
+                  name="email"
                   type="email"
                   required
                   value={formData.email}
@@ -238,8 +242,10 @@ export default function UserModal({ isOpen, onClose, userToEdit, onSave }: UserM
               </div>
 
               <div>
-                <label className="block text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1.5 px-1">Perfil / Cargo</label>
+                <label htmlFor="perfil" className="block text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1.5 px-1">Perfil / Cargo</label>
                 <select 
+                  id="perfil"
+                  name="perfil"
                   value={formData.perfil}
                   onChange={e => setFormData({...formData, perfil: e.target.value})}
                   className="w-full bg-slate-50 border border-slate-200 rounded-xl py-3 px-4 outline-none focus:ring-2 focus:ring-primary/20 transition-all font-sans"
@@ -252,8 +258,10 @@ export default function UserModal({ isOpen, onClose, userToEdit, onSave }: UserM
               </div>
 
               <div>
-                <label className="block text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1.5 px-1">Espaço Cultural</label>
+                <label htmlFor="espacoId" className="block text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1.5 px-1">Espaço Cultural</label>
                 <select 
+                  id="espacoId"
+                  name="espacoId"
                   value={formData.espacoId}
                   onChange={e => setFormData({...formData, espacoId: e.target.value})}
                   className="w-full bg-slate-50 border border-slate-200 rounded-xl py-3 px-4 outline-none focus:ring-2 focus:ring-primary/20 transition-all font-sans text-sm whitespace-normal"
@@ -281,8 +289,10 @@ export default function UserModal({ isOpen, onClose, userToEdit, onSave }: UserM
               {changePassword && (
                 <>
                   <div className="relative md:col-span-1">
-                    <label className="block text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1.5 px-1">Nova Senha</label>
+                    <label htmlFor="senha" className="block text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1.5 px-1">Nova Senha</label>
                     <input 
+                      id="senha"
+                      name="senha"
                       type={showPassword ? 'text' : 'password'}
                       required={changePassword}
                       value={formData.senha}
@@ -317,8 +327,10 @@ export default function UserModal({ isOpen, onClose, userToEdit, onSave }: UserM
                   </div>
 
                   <div className="md:col-span-1">
-                    <label className="block text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1.5 px-1">Confirmar Senha</label>
+                    <label htmlFor="confirmSenha" className="block text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1.5 px-1">Confirmar Senha</label>
                     <input 
+                      id="confirmSenha"
+                      name="confirmSenha"
                       type="password"
                       required={changePassword}
                       value={formData.confirmSenha}

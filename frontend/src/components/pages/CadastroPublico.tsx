@@ -192,12 +192,14 @@ export default function CadastroPublico() {
 
             <form onSubmit={handleSignUp} className="space-y-4">
               <div className="space-y-1.5">
-                <label className="text-xs font-bold text-slate-500 uppercase tracking-widest pl-1">
+                <label htmlFor="nome" className="text-xs font-bold text-slate-500 uppercase tracking-widest pl-1">
                   Nome Completo *
                 </label>
                 <div className="relative group">
                   <User className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 group-focus-within:text-indigo-500 transition-colors" size={18} />
                   <input
+                    id="nome"
+                    name="nome"
                     type="text"
                     placeholder="Seu nome completo"
                     value={formData.nome}
@@ -209,12 +211,14 @@ export default function CadastroPublico() {
               </div>
 
               <div className="space-y-1.5">
-                <label className="text-xs font-bold text-slate-500 uppercase tracking-widest pl-1">
+                <label htmlFor="cadastroEmail" className="text-xs font-bold text-slate-500 uppercase tracking-widest pl-1">
                   Email *
                 </label>
                 <div className="relative group">
                   <Mail className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 group-focus-within:text-indigo-500 transition-colors" size={18} />
                   <input
+                    id="cadastroEmail"
+                    name="email"
                     type="email"
                     placeholder="seu@email.com"
                     value={formData.email}
@@ -227,12 +231,14 @@ export default function CadastroPublico() {
 
               <div className="grid grid-cols-2 gap-4">
                 <div className="space-y-1.5">
-                  <label className="text-xs font-bold text-slate-500 uppercase tracking-widest pl-1">
+                  <label htmlFor="telefone" className="text-xs font-bold text-slate-500 uppercase tracking-widest pl-1">
                     Telefone *
                   </label>
                   <div className="relative group">
                     <Phone className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 group-focus-within:text-indigo-500 transition-colors" size={18} />
                     <input
+                      id="telefone"
+                      name="telefone"
                       type="tel"
                       placeholder="(00) 00000-0000"
                       value={formData.telefone}
@@ -244,10 +250,12 @@ export default function CadastroPublico() {
                 </div>
 
                 <div className="space-y-1.5">
-                  <label className="text-xs font-bold text-slate-500 uppercase tracking-widest pl-1">
+                  <label htmlFor="cpf" className="text-xs font-bold text-slate-500 uppercase tracking-widest pl-1">
                     CPF
                   </label>
                   <input
+                    id="cpf"
+                    name="cpf"
                     type="text"
                     placeholder="000.000.000-00"
                     value={formData.cpf}
@@ -258,10 +266,12 @@ export default function CadastroPublico() {
               </div>
 
               <div className="space-y-1.5">
-                <label className="text-xs font-bold text-slate-500 uppercase tracking-widest pl-1">
+                <label htmlFor="tipo" className="text-xs font-bold text-slate-500 uppercase tracking-widest pl-1">
                   Tipo de Usuário *
                 </label>
                 <select
+                  id="tipo"
+                  name="tipo"
                   value={formData.tipo}
                   onChange={(e) => updateFormData('tipo', e.target.value)}
                   className="w-full border border-slate-200 rounded-xl py-3.5 px-4 text-sm text-slate-900 focus:ring-2 focus:ring-indigo-500/30 focus:border-indigo-500/30 outline-none transition-all"
@@ -275,12 +285,14 @@ export default function CadastroPublico() {
               </div>
 
               <div className="space-y-1.5">
-                <label className="text-xs font-bold text-slate-500 uppercase tracking-widest pl-1">
+                <label htmlFor="cadastroSenha" className="text-xs font-bold text-slate-500 uppercase tracking-widest pl-1">
                   Senha *
                 </label>
                 <div className="relative group">
                   <Lock className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 group-focus-within:text-indigo-500 transition-colors" size={18} />
                   <input
+                    id="cadastroSenha"
+                    name="senha"
                     type={showPassword ? 'text' : 'password'}
                     placeholder="Mínimo 8 caracteres"
                     value={formData.senha}
@@ -299,12 +311,14 @@ export default function CadastroPublico() {
               </div>
 
               <div className="space-y-1.5">
-                <label className="text-xs font-bold text-slate-500 uppercase tracking-widest pl-1">
+                <label htmlFor="confirmarSenha" className="text-xs font-bold text-slate-500 uppercase tracking-widest pl-1">
                   Confirmar Senha *
                 </label>
                 <div className="relative group">
                   <Lock className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 group-focus-within:text-indigo-500 transition-colors" size={18} />
                   <input
+                    id="confirmarSenha"
+                    name="confirmarSenha"
                     type={showPassword ? 'text' : 'password'}
                     placeholder="Confirme sua senha"
                     value={formData.confirmarSenha}
@@ -315,8 +329,9 @@ export default function CadastroPublico() {
                 </div>
               </div>
 
-              <label className="flex items-start gap-3 p-4 border border-slate-200 rounded-xl cursor-pointer hover:bg-slate-50 mt-4">
+              <label htmlFor="termos" className="flex items-start gap-3 p-4 border border-slate-200 rounded-xl cursor-pointer hover:bg-slate-50 mt-4">
                 <input
+                  id="termos"
                   type="checkbox"
                   checked={formData.termos}
                   onChange={(e) => updateFormData('termos', e.target.checked)}

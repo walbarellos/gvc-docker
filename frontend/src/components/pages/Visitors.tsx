@@ -143,12 +143,27 @@ const mapped = (data || []).map((d: any) => ({
       if (error) {
         console.error("Erro no check-in:", error.message);
         
-        // Erro da trigger (bloqueio)
-        if (error.message.includes('já possui check-in ativo') || error.message.includes('60 minutos')) {
-          // Buscar info do check-in ativo para mostrar
+        // Erro de check-in duplicado ou limite (agora o backend retorna uma mensagem clara)
+        if (error.message.includes('já está no espaço') || error.message.includes('limite de 60 minutos') || error.message.includes('já possui check-in ativo')) {
+          // Se o backend retornou detalhes (nossa nova implementação)
+          if (error.detalhes?.espacos?.[0]) {
+            const detail = error.detalhes.espacos[0];
+            setBlockedInfo({
+              visitorName: visitor.fullName,
+              cpf: visitor.cpf || 'Não informado',
+              currentSpace: detail.nome,
+              checkinTime: detail.checkin,
+              remainingMinutes: detail.tempoRestante
+            });
+            setShowBlockedPopup(true);
+            setSaving(false);
+            return;
+          }
+
+          // Fallback: tentar buscar info do check-in ativo manualmente se não veio nos detalhes
           const { data: activeVisits } = await visitService.list(undefined, { 
             status: 'Ativo',
-            limit: 1 
+            limit: 10
           });
           
           const activeVisit = activeVisits?.find(v => v.visitor_id === visitor.id);
@@ -160,7 +175,7 @@ const mapped = (data || []).map((d: any) => ({
               cpf: visitor.cpf || 'Não informado',
               currentSpace: activeVisit.local,
               checkinTime: activeVisit.checkin,
-              remainingMinutes: 60 - diffMin
+              remainingMinutes: Math.max(0, 60 - diffMin)
             });
             setShowBlockedPopup(true);
             setSaving(false);
@@ -381,7 +396,11 @@ const mapped = (data || []).map((d: any) => ({
               <UserPlus size={20} />
               Novo Visitante
             </button>
-            <button className="p-3 border border-gray-200 rounded-lg text-gray-400 hover:bg-gray-50 transition-colors">
+            <button 
+              className="p-3 border border-gray-200 rounded-lg text-gray-400 hover:bg-gray-50 transition-colors"
+              aria-label="Filtrar resultados"
+              title="Filtrar"
+            >
               <Filter size={20} />
             </button>
           </div>
@@ -397,8 +416,20 @@ const mapped = (data || []).map((d: any) => ({
           <div className="flex items-center gap-4">
             <span className="text-sm text-gray-500">Mostrando {filteredVisitors.length} resultados</span>
             <div className="flex items-center border border-gray-200 rounded overflow-hidden">
-              <button className="p-1.5 hover:bg-gray-50 border-r border-gray-200 disabled:opacity-30" disabled><ChevronLeft size={16} /></button>
-              <button className="p-1.5 hover:bg-gray-50 disabled:opacity-30" disabled><ChevronRight size={16} /></button>
+              <button 
+                className="p-1.5 hover:bg-gray-50 border-r border-gray-200 disabled:opacity-30" 
+                disabled 
+                aria-label="Página anterior"
+              >
+                <ChevronLeft size={16} />
+              </button>
+              <button 
+                className="p-1.5 hover:bg-gray-50 disabled:opacity-30" 
+                disabled 
+                aria-label="Próxima página"
+              >
+                <ChevronRight size={16} />
+              </button>
             </div>
           </div>
         </div>
@@ -481,12 +512,16 @@ const mapped = (data || []).map((d: any) => ({
                        <button 
                         onClick={() => handleEdit(visitor)}
                         className="p-2 text-gray-400 hover:text-primary hover:bg-gray-100 rounded transition-all"
+                        aria-label={`Editar ${visitor.fullName}`}
+                        title="Editar"
                        >
                          <Edit size={16} />
                        </button>
                        <button 
                         onClick={() => handleDelete(visitor.id, visitor.fullName)}
                         className="p-2 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded transition-all"
+                        aria-label={`Excluir ${visitor.fullName}`}
+                        title="Excluir"
                        >
                          <Trash2 size={16} />
                        </button>

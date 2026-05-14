@@ -198,27 +198,29 @@ export async function visitRoutes(app: FastifyInstance) {
       return reply.status(404).send({ error: 'Visitante não encontrado' });
     }
 
-    // Verificar se já possui check-in ativo neste espaço
-    const existingInSpace = await prisma.visit.findFirst({
+    // Verificar se o visitante já tem visita ATIVA em QUALQUER espaço
+    const existingVisit = await prisma.visit.findFirst({
       where: {
         visitorId,
-        espacoId,
         status: 'ativo',
       },
+      include: {
+        espaco: true
+      }
     });
 
-    if (existingInSpace) {
-      const espaco = await prisma.espaco.findUnique({ where: { id: espacoId } });
-      const tempoLimite = espaco?.tempo_limite_excedido || 60; // minutos
-      const tempoDecorrido = Math.floor((Date.now() - existingInSpace.checkin.getTime()) / 60000);
+    if (existingVisit) {
+      const espacoNome = existingVisit.espaco?.nome || 'desconhecido';
+      const tempoLimite = existingVisit.espaco?.tempo_limite_excedido || 60; // minutos
+      const tempoDecorrido = Math.floor((Date.now() - existingVisit.checkin.getTime()) / 60000);
       const tempoRestante = Math.max(0, tempoLimite - tempoDecorrido);
       
       return reply.status(400).send({ 
-        error: `Visitante já possui check-in ativo neste espaço (${espaco?.nome || 'desconhecido'}).`,
+        error: `Visitante já está no espaço ${espacoNome} há ${tempoDecorrido} minutos. Tempo restante: ${tempoRestante} minutos.`,
         detalhes: {
           espacos: [{
-            nome: espaco?.nome || 'desconhecido',
-            checkin: existingInSpace.checkin,
+            nome: espacoNome,
+            checkin: existingVisit.checkin,
             tempoDecorrido,
             tempoRestante,
             minutosParaEncerrar: tempoRestante
