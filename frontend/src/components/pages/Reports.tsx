@@ -187,7 +187,7 @@ export default function Reports() {
       const visitorIds = [...new Set((visitsData || []).map(v => v.visitor_id))];
 
       // Buscar dados dos visitantes
-      const { data: allVisitorsRaw } = await api.get<{id: string; gender: string; birth_date: string}[]>('/visitantes');
+      const { data: allVisitorsRaw } = await api.get<{id: string; gender: string; birthDate: string}[]>('/visitantes');
       const visitorsData = (allVisitorsRaw || []).filter(v => visitorIds.includes(v.id));
 
       if (!visitorsData) {
@@ -202,12 +202,13 @@ export default function Reports() {
       };
 
       visitorsData.forEach(v => {
-        if (v.gender === 'Masculino' || v.gender === 'masculino') {
+        // Normalizar o gênero vindo do banco (enum gender)
+        const genderLower = v.gender?.toLowerCase();
+        if (genderLower === 'masculino') {
           genderCounts['Masculino']++;
-        } else if (v.gender === 'Feminino' || v.gender === 'feminino') {
+        } else if (genderLower === 'feminino') {
           genderCounts['Feminino']++;
         }
-        // Ignora valores nulos ou outros
       });
 
       setGenderData(
@@ -245,8 +246,8 @@ export default function Reports() {
       };
 
       visitorsData.forEach(v => {
-        if (v.birth_date) {
-          const age = calculateAge(v.birth_date);
+        if (v.birthDate) {
+          const age = calculateAge(v.birthDate);
           if (age !== null) {
             if (age <= 12) ageGroups['0-12 anos']++;
             else if (age <= 17) ageGroups['13-17 anos']++;
