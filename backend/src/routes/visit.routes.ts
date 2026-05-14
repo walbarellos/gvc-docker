@@ -1,7 +1,6 @@
 import type { FastifyInstance } from 'fastify';
-import { PrismaClient, VisitStatus } from '@prisma/client';
-
-const prisma = new PrismaClient();
+import { VisitStatus } from '@prisma/client';
+import { prisma } from '../lib/prisma.js';
 
 const statusMap: Record<string, VisitStatus | VisitStatus[]> = {
   'Ativo': 'ativo' as VisitStatus,

@@ -1,8 +1,6 @@
 import type { FastifyInstance } from 'fastify';
-import { PrismaClient } from '@prisma/client';
 import { createVisitorSchema, updateVisitorSchema, sendValidationError } from '../schemas/index.js';
-
-const prisma = new PrismaClient();
+import { prisma } from '../lib/prisma.js';
 
 function parseDate(value: any): Date | null {
   if (!value || typeof value !== 'string') return null;

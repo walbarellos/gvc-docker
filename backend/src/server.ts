@@ -1,6 +1,8 @@
 import Fastify from 'fastify';
 import cors from '@fastify/cors';
 import jwt from '@fastify/jwt';
+import helmet from '@fastify/helmet';
+import rateLimit from '@fastify/rate-limit';
 import dotenv from 'dotenv';
 import { authRoutes } from './routes/auth.routes.js';
 import { visitorRoutes } from './routes/visitor.routes.js';
@@ -21,6 +23,13 @@ dotenv.config();
 const app = Fastify({ logger: true });
 
 // Registros
+app.register(helmet);
+
+app.register(rateLimit, {
+  max: 100,
+  timeWindow: '1 minute'
+});
+
 app.register(cors, {
   origin: process.env.CORS_ORIGIN?.split(',') || true,
   credentials: true,
@@ -37,6 +46,38 @@ app.decorate('authenticate', async function (request: any, reply: any) {
   } catch (err) {
     reply.status(401).send({ error: 'Unauthorized' });
   }
+});
+
+// Handler global de erros
+app.setErrorHandler((error, request, reply) => {
+  request.log.error(error);
+
+  if (error.validation) {
+    return reply.status(400).send({
+      error: 'Erro de validação',
+      message: error.message,
+      details: error.validation
+    });
+  }
+
+  if (error.code === 'P2002') {
+    return reply.status(409).send({
+      error: 'Conflito de dados',
+      message: 'Um registro com estes dados já existe.'
+    });
+  }
+
+  if (error.code === 'P2025') {
+    return reply.status(404).send({
+      error: 'Não encontrado',
+      message: 'O registro solicitado não foi encontrado.'
+    });
+  }
+
+  reply.status(error.statusCode || 500).send({
+    error: error.name || 'Internal Server Error',
+    message: error.message || 'Ocorreu um erro inesperado no servidor.'
+  });
 });
 
 // Health check

@@ -1,7 +1,5 @@
-import { PrismaClient } from '@prisma/client';
 import bcrypt from 'bcryptjs';
-
-const prisma = new PrismaClient();
+import { prisma } from '../src/lib/prisma.js';
 
 async function resetAdmin() {
   const hash = await bcrypt.hash('admin123', 10);

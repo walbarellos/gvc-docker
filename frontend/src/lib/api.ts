@@ -14,6 +14,14 @@ function headers(includeAuth = true): Record<string, string> {
 }
 
 async function handleResponse<T>(response: Response): Promise<{ data: T | null; error: { message: string } | null }> {
+    if (response.status === 401) {
+        removeToken();
+        if (typeof window !== 'undefined' && !window.location.pathname.includes('/login')) {
+            window.location.href = '/login';
+        }
+        return { data: null, error: { message: 'Sessão expirada. Por favor, faça login novamente.' } };
+    }
+
     if (!response.ok) {
         const err = await response.json().catch(() => ({ error: 'Request failed' }));
         return { data: null, error: { message: err.error || err.message || 'Request failed' } };

@@ -1,8 +1,6 @@
 import type { FastifyInstance } from 'fastify';
-import { PrismaClient } from '@prisma/client';
 import bcrypt from 'bcryptjs';
-
-const prisma = new PrismaClient();
+import { prisma } from '../lib/prisma.js';
 
 export async function userRoutes(app: FastifyInstance) {
   // Listar todos (com filtro opcional por espacoId)

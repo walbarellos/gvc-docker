@@ -1,7 +1,6 @@
 import type { FastifyInstance } from 'fastify';
-import { PrismaClient, AgendamentoStatus } from '@prisma/client';
-
-const prisma = new PrismaClient();
+import { AgendamentoStatus } from '@prisma/client';
+import { prisma } from '../lib/prisma.js';
 
 function parseDate(value: any): Date | null {
   if (!value) return null;

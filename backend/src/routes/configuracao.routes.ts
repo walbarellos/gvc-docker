@@ -1,7 +1,5 @@
 import type { FastifyInstance } from 'fastify';
-import { PrismaClient } from '@prisma/client';
-
-const prisma = new PrismaClient();
+import { prisma } from '../lib/prisma.js';
 
 export async function configuracaoRoutes(app: FastifyInstance) {
   app.get('/', { preHandler: [app.authenticate] }, async (request: any, reply: any) => {
