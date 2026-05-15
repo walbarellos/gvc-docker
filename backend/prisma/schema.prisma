@@ -205,13 +205,13 @@ model Computador {
 }
 
 model Locker {
-  id          String       @id @default(uuid())
+  id          String   @id @default(uuid())
   number      Int
-  status      LockerStatus @default(Livre)
-  visitorId   String?      @map("visitor_id")
-  visitorName String?      @map("visitor_name")
-  espacoId    String?      @map("espaco_id")
-  updatedAt   DateTime     @default(now()) @updatedAt @map("updated_at")
+  status      String   @default("Livre")
+  visitorId   String?  @map("visitor_id")
+  visitorName String?  @map("visitor_name")
+  espacoId    String?  @map("espaco_id")
+  updatedAt   DateTime @default(now()) @updatedAt @map("updated_at")
 
   visitor Visitor? @relation(fields: [visitorId], references: [id], onDelete: SetNull)
   espaco  Espaco?  @relation(fields: [espacoId], references: [id], onDelete: SetNull)
