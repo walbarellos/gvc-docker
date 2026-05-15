@@ -184,7 +184,7 @@ export default function Reports() {
       }
 
       // Obter IDs únicos de visitantes no período
-      const visitorIds = [...new Set((visitsData || []).map(v => v.visitor_id))];
+      const visitorIds = [...new Set((visitsData || []).map(v => v.visitorId || v.visitor_id))];
 
       // Buscar dados dos visitantes
       const { data: allVisitorsRaw } = await api.get<{id: string; gender: string; birthDate: string}[]>('/visitantes');

@@ -2,20 +2,20 @@ import { api } from '../lib/api';
 
 export interface VisitWithVisitor {
     id: string;
-    visitor_id: string;
+    visitorId: string;
     nome: string;
     perfil: string;
     local: string;
-    espaco_id: string;
+    espacoId: string;
     checkin: string;
     checkout: string | null;
     status: string;
     armario: string | null;
-    visitors?: {
-        full_name: string;
+    visitor?: {
+        fullName: string;
         cpf: string | null;
         passport: string | null;
-        is_foreigner: boolean;
+        isForeigner: boolean;
     };
 }
 

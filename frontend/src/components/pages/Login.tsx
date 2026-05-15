@@ -296,20 +296,6 @@ export default function Login() {
           <motion.div 
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
-            transition={{ duration: 0.6, delay: 0.5 }}
-            className="mt-8 pt-6 border-t border-slate-200 text-center"
-          >
-            <button
-              onClick={() => navigate('/agendamento-publico')}
-              className="text-[#835425] hover:text-[#6d4520] text-sm font-medium underline underline-offset-3"
-            >
-              Agendamento de Espaço Cultural
-            </button>
-          </motion.div>
-          
-          <motion.div 
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
             transition={{ duration: 0.6, delay: 0.6 }}
             className="mt-6 pt-4 border-t border-slate-200 text-center"
           >

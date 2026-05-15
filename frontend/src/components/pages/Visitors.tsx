@@ -38,7 +38,7 @@ export default function Visitors() {
   const [showBlockedPopup, setShowBlockedPopup] = useState(false);
   const [blockedInfo, setBlockedInfo] = useState<{visitorName: string; cpf: string; currentSpace: string; checkinTime: string; remainingMinutes: number} | null>(null);
   const [showSuccessPopup, setShowSuccessPopup] = useState(false);
-  const [successInfo, setSuccessInfo] = useState<{visitorName: string; space: string; checkinTime: string} | null>(null);
+  const [successInfo, setSuccessInfo] = useState<{visitorName: string; space: string; checkinTime: string; isCheckout?: boolean} | null>(null);
   
   const { userData, isAdmin } = useAuth();
 
@@ -145,42 +145,49 @@ const mapped = (data || []).map((d: any) => ({
         
         // Erro de check-in duplicado ou limite (agora o backend retorna uma mensagem clara)
         if (error.message.includes('já está no espaço') || error.message.includes('limite de 60 minutos') || error.message.includes('já possui check-in ativo')) {
+          let remainingMinutes = 60;
+          let currentSpace = 'Espaço Cultural';
+          let checkinTime = now.toISOString();
+
           // Se o backend retornou detalhes (nossa nova implementação)
           if (error.detalhes?.espacos?.[0]) {
             const detail = error.detalhes.espacos[0];
-            setBlockedInfo({
-              visitorName: visitor.fullName,
-              cpf: visitor.cpf || 'Não informado',
-              currentSpace: detail.nome,
-              checkinTime: detail.checkin,
-              remainingMinutes: detail.tempoRestante
+            currentSpace = detail.nome || currentSpace;
+            checkinTime = detail.checkin || checkinTime;
+            remainingMinutes = detail.tempoRestante ?? detail.minutosParaEncerrar ?? remainingMinutes;
+          } else {
+            // Fallback: tentar buscar info do check-in ativo manualmente se não veio nos detalhes
+            const { data: activeVisits } = await visitService.list(undefined, { 
+              status: 'Ativo',
+              limit: 10
             });
-            setShowBlockedPopup(true);
-            setSaving(false);
-            return;
+            
+            const activeVisit = activeVisits?.find(v => v.visitorId === visitor.id || v.visitor_id === visitor.id);
+            
+            if (activeVisit) {
+              currentSpace = activeVisit.local || activeVisit.espaco?.nome || currentSpace;
+              checkinTime = activeVisit.checkin || checkinTime;
+              const diffMin = Math.floor((now.getTime() - new Date(activeVisit.checkin).getTime()) / 60000);
+              remainingMinutes = Math.max(0, 60 - diffMin);
+            } else {
+              // Extrair tempo restante da mensagem de erro como último fallback
+              const match = error.message.match(/Tempo restante[:\s]*(\d+)/i);
+              if (match) {
+                remainingMinutes = parseInt(match[1], 10);
+              }
+            }
           }
 
-          // Fallback: tentar buscar info do check-in ativo manualmente se não veio nos detalhes
-          const { data: activeVisits } = await visitService.list(undefined, { 
-            status: 'Ativo',
-            limit: 10
+          setBlockedInfo({
+            visitorName: visitor.fullName,
+            cpf: visitor.cpf || 'Não informado',
+            currentSpace: currentSpace,
+            checkinTime: checkinTime,
+            remainingMinutes: remainingMinutes
           });
-          
-          const activeVisit = activeVisits?.find(v => v.visitor_id === visitor.id);
-          
-          if (activeVisit) {
-            const diffMin = Math.floor((now.getTime() - new Date(activeVisit.checkin).getTime()) / 60000);
-            setBlockedInfo({
-              visitorName: visitor.fullName,
-              cpf: visitor.cpf || 'Não informado',
-              currentSpace: activeVisit.local,
-              checkinTime: activeVisit.checkin,
-              remainingMinutes: Math.max(0, 60 - diffMin)
-            });
-            setShowBlockedPopup(true);
-            setSaving(false);
-            return;
-          }
+          setShowBlockedPopup(true);
+          setSaving(false);
+          return;
         }
         
         throw error;
@@ -209,6 +216,7 @@ const mapped = (data || []).map((d: any) => ({
     if (saving) return;
     if (!confirm(`Confirmar checkout de ${visit.nome}?`)) return;
 
+    const checkoutTime = new Date().toISOString();
     setSaving(true);
     try {
       const { error } = await visitService.checkout(visit.id);
@@ -219,7 +227,8 @@ const mapped = (data || []).map((d: any) => ({
       setSuccessInfo({
         visitorName: visit.nome,
         space: visit.local || 'Espaço Cultural',
-        checkinTime: visit.checkin
+        checkinTime: checkoutTime,
+        isCheckout: true
       });
       setTimeout(() => setShowSuccessPopup(false), 4000);
       fetchActiveVisits();
@@ -559,6 +568,7 @@ const mapped = (data || []).map((d: any) => ({
       {showSuccessPopup && successInfo && (
         <CheckinSuccessPopup
           info={successInfo}
+          isCheckout={successInfo.isCheckout}
           onClose={() => {
             setShowSuccessPopup(false);
             setSuccessInfo(null);

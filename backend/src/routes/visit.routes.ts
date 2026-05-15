@@ -189,7 +189,7 @@ export async function visitRoutes(app: FastifyInstance) {
   app.post('/checkin', { preHandler: [app.authenticate] }, async (request: any, reply: any) => {
     const { visitorId, espacoId, perfil, responsibleAccompanied } = request.body as any;
     
-    if (request.user.role !== 'admin' && request.user.espacoId && request.user.espacoId !== espacoId) {
+    if (request.user.perfil !== 'administrador' && request.user.espacoId && request.user.espacoId !== espacoId) {
       return reply.status(403).send({ error: 'Espaço não autorizado para este usuário' });
     }
     
@@ -231,9 +231,9 @@ export async function visitRoutes(app: FastifyInstance) {
     
     if (existingInSameSpace) {
       const espacoNome = existingInSameSpace.espaco?.nome || 'desconhecido';
-      const tempoLimite = existingInSameSpace.espaco?.tempoLimiteExcedido || 60; // minutos
+      const tempoTotal = 60; // Tempo total padrão de 60 minutos
       const tempoDecorrido = Math.floor((Date.now() - existingInSameSpace.checkin.getTime()) / 60000);
-      const tempoRestante = Math.max(0, tempoLimite - tempoDecorrido);
+      const tempoRestante = Math.max(0, tempoTotal - tempoDecorrido);
       
       return reply.status(400).send({ 
         error: `Visitante já está no espaço ${espacoNome} há ${tempoDecorrido} minutos. Tempo restante: ${tempoRestante} minutos.`,

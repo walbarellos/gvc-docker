@@ -71,17 +71,17 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       id: data.id,
       nome: data.nome,
       municipio: data.municipio,
-      totalArmarios: data.total_armarios,
-      mensagemBoasVindas: data.mensagem_boas_vindas,
-      tempoLimiteExcedido: data.tempo_limite_excedido,
-      capacidadeVisitantes: data.capacidade_visitantes,
-      horarioFuncionamento: data.horario_funcionamento,
-      perfilArmarios: data.perfil_armarios,
-      perfilTelecentro: data.perfil_telecentro,
-      perfilAgendamento: data.perfil_agendamento,
-      totalComputadores: data.total_computadores,
-      tempoLimiteComputador: data.tempo_limite_computador,
-      capacidadeAgendamento: data.capacidade_agendamento
+      totalArmarios: data.total_armarios || data.totalArmarios,
+      mensagemBoasVindas: data.mensagem_boas_vindas || data.mensagemBoasVindas,
+      tempoLimiteExcedido: data.tempo_limite_excedido || data.tempoLimiteExcedido,
+      capacidadeVisitantes: data.capacidade_visitantes || data.capacidadeVisitantes,
+      horarioFuncionamento: data.horario_funcionamento || data.horarioFuncionamento,
+      perfilArmarios: data.perfil_armarios ?? data.perfilArmarios,
+      perfilTelecentro: data.perfil_telecentro ?? data.perfilTelecentro,
+      perfilAgendamento: data.perfil_agendamento ?? data.perfilAgendamento,
+      totalComputadores: data.total_computadores || data.totalComputadores,
+      tempoLimiteComputador: data.tempo_limite_computador || data.tempoLimiteComputador,
+      capacidadeAgendamento: data.capacidade_agendamento || data.capacidadeAgendamento
     };
   }
 

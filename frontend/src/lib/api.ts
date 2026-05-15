@@ -1,3 +1,5 @@
+import { snakeToCamel } from '../utils/caseConverter';
+
 const API_URL = import.meta.env.VITE_API_URL || (typeof window !== 'undefined' ? `${window.location.origin}/api` : 'http://localhost:3001/api');
 
 function getToken(): string | null {
@@ -27,7 +29,9 @@ async function handleResponse<T>(response: Response): Promise<{ data: T | null; 
         return { data: null, error: { message: err.error || err.message || 'Request failed' } };
     }
     const data = await response.json();
-    return { data, error: null };
+    // Converter resposta de snake_case para camelCase
+    const convertedData = snakeToCamel(data);
+    return { data: convertedData as T, error: null };
 }
 
 export const api = {
@@ -40,7 +44,7 @@ export const api = {
         const res = await fetch(`${API_URL}${endpoint}`, {
             method: 'POST',
             headers: headers(includeAuth),
-            body: data ? JSON.stringify(data) : undefined,
+            body: data ? JSON.stringify(data) : '{}',
         });
         return handleResponse<T>(res);
     },
