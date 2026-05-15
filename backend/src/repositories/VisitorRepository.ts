@@ -72,7 +72,7 @@ export class VisitorRepository implements IVisitorRepository {
       authorizationDocType: visitor.authorizationDocType,
       authorizationPresented: visitor.authorizationPresented,
       updatedAt: new Date(),
-    } as any;
+    };
 
     const saved = await this.prisma.visitor.upsert({
       where: { id: visitor.id },

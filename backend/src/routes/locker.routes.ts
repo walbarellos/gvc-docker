@@ -45,8 +45,8 @@ export async function lockerRoutes(app: FastifyInstance) {
       const existingLocker = await prisma.locker.findFirst({
         where: {
           visitorId: visitorId,
-          espacoId: data.espaco_id,
-          status: { in: ['Ocupado', 'ocupado'] },
+          espacoId: data.espacoId || data.espaco_id,
+          status: 'Ocupado',
         },
       });
 
@@ -89,12 +89,12 @@ export async function lockerRoutes(app: FastifyInstance) {
     // Se estiver liberando o armário (status = Livre), permitir
     // Se estiver ocupando, verificar limite
     const visitorId = data.visitor_id || data.visitorId;
-    if (visitorId && data.espacoId && (data.status === 'Ocupado' || data.status === 'ocupado')) {
+    if (visitorId && data.espacoId && data.status === 'Ocupado') {
       const existingLocker = await prisma.locker.findFirst({
         where: {
           visitorId: visitorId,
           espacoId: data.espacoId,
-          status: { in: ['Ocupado', 'ocupado'] },
+          status: 'Ocupado',
           id: { not: id },
         },
       });
@@ -143,7 +143,7 @@ export async function lockerRoutes(app: FastifyInstance) {
         where: {
           visitorId: visitorId,
           espacoId: espacoId,
-          status: { in: ['Ocupado', 'ocupado'] },
+          status: 'Ocupado',
         },
       });
 
@@ -191,7 +191,7 @@ export async function lockerRoutes(app: FastifyInstance) {
     const lockers = await prisma.locker.findMany({
       where: {
         visitorId: visitorId,
-        status: { in: ['Ocupado', 'ocupado'] },
+        status: 'Ocupado',
       },
       include: {
         espaco: true,

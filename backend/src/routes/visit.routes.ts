@@ -231,7 +231,7 @@ export async function visitRoutes(app: FastifyInstance) {
     
     if (existingInSameSpace) {
       const espacoNome = existingInSameSpace.espaco?.nome || 'desconhecido';
-      const tempoLimite = existingInSameSpace.espaco?.tempo_limite_excedido || 60; // minutos
+      const tempoLimite = existingInSameSpace.espaco?.tempoLimiteExcedido || 60; // minutos
       const tempoDecorrido = Math.floor((Date.now() - existingInSameSpace.checkin.getTime()) / 60000);
       const tempoRestante = Math.max(0, tempoLimite - tempoDecorrido);
       
@@ -263,7 +263,7 @@ export async function visitRoutes(app: FastifyInstance) {
 
     if (existingInOtherSpace) {
       const espacoNome = existingInOtherSpace.espaco?.nome || 'desconhecido';
-      const tempoLimite = existingInOtherSpace.espaco?.tempo_limite_excedido || 60; // minutos
+      const tempoLimite = existingInOtherSpace.espaco?.tempoLimiteExcedido || 60; // minutos
       const tempoDecorrido = Math.floor((Date.now() - existingInOtherSpace.checkin.getTime()) / 60000);
       const tempoRestante = Math.max(0, tempoLimite - tempoDecorrido);
       
@@ -400,7 +400,7 @@ export async function visitRoutes(app: FastifyInstance) {
 
     // Calcular tempo restante para cada visita
     const visitsWithTime = activeVisits.map(visit => {
-      const tempoLimite = visit.espaco?.tempo_limite_excedido || 60;
+      const tempoLimite = visit.espaco?.tempoLimiteExcedido || 60;
       const tempoDecorrido = Math.floor((Date.now() - visit.checkin.getTime()) / 60000);
       const tempoRestante = Math.max(0, tempoLimite - tempoDecorrido);
       

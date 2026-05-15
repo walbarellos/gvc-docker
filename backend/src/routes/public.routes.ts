@@ -10,12 +10,12 @@ export async function publicRoutes(app: FastifyInstance) {
     const conflicts = await prisma.agendamento.findMany({
       where: {
         espacoId: data.espacoId,
-        data_pretendida: data.data_pretendida,
+        dataPretendida: data.dataPretendida,
         status: { in: ['pendente', 'aprovado'] },
         OR: [
-          { AND: [{ horario_inicio: { lte: data.horario_inicio } }, { horario_fim: { gt: data.horario_inicio } }] },
-          { AND: [{ horario_inicio: { lt: data.horario_fim } }, { horario_fim: { gte: data.horario_fim } }] },
-          { AND: [{ horario_inicio: { gte: data.horario_inicio } }, { horario_fim: { lte: data.horario_fim } }] },
+          { AND: [{ horarioInicio: { lte: data.horarioInicio } }, { horarioFim: { gt: data.horarioInicio } }] },
+          { AND: [{ horarioInicio: { lt: data.horarioFim } }, { horarioFim: { gte: data.horarioFim } }] },
+          { AND: [{ horarioInicio: { gte: data.horarioInicio } }, { horarioFim: { lte: data.horarioFim } }] },
         ],
       },
     });
@@ -59,8 +59,8 @@ export async function publicRoutes(app: FastifyInstance) {
   // Espaços disponíveis para agendamento
   app.get('/espacos', async () => {
     return prisma.espaco.findMany({
-      where: { ativo: true, perfil_agendamento: true },
-      select: { id: true, nome: true, municipio: true, capacidade_agendamento: true },
+      where: { ativo: true, perfilAgendamento: true },
+      select: { id: true, nome: true, municipio: true, capacidadeAgendamento: true },
     });
   });
 }

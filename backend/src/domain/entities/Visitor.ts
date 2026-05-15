@@ -33,8 +33,15 @@ export class Visitor {
   get id() { return this.props.id; }
   get fullName() { return this.props.fullName; }
   get cpf() { return this.props.cpf; }
+  get passport() { return this.props.passport; }
+  get isForeigner() { return this.props.isForeigner; }
   get gender() { return this.props.gender; }
   get birthDate() { return this.props.birthDate; }
+  get email() { return this.props.email; }
+  get phone() { return this.props.phone; }
+  get address() { return this.props.address; }
+  get category() { return this.props.category; }
+  get photoUrl() { return this.props.photoUrl; }
   get parentalAuthorization() { return this.props.parentalAuthorization; }
   get responsibleName() { return this.props.responsibleName; }
   get authorizationDate() { return this.props.authorizationDate; }

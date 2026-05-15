@@ -30,90 +30,90 @@ function mapAgendamentoFields(data: any): any {
   if (data.espacoId !== undefined) mapped.espacoId = data.espacoId || null;
   if (data.espaco_id !== undefined) mapped.espacoId = data.espaco_id || null;
   
-  if (data.solicitante_nome !== undefined) mapped.solicitante_nome = data.solicitante_nome || '';
-  if (data.solicitanteNome !== undefined) mapped.solicitante_nome = data.solicitanteNome || '';
+  if (data.solicitante_nome !== undefined) mapped.solicitanteNome = data.solicitante_nome || '';
+  if (data.solicitanteNome !== undefined) mapped.solicitanteNome = data.solicitanteNome || '';
   
-  if (data.solicitante_email !== undefined) mapped.solicitante_email = data.solicitante_email || '';
-  if (data.solicitanteEmail !== undefined) mapped.solicitante_email = data.solicitanteEmail || '';
+  if (data.solicitante_email !== undefined) mapped.solicitanteEmail = data.solicitante_email || '';
+  if (data.solicitanteEmail !== undefined) mapped.solicitanteEmail = data.solicitanteEmail || '';
   
-  if (data.solicitante_telefone !== undefined) mapped.solicitante_telefone = data.solicitante_telefone || '';
-  if (data.solicitanteTelefone !== undefined) mapped.solicitante_telefone = data.solicitanteTelefone || '';
+  if (data.solicitante_telefone !== undefined) mapped.solicitanteTelefone = data.solicitante_telefone || '';
+  if (data.solicitanteTelefone !== undefined) mapped.solicitanteTelefone = data.solicitanteTelefone || '';
   
-  if (data.solicitante_documento !== undefined) mapped.solicitante_documento = data.solicitante_documento || null;
-  if (data.solicitanteDocumento !== undefined) mapped.solicitante_documento = data.solicitanteDocumento || null;
+  if (data.solicitante_documento !== undefined) mapped.solicitanteDocumento = data.solicitante_documento || null;
+  if (data.solicitanteDocumento !== undefined) mapped.solicitanteDocumento = data.solicitanteDocumento || null;
   
-  if (data.tipo_solicitante !== undefined) mapped.tipo_solicitante = data.tipo_solicitante || '';
-  if (data.tipoSolicitante !== undefined) mapped.tipo_solicitante = data.tipoSolicitante || '';
+  if (data.tipo_solicitante !== undefined) mapped.tipoSolicitante = data.tipo_solicitante || '';
+  if (data.tipoSolicitante !== undefined) mapped.tipoSolicitante = data.tipoSolicitante || '';
   
-  if (data.tipo_espaco !== undefined) mapped.tipo_espaco = data.tipo_espaco || '';
-  if (data.tipoEspaco !== undefined) mapped.tipo_espaco = data.tipoEspaco || '';
+  if (data.tipo_espaco !== undefined) mapped.tipoEspaco = data.tipo_espaco || '';
+  if (data.tipoEspaco !== undefined) mapped.tipoEspaco = data.tipoEspaco || '';
   
-  if (data.espaco_solicitado !== undefined) mapped.espaco_solicitado = data.espaco_solicitado || '';
-  if (data.espacoSolicitado !== undefined) mapped.espaco_solicitado = data.espacoSolicitado || '';
+  if (data.espaco_solicitado !== undefined) mapped.espacoSolicitado = data.espaco_solicitado || '';
+  if (data.espacoSolicitado !== undefined) mapped.espacoSolicitado = data.espacoSolicitado || '';
   
   const data_pretendida = data.data_pretendida || data.dataPretendida;
   if (data_pretendida) {
     const parsed = parseDate(data_pretendida);
-    if (parsed) mapped.data_pretendida = parsed;
+    if (parsed) mapped.dataPretendida = parsed;
   }
   
   const horario_inicio = data.horario_inicio || data.horarioInicio;
   if (horario_inicio) {
     const parsed = parseDate(horario_inicio);
-    if (parsed) mapped.horario_inicio = parsed;
+    if (parsed) mapped.horarioInicio = parsed;
   }
   
   const horario_fim = data.horario_fim || data.horarioFim;
   if (horario_fim) {
     const parsed = parseDate(horario_fim);
-    if (parsed) mapped.horario_fim = parsed;
+    if (parsed) mapped.horarioFim = parsed;
   }
   
-  if (data.numero_participantes !== undefined) mapped.numero_participantes = parseInt(data.numero_participantes) || 0;
-  if (data.numeroParticipantes !== undefined) mapped.numero_participantes = parseInt(data.numeroParticipantes) || 0;
+  if (data.numero_participantes !== undefined) mapped.numeroParticipantes = parseInt(data.numero_participantes) || 0;
+  if (data.numeroParticipantes !== undefined) mapped.numeroParticipantes = parseInt(data.numeroParticipantes) || 0;
   
-  if (data.descricao_evento !== undefined) mapped.descricao_evento = data.descricao_evento || '';
-  if (data.descricaoEvento !== undefined) mapped.descricao_evento = data.descricaoEvento || '';
+  if (data.descricao_evento !== undefined) mapped.descricaoEvento = data.descricao_evento || '';
+  if (data.descricaoEvento !== undefined) mapped.descricaoEvento = data.descricaoEvento || '';
   
-  if (data.natureza_evento !== undefined) mapped.natureza_evento = data.natureza_evento || '';
-  if (data.naturezaEvento !== undefined) mapped.natureza_evento = data.naturezaEvento || '';
+  if (data.natureza_evento !== undefined) mapped.naturezaEvento = data.natureza_evento || '';
+  if (data.naturezaEvento !== undefined) mapped.naturezaEvento = data.naturezaEvento || '';
   
   if (data.gratuito !== undefined) mapped.gratuito = data.gratuito;
   if (data.gratuito !== undefined && typeof data.gratuito === 'string') {
     mapped.gratuito = data.gratuito === 'true';
   }
   
-  if (data.valor_ingresso !== undefined) mapped.valor_ingresso = parseFloat(data.valor_ingresso) || null;
-  if (data.valorIngresso !== undefined) mapped.valor_ingresso = parseFloat(data.valorIngresso) || null;
+  if (data.valor_ingresso !== undefined) mapped.valorIngresso = parseFloat(data.valor_ingresso) || null;
+  if (data.valorIngresso !== undefined) mapped.valorIngresso = parseFloat(data.valorIngresso) || null;
   
-  if (data.necessita_equipamentos !== undefined) mapped.necessita_equipamentos = data.necessita_equipamentos || null;
-  if (data.necessitaEquipamentos !== undefined) mapped.necessita_equipamentos = data.necessitaEquipamentos || null;
+  if (data.necessita_equipamentos !== undefined) mapped.necessitaEquipamentos = data.necessita_equipamentos || null;
+  if (data.necessitaEquipamentos !== undefined) mapped.necessitaEquipamentos = data.necessitaEquipamentos || null;
   
   if (data.observacoes !== undefined) mapped.observacoes = data.observacoes || null;
   
-  if (data.termo_aceito !== undefined) mapped.termo_aceito = data.termo_aceito;
-  if (data.termoAceito !== undefined) mapped.termo_aceito = data.termoAceito;
+  if (data.termo_aceito !== undefined) mapped.termoAceito = data.termo_aceito;
+  if (data.termoAceito !== undefined) mapped.termoAceito = data.termoAceito;
   
   const termo_aceito_em = data.termo_aceito_em || data.termoAceitoEm;
   if (termo_aceito_em) {
     const parsed = parseDate(termo_aceito_em);
-    if (parsed) mapped.termo_aceito_em = parsed;
+    if (parsed) mapped.termoAceitoEm = parsed;
   }
   
-  if (data.responsabhilidade_evento !== undefined) mapped.responsabhilidade_evento = data.responsabhilidade_evento;
-  if (data.responsabhilidadeEvento !== undefined) mapped.responsabhilidade_evento = data.responsabhilidadeEvento;
+  if (data.responsabhilidade_evento !== undefined) mapped.responsabilidadeEvento = data.responsabhilidade_evento;
+  if (data.responsabhilidadeEvento !== undefined) mapped.responsabilidadeEvento = data.responsabhilidadeEvento;
   
-  if (data.danos_patrimonio !== undefined) mapped.danos_patrimonio = data.danos_patrimonio;
-  if (data.danosPatrimonio !== undefined) mapped.danos_patrimonio = data.danosPatrimonio;
+  if (data.danos_patrimonio !== undefined) mapped.danosPatrimonio = data.danos_patrimonio;
+  if (data.danosPatrimonio !== undefined) mapped.danosPatrimonio = data.danosPatrimonio;
   
-  if (data.respeito_lotacao !== undefined) mapped.respeito_lotacao = data.respeito_lotacao;
-  if (data.respeitoLotacao !== undefined) mapped.respeito_lotacao = data.respeitoLotacao;
+  if (data.respeito_lotacao !== undefined) mapped.respeitoLotacao = data.respeito_lotacao;
+  if (data.respeitoLotacao !== undefined) mapped.respeitoLotacao = data.respeitoLotacao;
   
-  if (data.autorizo_divulgacao !== undefined) mapped.autorizo_divulgacao = data.autorizo_divulgacao;
-  if (data.autorizoDivulgacao !== undefined) mapped.autorizo_divulgacao = data.autorizoDivulgacao;
+  if (data.autorizo_divulgacao !== undefined) mapped.autorizoDivulgacao = data.autorizo_divulgacao;
+  if (data.autorizoDivulgacao !== undefined) mapped.autorizoDivulgacao = data.autorizoDivulgacao;
   
-  if (data.documento_anexo_url !== undefined) mapped.documento_anexo_url = data.documento_anexo_url || null;
-  if (data.documentoAnexoUrl !== undefined) mapped.documento_anexo_url = data.documentoAnexoUrl || null;
+  if (data.documento_anexo_url !== undefined) mapped.documentoAnexoUrl = data.documento_anexo_url || null;
+  if (data.documentoAnexoUrl !== undefined) mapped.documentoAnexoUrl = data.documentoAnexoUrl || null;
   
   if (data.status !== undefined) mapped.status = data.status || 'pendente';
   
@@ -138,8 +138,8 @@ export async function agendamentoRoutes(app: FastifyInstance) {
       }
     }
     
-    if (data_inicio) where.data_pretendida = { gte: new Date(data_inicio) };
-    if (data_fim) where.data_pretendida = { ...where.data_pretendida, lte: new Date(data_fim) };
+    if (data_inicio) where.dataPretendida = { gte: new Date(data_inicio) };
+    if (data_fim) where.dataPretendida = { ...where.dataPretendida, lte: new Date(data_fim) };
 
     if (request.user.perfil === 'cidadao') {
       where.solicitanteEmail = request.user.email;
@@ -149,7 +149,7 @@ export async function agendamentoRoutes(app: FastifyInstance) {
 
     return prisma.agendamento.findMany({ 
       where, 
-      orderBy: { created_at: 'desc' },
+      orderBy: { createdAt: 'desc' },
       take: limit ? parseInt(limit) : undefined,
       include: { espaco: true }
     });
@@ -167,7 +167,7 @@ export async function agendamentoRoutes(app: FastifyInstance) {
   // Criar
   app.post('/', async (request: any) => {
     const data = mapAgendamentoFields(request.body);
-    data.termo_aceito_em = data.termo_aceito ? new Date() : null;
+    data.termoAceitoEm = data.termoAceito ? new Date() : null;
     return prisma.agendamento.create({ data });
   });
 
@@ -188,24 +188,26 @@ export async function agendamentoRoutes(app: FastifyInstance) {
     return { success: true };
   });
 
-  // Atualizar status
-  app.patch('/:id', { preHandler: [app.authenticate] }, async (request: any, reply: any) => {
+  // Responder agendamento
+  app.put('/:id/resposta', { preHandler: [app.authenticate] }, async (request: any, reply: any) => {
     const { id } = request.params;
-    const { status, resposta_coordenador } = request.body as any;
-    
-    if (status && !['coordenador', 'administrador'].includes(request.user.perfil)) {
-      return reply.status(403).send({ error: 'Apenas coordenador pode alterar status' });
+    const { status, respostaCoordenador } = request.body as any;
+
+    if (request.user.perfil === 'cidadao') {
+      return reply.status(403).send({ error: 'Perfil sem permissão' });
     }
-    
-    const data: any = {};
-    if (status) data.status = status;
-    if (resposta_coordenador) {
-      data.resposta_coordenador = resposta_coordenador;
-      data.coordenador_id = request.user.id;
-      data.respondido_em = new Date();
-    }
-    
-    return prisma.agendamento.update({ where: { id }, data });
+
+    const agendamento = await prisma.agendamento.update({
+      where: { id },
+      data: {
+        status,
+        respostaCoordenador,
+        coordenadorId: request.user.id,
+        respondidoEm: new Date()
+      },
+    });
+
+    return agendamento;
   });
 
   // Aprovar (coordenador+)
@@ -215,9 +217,14 @@ export async function agendamentoRoutes(app: FastifyInstance) {
     }
     const { id } = request.params;
     const { resposta } = request.body as any;
-return prisma.agendamento.update({
+    return prisma.agendamento.update({
       where: { id },
-      data: { status: 'aprovado', resposta_coordenador: resposta, coordenador_id: request.user.id, respondido_em: new Date() },
+      data: {
+        status: 'aprovado',
+        respostaCoordenador: resposta,
+        coordenadorId: request.user.id,
+        respondidoEm: new Date()
+      },
     });
 });
 
@@ -243,44 +250,31 @@ return prisma.agendamento.update({
     return { total, pendentes, aprovados, rejeitados, cancelados };
   });
 
-  // Salvar rascunho
-  app.post('/rascunho', async (request: any) => {
-    const { session_id, ...rest } = request.body as any;
-    
-    const existing = await prisma.agendamentoRascunho.findFirst({
-      where: { session_id }
-    });
-    
-    if (existing) {
-      return prisma.agendamentoRascunho.update({
-        where: { id: existing.id },
-        data: rest
-      });
-    }
-    
-    return prisma.agendamentoRascunho.create({
-      data: { session_id, ...rest }
+  // Buscar rascunho
+  app.get('/rascunho/:sessionId', async (request: any) => {
+    const { sessionId } = request.params;
+    return prisma.agendamentoRascunho.findUnique({ 
+      where: { sessionId } 
     });
   });
 
-  // Carregar rascunho
-  app.get('/rascunho', async (request: any) => {
-    const { session_id } = request.query as any;
-    if (!session_id) return [];
+  // Salvar rascunho
+  app.post('/rascunho', async (request: any) => {
+    const { sessionId, data } = request.body as any;
     
-    const rascunho = await prisma.agendamentoRascunho.findFirst({
-      where: { session_id }
+    return prisma.agendamentoRascunho.upsert({
+      where: { sessionId },
+      update: { ...data, updatedAt: new Date() },
+      create: { sessionId, ...data }
     });
-    
-    return rascunho ? [rascunho] : [];
   });
 
   // Deletar rascunho
-  app.delete('/rascunho', async (request: any) => {
-    const { session_id } = request.query as any;
-    if (!session_id) return { success: false };
-    
-    await prisma.agendamentoRascunho.deleteMany({ where: { session_id } });
+  app.delete('/rascunho/:sessionId', async (request: any) => {
+    const { sessionId } = request.params;
+    await prisma.agendamentoRascunho.delete({ 
+      where: { sessionId } 
+    });
     return { success: true };
   });
 
@@ -290,7 +284,7 @@ return prisma.agendamento.update({
     
     const where: any = {
       espacoId: espaco_id,
-      data_pretendida: new Date(data),
+      dataPretendida: new Date(data),
       status: { in: ['pendente', 'aprovado'] }
     };
     
@@ -300,14 +294,14 @@ return prisma.agendamento.update({
     
     const agendamentos = await prisma.agendamento.findMany({
       where,
-      select: { horario_inicio: true, horario_fim: true }
+      select: { horarioInicio: true, horarioFim: true }
     });
     
-    return agendamentos.filter(a => {
+    return agendamentos.filter((a: any) => {
       const aStart = new Date(`2000-01-01T${inicio}`);
       const aEnd = new Date(`2000-01-01T${fim}`);
-      const bStart = new Date(`2000-01-01T${a.horario_inicio}`);
-      const bEnd = new Date(`2000-01-01T${a.horario_fim}`);
+      const bStart = new Date(`2000-01-01T${a.horarioInicio}`);
+      const bEnd = new Date(`2000-01-01T${a.horarioFim}`);
       
       return aStart < bEnd && aEnd > bStart;
     });
@@ -320,10 +314,10 @@ return prisma.agendamento.update({
     const agendamentos = await prisma.agendamento.findMany({
       where: {
         espacoId: espaco_id,
-        data_pretendida: { gte: new Date(inicio), lte: new Date(fim) },
+        dataPretendida: { gte: new Date(inicio), lte: new Date(fim) },
         status: { in: ['pendente', 'aprovado'] }
       },
-      select: { data_pretendida: true, horario_inicio: true, horario_fim: true }
+      select: { dataPretendida: true, horarioInicio: true, horarioFim: true }
     });
     
     return agendamentos;
