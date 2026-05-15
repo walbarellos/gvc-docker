@@ -7,12 +7,17 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
+// ==========================================
+// ENUMS (Standardized)
+// ==========================================
+
 enum PerfilUsuario {
   administrador
   coordenador
   operador
   monitor
   funcionario
+  cidadao
 }
 
 enum VisitStatus {
@@ -39,6 +44,8 @@ enum AgendamentoStatus {
   aprovado
   rejeitado
   cancelado
+  confirmado
+  concluido
 }
 
 enum Gender {
@@ -48,44 +55,24 @@ enum Gender {
   prefiro_nao_dizer
 }
 
-model Visitor {
-  id          String    @id @default(uuid()) @map("id")
-  fullName    String    @map("full_name")
-  cpf        String?   @unique
-  passport  String?
-  isForeigner Boolean  @default(false) @map("is_foreigner")
-  gender     Gender?
-  birthDate  DateTime? @map("birth_date")
-  email      String?
-  phone     String?
-  address   String?
-  category  String?
-  photoUrl  String?   @map("photo_url")
-  createdAt DateTime  @default(now()) @map("created_at")
-  updatedAt DateTime  @default(now()) @map("updated_at")
-
-  visits    Visit[]
-  lockers   Locker[]
-
-  @@index([cpf])
-  @@index([email])
-  @@map("visitors")
-}
+// ==========================================
+// CORE MODELS
+// ==========================================
 
 model Usuario {
-  id         String       @id @default(uuid())
-  authUid    String?      @unique @map("auth_uid")
+  id         String        @id @default(uuid())
+  authUid    String?       @unique @map("auth_uid")
   nome       String
-  email      String       @unique
+  email      String        @unique
   senha      String?
   perfil     PerfilUsuario
-  espacoId   String?      @map("espaco_id")
-  espacoNome String?      @map("espaco_nome")
-  ativo      Boolean      @default(true)
-  createdAt  DateTime     @default(now()) @map("created_at")
-  updatedAt  DateTime     @default(now()) @map("updated_at")
+  espacoId   String?       @map("espaco_id")
+  espacoNome String?       @map("espaco_nome")
+  ativo      Boolean       @default(true)
+  createdAt  DateTime      @default(now()) @map("created_at")
+  updatedAt  DateTime      @default(now()) @updatedAt @map("updated_at")
 
-  espaco     Espaco?      @relation(fields: [espacoId], references: [id])
+  espaco Espaco? @relation(fields: [espacoId], references: [id])
 
   @@index([espacoId])
   @@index([perfil])
@@ -99,57 +86,93 @@ model Espaco {
   email                 String?
   endereco              String?
   municipio             String?
-  horario_funcionamento String?   @map("horario_funcionamento")
-  capacidade_visitantes Int?      @map("capacidade_visitantes")
-  mensagem_boas_vindas String?   @map("mensagem_boas_vindas")
-  tempo_limite_excedido Int?      @map("tempo_limite_excedido")
-  ativo                 Boolean   @default(true)
-  perfil_armarios       Boolean   @default(true) @map("perfil_armarios")
-  perfil_telecentro    Boolean   @default(false) @map("perfil_telecentro")
-  perfil_agendamento  Boolean   @default(false) @map("perfil_agendamento")
-  total_armarios       Int?      @map("total_armarios")
-  total_computadores   Int?      @map("total_computadores")
-  tempo_limite_computador Int?   @map("tempo_limite_computador")
-  capacidade_agendamento Int?    @map("capacidade_agendamento")
+  horarioFuncionamento String?   @map("horario_funcionamento")
+  capacidadeVisitantes Int?      @map("capacidade_visitantes")
+  mensagemBoasVindas   String?   @map("mensagem_boas_vindas")
+  tempoLimiteExcedido  Int?      @map("tempo_limite_excedido")
+  ativo                 Boolean  @default(true)
+  perfilArmarios       Boolean   @default(true) @map("perfil_armarios")
+  perfilTelecentro     Boolean   @default(false) @map("perfil_telecentro")
+  perfilAgendamento    Boolean   @default(false) @map("perfil_agendamento")
+  totalArmarios        Int?      @map("total_armarios")
+  totalComputadores    Int?      @map("total_computadores")
+  tempoLimiteComputador Int?     @map("tempo_limite_computador")
+  capacidadeAgendamento Int?     @map("capacidade_agendamento")
+  hasAuditorio         Boolean   @default(false) @map("has_auditorio")
+  qtdAuditorio         Int?      @map("qtd_auditorio")
+  hasSalaEstudos       Boolean   @default(false) @map("has_sala_estudos")
+  qtdSalaEstudos       Int?      @map("qtd_sala_estudos")
+  hasTeatro            Boolean   @default(false) @map("has_teatro")
+  qtdTeatro            Int?      @map("qtd_teatro")
+  hasFilmoteca         Boolean   @default(false) @map("has_filmoteca")
+  qtdFilmoteca         Int?      @map("qtd_filmoteca")
+  hasEspacoAberto      Boolean   @default(false) @map("has_espaco_aberto")
+  qtdEspacoAberto      Int?      @map("qtd_espaco_aberto")
+  hasVisitaGuiada      Boolean   @default(false) @map("has_visita_guiada")
+  qtdVisitaGuiada      Int?      @map("qtd_visita_guiada")
   createdAt            DateTime  @default(now()) @map("created_at")
-  updatedAt            DateTime  @default(now()) @map("updated_at")
-  has_auditorio        Boolean   @default(false) @map("has_auditorio")
-  qtd_auditorio       Int?      @map("qtd_auditorio")
-  has_sala_estudos    Boolean   @default(false) @map("has_sala_estudos")
-  qtd_sala_estudos   Int?      @map("qtd_sala_estudos")
-  has_teatro          Boolean   @default(false) @map("has_teatro")
-  qtd_teatro         Int?      @map("qtd_teatro")
-  has_filmoteca       Boolean   @default(false) @map("has_filmoteca")
-  qtd_filmoteca      Int?      @map("qtd_filmoteca")
-  has_espaco_aberto  Boolean   @default(false) @map("has_espaco_aberto")
-  qtd_espaco_aberto  Int?      @map("qtd_espaco_aberto")
-  has_visita_guiada  Boolean   @default(false) @map("has_visita_guiada")
-  qtd_visita_guiada  Int?      @map("qtd_visita_guiada")
+  updatedAt            DateTime  @default(now()) @updatedAt @map("updated_at")
 
-  usuarios    Usuario[]
-  visits      Visit[]
-  lockers     Locker[]
+  usuarios     Usuario[]
+  visits       Visit[]
+  lockers      Locker[]
   computadores Computador[]
   agendamentos Agendamento[]
 
   @@map("espacos")
 }
 
-model Visit {
-  id         String      @id @default(uuid())
-  visitorId  String?     @map("visitor_id")
-  nome       String
-  perfil    String?
-  local     String?
-  espacoId  String?     @map("espaco_id")
-  checkin   DateTime    @default(now())
-  checkout  DateTime?
-  status    VisitStatus?
-  armario  String?
-  createdAt DateTime    @default(now()) @map("created_at")
+// ==========================================
+// DOMAIN MODELS
+// ==========================================
 
-  visitor Visitor? @relation(fields: [visitorId], references: [id])
-  espaco  Espaco?  @relation(fields: [espacoId], references: [id])
+model Visitor {
+  id                     String    @id @default(uuid())
+  fullName               String    @map("full_name")
+  cpf                    String?   @unique
+  passport               String?
+  isForeigner            Boolean   @default(false) @map("is_foreigner")
+  gender                 Gender?
+  birthDate              DateTime? @map("birth_date")
+  email                  String?
+  phone                  String?
+  address                String?
+  category               String?   @default("general")
+  photoUrl               String?   @map("photo_url")
+  parentalAuthorization  Boolean   @default(false) @map("parental_authorization")
+  authorizationDate      DateTime? @map("authorization_date")
+  responsibleName        String?   @map("responsible_name") @db.VarChar(100)
+  authorizationDocType   String?   @map("authorization_doc_type") @db.VarChar(20)
+  authorizationPresented Boolean   @default(false) @map("authorization_presented")
+  createdAt              DateTime  @default(now()) @map("created_at")
+  updatedAt              DateTime  @default(now()) @updatedAt @map("updated_at")
+
+  visits             Visit[]
+  lockers            Locker[]
+  authorizationLogs  AuthorizationLog[]
+  assinaturasDigitais AssinaturaDigital[]
+
+  @@index([cpf])
+  @@index([email])
+  @@map("visitors")
+}
+
+model Visit {
+  id                     String      @id @default(uuid())
+  visitorId              String?     @map("visitor_id")
+  espacoId               String?     @map("espaco_id")
+  nome                   String      // Snapshot do nome do visitante no checkin
+  perfil                 String?     @default("general")
+  local                  String?     @default("Entrada Principal")
+  checkin                DateTime    @default(now())
+  checkout               DateTime?
+  status                 VisitStatus @default(ativo)
+  armario                String?
+  responsibleAccompanied Boolean     @default(false) @map("responsible_accompanied")
+  createdAt              DateTime    @default(now()) @map("created_at")
+
+  visitor Visitor? @relation(fields: [visitorId], references: [id], onDelete: SetNull)
+  espaco  Espaco?  @relation(fields: [espacoId], references: [id], onDelete: SetNull)
 
   @@index([visitorId])
   @@index([espacoId])
@@ -158,173 +181,143 @@ model Visit {
   @@map("visits")
 }
 
+// ==========================================
+// RESOURCE MODELS
+// ==========================================
+
 model Computador {
-  id           String            @id @default(uuid())
-  numero       Int               @map("numero")
-  status       ComputadorStatus? @default(Livre)
-  usuarioId    String?           @map("usuario_id")
-  usuarioNome  String?           @map("usuario_nome")
+  id            String           @id @default(uuid())
+  numero        Int
+  status        ComputadorStatus @default(Livre)
+  usuarioId     String?          @map("usuario_id")
+  usuarioNome   String?          @map("usuario_nome")
   horarioInicio DateTime?        @map("horario_inicio")
   horarioLimite DateTime?        @map("horario_limite")
-  espacoId     String?           @map("espaco_id")
-  espacoNome   String?           @map("espaco_nome")
+  espacoId      String?          @map("espaco_id")
+  espacoNome    String?          @map("espaco_nome")
 
-  espaco Espaco? @relation(fields: [espacoId], references: [id])
+  espaco Espaco? @relation(fields: [espacoId], references: [id], onDelete: SetNull)
 
+  @@unique([espacoId, numero])
   @@index([espacoId])
   @@index([status])
-  @@unique([espacoId, numero])
   @@map("computadores")
 }
 
 model Locker {
-  id           String   @id @default(uuid())
-  number       Int
-  status       String?
-  visitorId    String?   @map("visitor_id")
-  visitorName String?   @map("visitor_name")
-  espacoId   String?   @map("espaco_id")
-  updatedAt  DateTime  @default(now()) @map("updated_at")
+  id          String       @id @default(uuid())
+  number      Int
+  status      LockerStatus @default(Livre)
+  visitorId   String?      @map("visitor_id")
+  visitorName String?      @map("visitor_name")
+  espacoId    String?      @map("espaco_id")
+  updatedAt   DateTime     @default(now()) @updatedAt @map("updated_at")
 
-  visitor Visitor? @relation(fields: [visitorId], references: [id])
-  espaco Espaco?  @relation(fields: [espacoId], references: [id])
+  visitor Visitor? @relation(fields: [visitorId], references: [id], onDelete: SetNull)
+  espaco  Espaco?  @relation(fields: [espacoId], references: [id], onDelete: SetNull)
 
+  @@index([espacoId])
+  @@index([status])
   @@map("lockers")
 }
 
-model Agendamento {
-  id                       String           @id @default(uuid())
-  espacoId                  String           @map("espaco_id")
-  solicitante_nome           String           @map("solicitante_nome")
-  solicitante_email          String           @map("solicitante_email")
-  solicitante_telefone      String           @map("solicitante_telefone")
-  solicitante_documento       String?          @map("solicitante_documento")
-  tipo_solicitante         String           @map("tipo_solicitante")
-  tipo_espaco            String           @map("tipo_espaco")
-  espaco_solicitado        String           @map("espaco_solicitado")
-  data_pretendida        DateTime         @map("data_pretendida")
-  horario_inicio           DateTime         @map("horario_inicio")
-  horario_fim             DateTime         @map("horario_fim")
-  numero_participantes    Int              @map("numero_participantes")
-  descricao_evento        String           @map("descricao_evento")
-  natureza_evento       String           @map("natureza_evento")
-  gratuito              Boolean?
-  valor_ingresso       Float?           @map("valor_ingresso")
-  necessita_equipamentos String?          @map("necessita_equipamentos")
-  observacoes          String?
-  status               AgendamentoStatus @default(pendente)
-  termo_aceito         Boolean?          @map("termo_aceito")
-  termo_aceito_em      DateTime?          @map("termo_aceito_em")
-  responsabhilidade_evento Boolean?        @map("responsabhilidade_evento")
-  danos_patrimonio    Boolean?          @map("danos_patrimonio")
-  respeito_lotacao    Boolean?          @map("respeito_lotacao")
-  autorizo_divulgacao   Boolean?          @map("autorizo_divulgacao")
-  documento_anexo_url String?           @map("documento_anexo_url")
-  resposta_coordenador String?           @map("resposta_coordenador")
-  coordenador_id        String?           @map("coordenador_id")
-  respondido_em       DateTime?          @map("respondido_em")
-  created_at           DateTime           @default(now()) @map("created_at")
-  updated_at           DateTime           @default(now()) @map("updated_at")
+// ==========================================
+// TRANSACTIONAL MODELS
+// ==========================================
 
-  espaco Espaco @relation(fields: [espacoId], references: [id])
+model Agendamento {
+  id                      String            @id @default(uuid())
+  espacoId                String            @map("espaco_id")
+  solicitanteNome         String            @map("solicitante_nome")
+  solicitanteEmail        String            @map("solicitante_email")
+  solicitanteTelefone     String            @map("solicitante_telefone")
+  solicitanteDocumento    String?           @map("solicitante_documento")
+  tipoSolicitante         String            @map("tipo_solicitante")
+  tipoEspaco              String            @map("tipo_espaco")
+  espacoSolicitado        String            @map("espaco_solicitado")
+  dataPretendida          DateTime          @map("data_pretendida") @db.Date
+  horarioInicio           DateTime          @map("horario_inicio")
+  horarioFim              DateTime          @map("horario_fim")
+  numeroParticipantes     Int               @map("numero_participantes")
+  descricaoEvento         String            @map("descricao_evento")
+  naturezaEvento          String            @map("natureza_evento")
+  gratuito                Boolean?          @default(true)
+  valorIngresso           Float?            @map("valor_ingresso")
+  necessitaEquipamentos   String?           @map("necessita_equipamentos")
+  observacoes             String?
+  status                  AgendamentoStatus @default(pendente)
+  termoAceito             Boolean?          @default(false) @map("termo_aceito")
+  termoAceitoEm           DateTime?         @map("termo_aceito_em")
+  responsabilidadeEvento  Boolean?          @default(false) @map("responsabhilidade_evento")
+  danosPatrimonio         Boolean?          @default(false) @map("danos_patrimonio")
+  respeitoLotacao         Boolean?          @default(false) @map("respeito_lotacao")
+  autorizoDivulgacao      Boolean?          @default(false) @map("autorizo_divulgacao")
+  documentoAnexoUrl       String?           @map("documento_anexo_url")
+  respostaCoordenador     String?           @map("resposta_coordenador")
+  coordenadorId           String?           @map("coordenador_id")
+  respondidoEm            DateTime?         @map("respondido_em")
+  razaoSocial             String?           @map("razao_social")
+  nomeInstituicao         String?           @map("nome_instituicao")
+  secretariaGoverno       String?           @map("secretaria_governo")
+  unidadeGoverno          String?           @map("unidade_governo")
+  assinaturaId            String?           @map("assinatura_id")
+  ipConfirmacao           String?           @map("ip_confirmacao")
+  userAgent               String?           @map("user_agent")
+  createdAt               DateTime          @default(now()) @map("created_at")
+  updatedAt               DateTime          @default(now()) @updatedAt @map("updated_at")
+  termoCompromissoAssinado Boolean?         @default(false) @map("termo_compromisso_assinado")
+  termoCompromissoData    DateTime?         @map("termo_compromisso_data")
+  termoCompromissoIp      String?           @map("termo_compromisso_ip")
+
+  espaco     Espaco                 @relation(fields: [espacoId], references: [id])
   documentos DocumentoAgendamento[]
 
   @@index([espacoId])
   @@index([status])
-  @@index([data_pretendida])
-  @@index([solicitante_email])
+  @@index([dataPretendida])
+  @@index([solicitanteEmail])
   @@map("agendamentos")
 }
 
-model AssinaturaDigital {
-  id                  String   @id @default(uuid())
-  visitorId            String?  @map("visitor_id")
-  nomeAssinante        String   @map("nome_assinante")
-  cpfAssinante       String    @map("cpf_assinante")
-  tipoDocumento       String    @map("tipo_documento")
-  documentoId        String?   @map("documento_id")
-  documentoHash     String    @map("documento_hash")
-  dataHora          DateTime  @default(now()) @map("data_hora")
-  dataHoraBrasilia   String?   @map("data_hora_brasilia")
-  ipPublico         String    @map("ip_publico")
-  userAgent         String?   @map("user_agent")
-  browserFingerprint Json?    @map("browser_fingerprint")
-  cpfValidado       Boolean?   @map("cpf_validado")
-  cpfStatus        String?    @map("cpf_status")
-  termoConteudo     String?   @map("termo_conteudo")
-  termoHash        String?   @map("termo_hash")
-  createdAt        DateTime   @default(now()) @map("created_at")
-  updatedAt        DateTime   @default(now()) @map("updated_at")
-
-  @@index([cpfAssinante])
-  @@index([visitorId])
-  @@index([dataHora])
-  @@map("assinaturas_digitais")
-}
-
-model Auditoria {
-  id          String   @id @default(uuid())
-  usuario     String
-  perfil      String?
-  acao        String
-  detalhes    String?
-  entidadeId  String?   @map("entidade_id")
-  createdAt   DateTime  @default(now()) @map("created_at")
-
-  @@index([usuario])
-  @@index([acao])
-  @@index([createdAt])
-  @@map("auditoria")
-}
-
-model Configuracao {
-  id               String  @id @default("sistema")
-  institutionName  String?  @map("institution_name")
-  data             Json?
-  updatedAt        DateTime  @default(now()) @map("updated_at")
-
-  @@map("configuracoes")
-}
-
 model AgendamentoRascunho {
-  id                       String   @id @default(uuid())
-  session_id               String   @unique @map("session_id")
-  solicitante_nome         String?  @map("solicitante_nome")
-  solicitante_email        String?  @map("solicitante_email")
-  solicitante_telefone     String?  @map("solicitante_telefone")
-  solicitante_documento    String?  @map("solicitante_documento")
-  tipo_solicitante         String?  @map("tipo_solicitante")
-  razao_social             String?  @map("razao_social")
-  nome_instituicao         String?  @map("nome_instituicao")
-  secretaria_governo       String?  @map("secretaria_governo")
-  unidade_governo          String?  @map("unidade_governo")
-  espaco_id                String?  @map("espaco_id")
-  tipo_espaco              String?  @map("tipo_espaco")
-  espaco_solicitado        String?  @map("espaco_solicitado")
-  data_pretendida          String?  @map("data_pretendida")
-  horario_inicio           String?  @map("horario_inicio")
-  horario_fim              String?  @map("horario_fim")
-  numero_participantes     Int?     @map("numero_participantes")
-  descricao_evento         String?  @map("descricao_evento")
-  natureza_evento          String?  @map("natureza_evento")
-  gratuito                 Boolean? @map("gratuito")
-  valor_ingresso           String?  @map("valor_ingresso")
-  necessita_equipamentos   String?  @map("necessita_equipamentos")
-  observacoes              String?  @map("observacoes")
-  termo_aceito             Boolean? @map("termo_aceito")
-  responsabhilidade_evento Boolean? @map("responsabhilidade_evento")
-  danos_patrimonio         Boolean? @map("danos_patrimonio")
-  respeito_lotacao         Boolean? @map("respeito_lotacao")
-  autorizo_divulgacao      Boolean? @map("autorizo_divulgacao")
-  termo_compromisso_assinado Boolean? @map("termo_compromisso_assinado")
-  termo_compromisso_data   String?  @map("termo_compromisso_data")
-  termo_compromisso_ip     String?  @map("termo_compromisso_ip")
-  termo_compromisso_arquivo String? @map("termo_compromisso_arquivo")
-  current_step             Int?     @map("current_step")
-  createdAt                DateTime @default(now()) @map("created_at")
-  updatedAt                DateTime @default(now()) @map("updated_at")
+  id                       String    @id @default(uuid())
+  sessionId                String    @unique @map("session_id")
+  solicitanteNome          String?   @map("solicitante_nome")
+  solicitanteEmail         String?   @map("solicitante_email")
+  solicitanteTelefone      String?   @map("solicitante_telefone")
+  solicitanteDocumento     String?   @map("solicitante_documento")
+  tipoSolicitante          String?   @map("tipo_solicitante")
+  razaoSocial              String?   @map("razao_social")
+  nomeInstituicao          String?   @map("nome_instituicao")
+  secretariaGoverno        String?   @map("secretaria_governo")
+  unidadeGoverno           String?   @map("unidade_governo")
+  espacoId                 String?   @map("espaco_id")
+  tipoEspaco               String?   @map("tipo_espaco")
+  espacoSolicitado         String?   @map("espaco_solicitado")
+  dataPretendida           String?   @map("data_pretendida")
+  horarioInicio            String?   @map("horario_inicio")
+  horarioFim               String?   @map("horario_fim")
+  numeroParticipantes      Int?      @map("numero_participantes")
+  descricaoEvento          String?   @map("descricao_evento")
+  naturezaEvento           String?   @map("natureza_evento")
+  gratuito                 Boolean?  @default(true) @map("gratuito")
+  valorIngresso            String?   @map("valor_ingresso")
+  necessitaEquipamentos    String?   @map("necessita_equipamentos")
+  observacoes              String?   @map("observacoes")
+  termoAceito              Boolean?  @default(false) @map("termo_aceito")
+  responsabilidadeEvento   Boolean?  @default(false) @map("responsabhilidade_evento")
+  danosPatrimonio          Boolean?  @default(false) @map("danos_patrimonio")
+  respeitoLotacao          Boolean?  @default(false) @map("respeito_lotacao")
+  autorizoDivulgacao       Boolean?  @default(false) @map("autorizo_divulgacao")
+  termoCompromissoAssinado Boolean?  @default(false) @map("termo_compromisso_assinado")
+  termoCompromissoData     DateTime? @map("termo_compromisso_data")
+  termoCompromissoIp       String?   @map("termo_compromisso_ip")
+  termoCompromissoArquivo  String?   @map("termo_compromisso_arquivo")
+  currentStep              Int?      @default(1) @map("current_step")
+  createdAt                DateTime  @default(now()) @map("created_at")
+  updatedAt                DateTime  @default(now()) @updatedAt @map("updated_at")
 
-  @@index([session_id])
+  @@index([sessionId])
   @@map("agendamentos_rascunhos")
 }
 
@@ -341,13 +334,86 @@ model DocumentoAgendamento {
   @@map("documentos_agendamento")
 }
 
+model AssinaturaDigital {
+  id                String   @id @default(uuid())
+  visitorId         String?  @map("visitor_id")
+  nomeAssinante     String   @map("nome_assinante")
+  cpfAssinante      String   @map("cpf_assinante")
+  tipoDocumento     String   @map("tipo_documento")
+  documentoId       String?  @map("documento_id")
+  documentoHash     String   @map("documento_hash")
+  dataHora          DateTime @default(now()) @map("data_hora")
+  dataHoraBrasilia  String?  @map("data_hora_brasilia")
+  ipPublico         String   @map("ip_publico")
+  userAgent         String?  @map("user_agent")
+  browserFingerprint Json?   @map("browser_fingerprint")
+  cpfValidado       Boolean? @default(false) @map("cpf_validado")
+  cpfStatus         String?  @map("cpf_status")
+  termoConteudo     String?  @map("termo_conteudo")
+  termoHash         String?  @map("termo_hash")
+  createdAt         DateTime @default(now()) @map("created_at")
+  updatedAt         DateTime @default(now()) @updatedAt @map("updated_at")
+
+  visitor Visitor? @relation(fields: [visitorId], references: [id], onDelete: SetNull)
+
+  @@index([cpfAssinante])
+  @@index([visitorId])
+  @@index([dataHora])
+  @@map("assinaturas_digitais")
+}
+
+// ==========================================
+// OBSERVABILITY MODELS
+// ==========================================
+
+model Auditoria {
+  id         String   @id @default(uuid())
+  usuario    String
+  perfil     String?  @default("desconhecido")
+  acao       String
+  detalhes   String?
+  entidadeId String?  @map("entidade_id")
+  createdAt  DateTime @default(now()) @map("created_at")
+
+  @@index([usuario])
+  @@index([acao])
+  @@index([createdAt])
+  @@map("auditoria")
+}
+
+model AuthorizationLog {
+  id           String   @id @default(uuid())
+  visitorId    String   @map("visitor_id")
+  authorizedBy String   @map("authorized_by")
+  timestamp    DateTime @default(now())
+  docType      String   @map("doc_type")
+  details      String?
+
+  visitor Visitor @relation(fields: [visitorId], references: [id], onDelete: Cascade)
+
+  @@index([visitorId])
+  @@map("authorization_logs")
+}
+
 model LogAgendamento {
   id            String   @id @default(uuid())
   agendamentoId String?  @map("agendamento_id")
   usuario       String
   acao          String
   detalhes      String?
+  dadosAnteriores Json?  @map("dados_anteriores")
+  dadosNovos      Json?  @map("dados_novos")
+  ipAddress       String? @map("ip_address")
   createdAt     DateTime @default(now()) @map("created_at")
 
   @@map("log_agendamentos")
+}
+
+model Configuracao {
+  id              String   @id @default("sistema")
+  institutionName String?  @map("institution_name")
+  data            Json?    @default("{}")
+  updatedAt       DateTime @default(now()) @updatedAt @map("updated_at")
+
+  @@map("configuracoes")
 }

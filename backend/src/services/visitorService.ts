@@ -17,16 +17,26 @@ export class VisitorService {
   }
 
   async createVisitor(data: any): Promise<Visitor> {
-    // Aqui poderíamos usar um Factory ou o próprio construtor da Entidade
     const visitor = new Visitor({
       id: crypto.randomUUID(),
       fullName: data.fullName || data.full_name,
       cpf: data.cpf,
       isForeigner: data.is_foreigner || data.isForeigner || false,
+      birthDate: data.birth_date ? new Date(data.birth_date) : (data.birthDate ? new Date(data.birthDate) : null),
+      parentalAuthorization: data.parentalAuthorization || false,
+      responsibleName: data.responsibleName || null,
+      authorizationDocType: data.authorizationDocType || null,
+      authorizationPresented: data.authorizationPresented || false,
+      authorizationDate: data.parentalAuthorization ? new Date() : null,
       createdAt: new Date(),
       updatedAt: new Date(),
       // ... outros campos mapeados
     } as any);
+
+    const validation = visitor.canRegister();
+    if (!validation.allowed) {
+      throw new Error(validation.reason!);
+    }
 
     return this.visitorRepository.save(visitor);
   }
@@ -47,5 +57,21 @@ export class VisitorService {
 
   async deleteVisitor(id: string): Promise<void> {
     await this.visitorRepository.delete(id);
+  }
+
+  async authorizeVisitor(id: string, responsibleName: string, docType: string, authorizedBy: string): Promise<Visitor> {
+    const existing = await this.visitorRepository.findById(id);
+    if (!existing) throw new Error('Visitor not found');
+
+    const authorized = existing.authorizeParental(responsibleName, docType);
+    
+    await this.visitorRepository.createAuthorizationLog({
+      visitorId: id,
+      authorizedBy,
+      docType,
+      details: `Autorização parental concedida por ${responsibleName}`
+    });
+    
+    return this.visitorRepository.save(authorized);
   }
 }

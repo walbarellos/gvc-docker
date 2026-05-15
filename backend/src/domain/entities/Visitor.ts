@@ -18,6 +18,11 @@ export interface VisitorProps {
   address?: string | null;
   category?: string | null;
   photoUrl?: string | null;
+  parentalAuthorization: boolean;
+  authorizationDate?: Date | null;
+  responsibleName?: string | null;
+  authorizationDocType?: string | null;
+  authorizationPresented: boolean;
   createdAt: Date;
   updatedAt: Date;
 }
@@ -30,19 +35,68 @@ export class Visitor {
   get cpf() { return this.props.cpf; }
   get gender() { return this.props.gender; }
   get birthDate() { return this.props.birthDate; }
+  get parentalAuthorization() { return this.props.parentalAuthorization; }
+  get responsibleName() { return this.props.responsibleName; }
+  get authorizationDate() { return this.props.authorizationDate; }
+  get authorizationDocType() { return this.props.authorizationDocType; }
+  get authorizationPresented() { return this.props.authorizationPresented; }
 
-  // Exemplo de regra de negócio no domínio
-  get isUnderage(): boolean {
-    if (!this.props.birthDate) return false;
+  get age(): number {
+    if (!this.props.birthDate) return 0;
     const today = new Date();
-    const age = today.getFullYear() - this.props.birthDate.getFullYear();
-    return age < 18;
+    let age = today.getFullYear() - this.props.birthDate.getFullYear();
+    const m = today.getMonth() - this.props.birthDate.getMonth();
+    if (m < 0 || (m === 0 && today.getDate() < this.props.birthDate.getDate())) {
+      age--;
+    }
+    return age;
+  }
+
+  get isUnderage(): boolean {
+    return this.age < 18;
+  }
+
+  get isUnder12(): boolean {
+    return this.age < 12;
+  }
+
+  canRegister(): { allowed: boolean; reason: string | null } {
+    if (this.isUnder12 && !this.props.parentalAuthorization) {
+      return { allowed: false, reason: "Menores de 12 anos precisam de autorização parental OBRIGATÓRIA." };
+    }
+    
+    if (this.isUnder12 && this.props.parentalAuthorization && !this.props.responsibleName) {
+      return { allowed: false, reason: "Informe o nome do responsável pela autorização." };
+    }
+
+    return { allowed: true, reason: null };
+  }
+
+  canCheckIn(): { allowed: boolean; reason: string | null } {
+    if (this.isUnder12 && !this.props.parentalAuthorization) {
+      return { allowed: false, reason: "Este menor não possui autorização parental registrada. Procure a administração." };
+    }
+    return { allowed: true, reason: null };
+  }
+
+  authorizeParental(responsibleName: string, docType: string): Visitor {
+    return new Visitor({
+      ...this.props,
+      parentalAuthorization: true,
+      authorizationDate: new Date(),
+      responsibleName,
+      authorizationDocType: docType,
+      authorizationPresented: true,
+      updatedAt: new Date()
+    });
   }
 
   toJSON() {
     return {
       ...this.props,
-      isUnderage: this.isUnderage
+      age: this.age,
+      isUnderage: this.isUnderage,
+      isUnder12: this.isUnder12
     };
   }
 }

@@ -20,6 +20,11 @@ export class VisitorRepository implements IVisitorRepository {
       address: prismaVisitor.address,
       category: prismaVisitor.category,
       photoUrl: prismaVisitor.photoUrl,
+      parentalAuthorization: prismaVisitor.parentalAuthorization,
+      authorizationDate: prismaVisitor.authorizationDate,
+      responsibleName: prismaVisitor.responsibleName,
+      authorizationDocType: prismaVisitor.authorizationDocType,
+      authorizationPresented: prismaVisitor.authorizationPresented,
       createdAt: prismaVisitor.createdAt,
       updatedAt: prismaVisitor.updatedAt,
     });
@@ -52,7 +57,21 @@ export class VisitorRepository implements IVisitorRepository {
     const data = {
       fullName: visitor.fullName,
       cpf: visitor.cpf,
-      // ... mapear outros campos conforme necessário para o prisma.upsert ou create/update
+      passport: visitor.passport,
+      isForeigner: visitor.isForeigner,
+      gender: visitor.gender,
+      birthDate: visitor.birthDate,
+      email: visitor.email,
+      phone: visitor.phone,
+      address: visitor.address,
+      category: visitor.category,
+      photoUrl: visitor.photoUrl,
+      parentalAuthorization: visitor.parentalAuthorization,
+      authorizationDate: visitor.authorizationDate,
+      responsibleName: visitor.responsibleName,
+      authorizationDocType: visitor.authorizationDocType,
+      authorizationPresented: visitor.authorizationPresented,
+      updatedAt: new Date(),
     } as any;
 
     const saved = await this.prisma.visitor.upsert({
@@ -66,5 +85,16 @@ export class VisitorRepository implements IVisitorRepository {
 
   async delete(id: string): Promise<void> {
     await this.prisma.visitor.delete({ where: { id } });
+  }
+
+  async createAuthorizationLog(data: { visitorId: string, authorizedBy: string, docType: string, details?: string }): Promise<void> {
+    await this.prisma.authorizationLog.create({
+      data: {
+        visitorId: data.visitorId,
+        authorizedBy: data.authorizedBy,
+        docType: data.docType,
+        details: data.details,
+      }
+    });
   }
 }

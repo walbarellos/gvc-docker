@@ -62,6 +62,10 @@ export const createVisitorSchema = z.object({
   address: z.string().optional(),
   category: z.string().optional(),
   photo_url: z.string().url('URL inválida').optional().or(z.literal('')),
+  parentalAuthorization: z.boolean().optional().default(false),
+  responsibleName: z.string().max(100).optional(),
+  authorizationDocType: z.enum(['PHYSICAL', 'DIGITAL', 'TERM']).optional(),
+  authorizationPresented: z.boolean().optional().default(false),
 });
 
 export const updateVisitorSchema = createVisitorSchema.partial();
@@ -86,6 +90,7 @@ export const checkinSchema = z.object({
   perfil: z.enum(['general', 'estudante', 'professor', 'turista', 'pesquisador', 'cultural']).default('general'),
   nome: z.string().optional(),
   local: z.string().optional(),
+  responsibleAccompanied: z.boolean().optional().default(false),
 });
 
 export const checkoutSchema = z.object({

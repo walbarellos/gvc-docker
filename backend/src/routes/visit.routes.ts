@@ -1,6 +1,7 @@
 import type { FastifyInstance } from 'fastify';
 import { VisitStatus } from '@prisma/client';
 import { prisma } from '../lib/prisma.js';
+import { Visitor, Gender } from '../domain/entities/Visitor.js';
 
 const statusMap: Record<string, VisitStatus | VisitStatus[]> = {
   'Ativo': 'ativo' as VisitStatus,
@@ -186,7 +187,7 @@ export async function visitRoutes(app: FastifyInstance) {
 
   // Check-in
   app.post('/checkin', { preHandler: [app.authenticate] }, async (request: any, reply: any) => {
-    const { visitorId, espacoId, perfil } = request.body as any;
+    const { visitorId, espacoId, perfil, responsibleAccompanied } = request.body as any;
     
     if (request.user.role !== 'admin' && request.user.espacoId && request.user.espacoId !== espacoId) {
       return reply.status(403).send({ error: 'Espaço não autorizado para este usuário' });
@@ -195,6 +196,22 @@ export async function visitRoutes(app: FastifyInstance) {
     const visitor = await prisma.visitor.findUnique({ where: { id: visitorId } });
     if (!visitor) {
       return reply.status(404).send({ error: 'Visitante não encontrado' });
+    }
+
+    // Validar regras de autorização parental via Entidade de Domínio
+    const visitorEntity = new Visitor({
+      ...visitor,
+      gender: visitor.gender as Gender,
+      parentalAuthorization: visitor.parentalAuthorization,
+      authorizationDate: visitor.authorizationDate,
+      responsibleName: visitor.responsibleName,
+      authorizationDocType: visitor.authorizationDocType,
+      authorizationPresented: visitor.authorizationPresented,
+    } as any);
+
+    const checkinValidation = visitorEntity.canCheckIn();
+    if (!checkinValidation.allowed) {
+      return reply.status(403).send({ error: checkinValidation.reason });
     }
 
     // Verificar se o visitante já tem visita ATIVA no mesmo espaço OU em outro espaço (últimos 60 minutos)
@@ -295,7 +312,14 @@ export async function visitRoutes(app: FastifyInstance) {
     }
 
     const visit = await prisma.visit.create({
-      data: { visitorId, espacoId, nome: visitor.fullName, perfil: perfil || 'general', status: 'ativo' },
+      data: { 
+        visitorId, 
+        espacoId, 
+        nome: visitor.fullName, 
+        perfil: perfil || 'general', 
+        status: 'ativo',
+        responsibleAccompanied: responsibleAccompanied || false
+      },
     });
     return visit;
   });

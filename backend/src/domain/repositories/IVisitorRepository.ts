@@ -6,4 +6,5 @@ export interface IVisitorRepository {
   findByCpf(cpf: string): Promise<Visitor | null>;
   save(visitor: Visitor): Promise<Visitor>;
   delete(id: string): Promise<void>;
+  createAuthorizationLog(data: { visitorId: string, authorizedBy: string, docType: string, details?: string }): Promise<void>;
 }

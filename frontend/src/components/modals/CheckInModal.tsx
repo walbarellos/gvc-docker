@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { X, User, Globe, Heart, Mail, Phone, Camera, CheckCircle2 } from 'lucide-react';
+import { X, User, Globe, Heart, Mail, Phone, Camera, CheckCircle2, AlertCircle } from 'lucide-react';
 import { motion } from 'motion/react';
 import { visitorService } from '../../services/visitorService';
 import { VisitorCategory, Gender, Visitor } from '../../types';
@@ -23,7 +23,11 @@ export default function CheckInModal({ isOpen, onClose, visitorToEdit, onSuccess
     email: '',
     phone: '',
     address: '',
-    category: VisitorCategory.GENERAL
+    category: VisitorCategory.GENERAL,
+    parentalAuthorization: false,
+    responsibleName: '',
+    authorizationDocType: '',
+    authorizationPresented: false
   });
   const [errors, setErrors] = useState<{ [key: string]: string }>({});
   const [loading, setLoading] = useState(false);
@@ -78,6 +82,26 @@ export default function CheckInModal({ isOpen, onClose, visitorToEdit, onSuccess
     setErrors({});
   }, [visitorToEdit, isOpen]);
 
+  const calculateAge = (birthDateStr: string) => {
+    if (!birthDateStr) return null;
+    const parts = birthDateStr.split('/');
+    if (parts.length !== 3) return null;
+    const day = parseInt(parts[0], 10);
+    const month = parseInt(parts[1], 10);
+    const year = parseInt(parts[2], 10);
+    if (isNaN(day) || isNaN(month) || isNaN(year)) return null;
+    const birth = new Date(year, month - 1, day);
+    const now = new Date();
+    let age = now.getFullYear() - birth.getFullYear();
+    const m = now.getMonth() - birth.getMonth();
+    if (m < 0 || (m === 0 && now.getDate() < birth.getDate())) {
+      age--;
+    }
+    return age;
+  };
+
+  const age = calculateAge(formData.birthDate);
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     const newErrors: { [key: string]: string } = {};
@@ -130,6 +154,16 @@ export default function CheckInModal({ isOpen, onClose, visitorToEdit, onSuccess
       }
     }
 
+    if (age !== null && age < 12) {
+      if (!formData.parentalAuthorization) {
+        newErrors.parentalAuthorization = 'Autorização parental é obrigatória';
+      } else if (!formData.responsibleName.trim()) {
+        newErrors.responsibleName = 'Nome do responsável é obrigatório';
+      } else if (!formData.authorizationDocType) {
+        newErrors.authorizationDocType = 'Tipo de documento é obrigatório';
+      }
+    }
+
     if (Object.keys(newErrors).length > 0) {
       setErrors(newErrors);
       return;
@@ -172,7 +206,11 @@ export default function CheckInModal({ isOpen, onClose, visitorToEdit, onSuccess
         email: formData.email,
         phone: cleanPhone,
         address: formData.address,
-        category: formData.category
+        category: formData.category,
+        parentalAuthorization: formData.parentalAuthorization,
+        responsibleName: formData.responsibleName,
+        authorizationDocType: formData.authorizationDocType,
+        authorizationPresented: formData.parentalAuthorization
       };
 
       // Usa visitorService para criar ou atualizar
@@ -356,6 +394,79 @@ export default function CheckInModal({ isOpen, onClose, visitorToEdit, onSuccess
                     </div>
                   </div>
                 </div>
+
+                {/* Parental Authorization for under-12 */}
+                {age !== null && age < 12 && (
+                  <motion.div 
+                    initial={{ opacity: 0, height: 0 }}
+                    animate={{ opacity: 1, height: 'auto' }}
+                    className="bg-amber-50 border border-amber-200 rounded-xl p-5 space-y-4"
+                  >
+                    <div className="flex items-start gap-3">
+                      <div className="mt-0.5">
+                        <AlertCircle className="text-amber-600 w-5 h-5" />
+                      </div>
+                      <div>
+                        <h4 className="text-sm font-bold text-amber-900 uppercase tracking-tight">Autorização Parental Obrigatória</h4>
+                        <p className="text-[11px] text-amber-700 leading-relaxed font-medium">
+                          Visitantes menores de 12 anos necessitam de autorização expressa do responsável para cadastro e acesso ao espaço cultural.
+                        </p>
+                      </div>
+                    </div>
+
+                    <div className="space-y-3">
+                      <label className="flex items-center gap-3 cursor-pointer group">
+                        <input
+                          type="checkbox"
+                          checked={formData.parentalAuthorization}
+                          onChange={e => setFormData({ ...formData, parentalAuthorization: e.target.checked })}
+                          className="w-4 h-4 text-amber-600 border-amber-300 rounded focus:ring-amber-500"
+                        />
+                        <span className="text-xs font-bold text-amber-900 group-hover:text-amber-700 transition-colors">Declaro que possuo autorização para este menor</span>
+                      </label>
+                      {errors.parentalAuthorization && <p className="text-[10px] text-red-500 font-bold uppercase">{errors.parentalAuthorization}</p>}
+
+                      {formData.parentalAuthorization && (
+                        <motion.div 
+                          initial={{ opacity: 0, y: -10 }}
+                          animate={{ opacity: 1, y: 0 }}
+                          className="grid grid-cols-1 md:grid-cols-2 gap-3 pt-2 border-t border-amber-200/50"
+                        >
+                          <div>
+                            <label className="block text-[10px] font-bold text-amber-800 uppercase tracking-widest mb-1.5">Nome do Responsável *</label>
+                            <input
+                              type="text"
+                              value={formData.responsibleName}
+                              onChange={e => setFormData({ ...formData, responsibleName: e.target.value })}
+                              placeholder="Nome completo do tutor"
+                              className={`w-full bg-white border ${errors.responsibleName ? 'border-red-400' : 'border-amber-200'} rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-amber-500/20 outline-none`}
+                            />
+                            {errors.responsibleName && <p className="text-[10px] text-red-500 font-bold mt-1 uppercase">{errors.responsibleName}</p>}
+                          </div>
+                          <div>
+                            <label className="block text-[10px] font-bold text-amber-800 uppercase tracking-widest mb-1.5">Tipo de Documento *</label>
+                            <select
+                              value={formData.authorizationDocType}
+                              onChange={e => setFormData({ ...formData, authorizationDocType: e.target.value })}
+                              className={`w-full bg-white border ${errors.authorizationDocType ? 'border-red-400' : 'border-amber-200'} rounded-lg px-3 py-2 text-sm outline-none`}
+                            >
+                              <option value="">Selecione...</option>
+                              <option value="PHYSICAL">Documento Físico</option>
+                              <option value="DIGITAL">Documento Digital</option>
+                              <option value="TERM">Termo de Uso Assinado</option>
+                            </select>
+                            {errors.authorizationDocType && <p className="text-[10px] text-red-500 font-bold mt-1 uppercase">{errors.authorizationDocType}</p>}
+                          </div>
+                          <div className="md:col-span-2">
+                            <p className="text-[10px] text-amber-600 font-medium italic">
+                              * A autorização deve ser apresentada fisicamente ou via arquivo digital para conferência na recepção.
+                            </p>
+                          </div>
+                        </motion.div>
+                      )}
+                    </div>
+                  </motion.div>
+                )}
 
                 {/* Gender selection */}
                 <div>
