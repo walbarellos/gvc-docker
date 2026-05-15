@@ -1,9 +1,10 @@
+import './instrument.js';
 import Fastify from 'fastify';
 import cors from '@fastify/cors';
 import jwt from '@fastify/jwt';
 import helmet from '@fastify/helmet';
 import rateLimit from '@fastify/rate-limit';
-import dotenv from 'dotenv';
+import { config } from './config/unifiedConfig.js';
 import { authRoutes } from './routes/auth.routes.js';
 import { visitorRoutes } from './routes/visitor.routes.js';
 import { visitRoutes } from './routes/visit.routes.js';
@@ -18,8 +19,6 @@ import { assinaturaRoutes } from './routes/assinatura.routes.js';
 import { userRoutes } from './routes/user.routes.js';
 import { configuracaoRoutes } from './routes/configuracao.routes.js';
 
-dotenv.config();
-
 const app = Fastify({ logger: true });
 
 // Registros
@@ -31,12 +30,12 @@ app.register(rateLimit, {
 });
 
 app.register(cors, {
-  origin: process.env.CORS_ORIGIN?.split(',') || true,
+  origin: config.api.corsOrigin === '*' ? true : config.api.corsOrigin.split(','),
   credentials: true,
 });
 
 app.register(jwt, {
-  secret: process.env.JWT_SECRET || 'default-secret',
+  secret: config.auth.jwtSecret,
 });
 
 // Decorator para autenticação
@@ -103,7 +102,7 @@ app.register(configuracaoRoutes, { prefix: '/configuracoes' });
 
 // Startup
 const start = async () => {
-  const port = parseInt(process.env.API_PORT || '3001');
+  const port = config.api.port;
   try {
     await app.listen({ port, host: '0.0.0.0' });
     console.log(`🚀 GVC API rodando na porta ${port}`);
