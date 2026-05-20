@@ -17,6 +17,17 @@ export class VisitorService {
   }
 
   async createVisitor(data: any): Promise<Visitor> {
+    // BUG 2 FIX: Verificar CPF duplicado antes de criar
+    const cpf = data.cpf;
+    if (cpf) {
+      const existing = await this.visitorRepository.findByCpf(cpf);
+      if (existing) {
+        const error: any = new Error('CPF já cadastrado no sistema.');
+        error.statusCode = 409;
+        throw error;
+      }
+    }
+
     const visitor = new Visitor({
       id: crypto.randomUUID(),
       fullName: data.fullName || data.full_name,
@@ -25,6 +36,7 @@ export class VisitorService {
       birthDate: data.birth_date ? new Date(data.birth_date) : (data.birthDate ? new Date(data.birthDate) : null),
       parentalAuthorization: data.parentalAuthorization || false,
       responsibleName: data.responsibleName || null,
+      responsibleId: data.responsibleId || null,
       authorizationDocType: data.authorizationDocType || null,
       authorizationPresented: data.authorizationPresented || false,
       authorizationDate: data.parentalAuthorization ? new Date() : null,

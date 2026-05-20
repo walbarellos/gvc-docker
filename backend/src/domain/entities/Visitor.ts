@@ -21,6 +21,7 @@ export interface VisitorProps {
   parentalAuthorization: boolean;
   authorizationDate?: Date | null;
   responsibleName?: string | null;
+  responsibleId?: string | null;
   authorizationDocType?: string | null;
   authorizationPresented: boolean;
   createdAt: Date;
@@ -43,8 +44,9 @@ export class Visitor {
   get category() { return this.props.category; }
   get photoUrl() { return this.props.photoUrl; }
   get parentalAuthorization() { return this.props.parentalAuthorization; }
-  get responsibleName() { return this.props.responsibleName; }
   get authorizationDate() { return this.props.authorizationDate; }
+  get responsibleName() { return this.props.responsibleName; }
+  get responsibleId() { return this.props.responsibleId; }
   get authorizationDocType() { return this.props.authorizationDocType; }
   get authorizationPresented() { return this.props.authorizationPresented; }
 

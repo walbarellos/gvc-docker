@@ -26,13 +26,6 @@ enum VisitStatus {
   cancelado
 }
 
-enum ComputadorStatus {
-  Livre
-  EmUso
-  Manutencao
-  Indisponivel
-}
-
 enum LockerStatus {
   Livre
   Ocupado
@@ -142,10 +135,14 @@ model Visitor {
   parentalAuthorization  Boolean   @default(false) @map("parental_authorization")
   authorizationDate      DateTime? @map("authorization_date")
   responsibleName        String?   @map("responsible_name") @db.VarChar(100)
+  responsibleId          String?   @map("responsible_id")
   authorizationDocType   String?   @map("authorization_doc_type") @db.VarChar(20)
   authorizationPresented Boolean   @default(false) @map("authorization_presented")
   createdAt              DateTime  @default(now()) @map("created_at")
   updatedAt              DateTime  @default(now()) @updatedAt @map("updated_at")
+
+  responsibleFor    Visitor[]  @relation("ResponsibleFor")
+  responsibleParent Visitor?   @relation("ResponsibleFor", fields: [responsibleId], references: [id])
 
   visits             Visit[]
   lockers            Locker[]
@@ -188,7 +185,7 @@ model Visit {
 model Computador {
   id            String           @id @default(uuid())
   numero        Int
-  status        ComputadorStatus @default(Livre)
+  status        String @default("Livre")
   usuarioId     String?          @map("usuario_id")
   usuarioNome   String?          @map("usuario_nome")
   horarioInicio DateTime?        @map("horario_inicio")

@@ -24,6 +24,8 @@ export default function Sidebar({ onNewCheckIn }: SidebarProps) {
   const location = useLocation();
   const { hasPermission, userData, spaceConfig, logout, isAdmin, isCoordinator, isStaff } = useAuth();
 
+  const isGlobalAdmin = userData?.perfil === 'administrador' && (!userData?.espacoId || userData?.espacoId === 'todos');
+
   const navItems = [
     { icon: LayoutDashboard, label: 'Painel', path: '/' },
     { icon: Users, label: 'Visitantes', path: '/visitantes' },
@@ -37,7 +39,7 @@ export default function Sidebar({ onNewCheckIn }: SidebarProps) {
       icon: Monitor, 
       label: 'Telecentro', 
       path: '/telecentro',
-      hidden: !spaceConfig?.perfilTelecentro && userData?.perfil !== 'administrador'
+      hidden: !isGlobalAdmin && !spaceConfig?.perfilTelecentro
     },
     { 
       icon: CalendarDays, 

@@ -123,7 +123,7 @@ export default function Telecentro() {
           const searchTokens = searchLower.split(/\s+/).filter(t => t.length > 0);
           return searchTokens.length > 0 && searchTokens.every(token => 
             (v.fullName || v.full_name || '').toLowerCase().includes(token) ||
-            (v.cpf || '').replace(/\D/g, '').includes(token.replace(/\D/g, ''))
+            (/^\d+$/.test(token) && (v.cpf || '').replace(/\D/g, '').includes(token))
           );
         });
         setSearchResults((filtered || []).map(v => ({ id: v.id, fullName: v.fullName || v.full_name, cpf: v.cpf })).slice(0, 5));
@@ -148,7 +148,7 @@ export default function Telecentro() {
     try {
       const agora = new Date();
       const limite = new Date(agora.getTime() + limiteMaximoMinutos * 60000);
-      await api.post('/computadores', {
+      const { error } = await api.post('/computadores', {
         numero: selectedComputador.numero,
         status: 'EmUso',
         usuarioId: visitor.id,
@@ -158,6 +158,13 @@ export default function Telecentro() {
         horarioInicio: agora.toISOString(),
         horarioLimite: limite.toISOString()
       });
+
+      if (error) {
+        setToast({ message: error.message || "Erro ao iniciar sessão.", type: 'error' });
+        setTimeout(() => setToast(null), 4000);
+        return;
+      }
+
       setToast({ message: `Sessão iniciada no PC ${selectedComputador.numero}!`, type: 'success' });
       setIsSearchOpen(false);
       setSelectedComputador(null);

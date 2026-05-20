@@ -277,23 +277,19 @@ const mapped = (data || []).map((d: any) => ({
   };
 
   const filteredVisitors = (visitors || []).filter(v => {
-    //     // console.log('Filtrando visitor:', v.fullName, 'searchTerm:', searchTerm);
-      const searchLower = searchTerm.toLowerCase();
-      const cleanSearch = searchTerm.replace(/[^\d]/g, '');
-      const searchTokens = searchLower.split(/\s+/).filter(t => t.length > 0);
-      
-      const nameMatches = searchTokens.length > 0 && searchTokens.every(token => 
-        (v.fullName || '').toLowerCase().includes(token)
-      );
-      
-      return (
-        (searchTokens.length === 0 || nameMatches) ||
-        ((v.cpf || '') && cleanSearch && (v.cpf || '').includes(cleanSearch)) ||
-        ((v.passport || '') && searchLower && (v.passport || '').toLowerCase().includes(searchLower))
-      );
+      const trimmed = searchTerm.trim();
+      if (!trimmed) return true;
+
+      const searchLower = trimmed.toLowerCase();
+      const isNumeric = /^\d+$/.test(trimmed);
+
+      if (isNumeric) {
+        const cpf = (v.cpf || '').replace(/\D/g, '');
+        if (cpf.includes(trimmed)) return true;
+      }
+
+      return (v.fullName || '').toLowerCase().includes(searchLower);
     });
-  
-  // console.log('Total visitantes:', visitors.length, 'Filtrados:', filteredVisitors.length);
 
   return (
     <div className="p-8 max-w-7xl mx-auto">

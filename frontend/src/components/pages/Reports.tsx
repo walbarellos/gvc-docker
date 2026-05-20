@@ -53,7 +53,7 @@ interface Visit {
 }
 
 export default function Reports() {
-  const { userData: currentAdmin } = useAuth();
+  const { userData: currentAdmin, spaceConfig } = useAuth();
   const [visits, setVisits] = useState<Visit[]>([]);
   const [locations, setLocations] = useState<any[]>([]);
   const [config, setConfig] = useState<any>(null);
@@ -295,7 +295,7 @@ export default function Reports() {
           ? filterLocation 
           : undefined;
         const { data: comps } = await computadorService.list({ espacoId });
-        
+
         if (!comps) {
           setTelecentroStats({ acessosHoje: 0, tempoMedio: 0, livres: 0, emUso: 0, excedidos: 0 });
           setTelecentroPrintData([]);
@@ -303,24 +303,43 @@ export default function Reports() {
           return;
         }
 
-        const startDatetime = new Date(startDate + 'T00:00:00').toISOString();
-        const endDatetime = new Date(endDate + 'T23:59:59').toISOString();
+        const agora = new Date();
 
-        const acessosPeriodo = (comps || []).filter(c => c.horario_inicio && new Date(c.horario_inicio) >= new Date(startDatetime) && new Date(c.horario_inicio) <= new Date(endDatetime));
-        const ativos = (comps || []).filter(c => c.status === 'Em Uso');
-        const livres = (comps || []).filter(c => c.status === 'Livre' || !c.status).length;
-        const emUso = ativos.length;
-        const excedidos = (comps || []).filter(c => c.status === 'Excedido').length;
+        // Em Uso
+        const emUso = (comps || []).filter(c => c.status === 'Em Uso').length;
 
-        const usedWithTime = (comps || []).filter(c => c.horario_inicio && c.horario_limite);
+        // Excedidos: horarioLimite < agora (mesma lógica do Telecentro.tsx)
+        const excedidos = (comps || []).filter(c =>
+          c.status === 'Em Uso' && c.horarioLimite && new Date(c.horarioLimite) < agora
+        ).length;
+
+        // Livres = total config - emUso - excedidos
+        const totalComputadores = spaceConfig?.totalComputadores || 10;
+        const livres = Math.max(0, totalComputadores - emUso - excedidos);
+
+        // Tempo médio baseado nas sessões ativas com horarioInicio
+        const activeWithTime = (comps || []).filter(c => c.status === 'Em Uso' && c.horarioInicio);
         let tempoMedio = 0;
-        if (usedWithTime.length > 0) {
-          const totalMinutes = usedWithTime.reduce((acc, c) => acc + (new Date(c.horario_limite).getTime() - new Date(c.horario_inicio).getTime()) / 60000, 0);
-          tempoMedio = Math.round(totalMinutes / usedWithTime.length);
+        if (activeWithTime.length > 0) {
+          const totalMinutos = activeWithTime.reduce((acc, c) =>
+            acc + Math.floor((agora.getTime() - new Date(c.horarioInicio).getTime()) / 60000), 0);
+          tempoMedio = Math.round(totalMinutos / activeWithTime.length);
         }
 
-        setTelecentroStats({ acessosHoje: acessosPeriodo.length, tempoMedio, livres, emUso, excedidos });
-        setTelecentroPrintData(acessosPeriodo);
+        // Acessos (Período): visitas no período do filtro
+        const startDt = new Date(startDate + 'T00:00:00');
+        const endDt = new Date(endDate + 'T23:59:59');
+        const acessosPeriodo = (visits || []).filter(v =>
+          v.checkin && new Date(v.checkin) >= startDt && new Date(v.checkin) <= endDt
+        ).length;
+
+        setTelecentroStats({ acessosHoje: acessosPeriodo, tempoMedio, livres, emUso, excedidos });
+
+        // Dados para exportação (computadores ativos no período)
+        const acessosComps = (comps || []).filter(c =>
+          c.horarioInicio && new Date(c.horarioInicio) >= startDt && new Date(c.horarioInicio) <= endDt
+        );
+        setTelecentroPrintData(acessosComps);
       } catch (error) {
         console.error("Erro ao carregar stats do telecentro:", error);
       } finally {
@@ -367,13 +386,13 @@ export default function Reports() {
         const endDatetime = new Date(endDate + 'T23:59:59').toISOString();
 
         telecentroData = (comps || [])
-          .filter(c => c.horario_inicio && new Date(c.horario_inicio) >= new Date(startDatetime) && new Date(c.horario_inicio) <= new Date(endDatetime))
+          .filter(c => c.horarioInicio && new Date(c.horarioInicio) >= new Date(startDatetime) && new Date(c.horarioInicio) <= new Date(endDatetime))
           .map(c => ({
             'PC': c.numero,
-            'Usuário': c.usuario_nome || c.usuarioNome || '-',
-            'Espaço': c.espaco_nome || c.espacoNome || '-',
-            'Início': c.horario_inicio ? format(new Date(c.horario_inicio), 'dd/MM/yyyy HH:mm') : '-',
-            'Término': c.horario_limite ? format(new Date(c.horario_limite), 'dd/MM/yyyy HH:mm') : '-',
+            'Usuário': c.usuarioNome || '-',
+            'Espaço': c.espacoNome || '-',
+            'Início': c.horarioInicio ? format(new Date(c.horarioInicio), 'dd/MM/yyyy HH:mm') : '-',
+            'Término': c.horarioLimite ? format(new Date(c.horarioLimite), 'dd/MM/yyyy HH:mm') : '-',
             'Status': c.status || 'Desconhecido'
           }));
       }

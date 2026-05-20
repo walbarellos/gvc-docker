@@ -32,17 +32,21 @@ export default function CheckInModal({ isOpen, onClose, visitorToEdit, onSuccess
   const [errors, setErrors] = useState<{ [key: string]: string }>({});
   const [loading, setLoading] = useState(false);
   const [success, setSuccess] = useState(false);
+  const [responsibleSearch, setResponsibleSearch] = useState('');
+  const [responsibleResults, setResponsibleResults] = useState<any[]>([]);
+  const [selectedResponsible, setSelectedResponsible] = useState<{ id: string; fullName: string } | null>(null);
 
   useEffect(() => {
     if (visitorToEdit) {
+      const v: any = visitorToEdit;
       setFormData({
-        fullName: visitorToEdit.fullName,
-        cpf: visitorToEdit.cpf || '',
-        passport: visitorToEdit.passport || '',
-        isForeigner: visitorToEdit.isForeigner || false,
-        gender: visitorToEdit.gender || Gender.MALE,
+        fullName: v.fullName,
+        cpf: v.cpf || '',
+        passport: v.passport || '',
+        isForeigner: v.isForeigner || false,
+        gender: v.gender || Gender.MALE,
         birthDate: (() => {
-          const bd = (visitorToEdit as any).birthDate;
+          const bd = v.birthDate;
           if (!bd) return '';
           let dateStr = '';
           if (typeof bd === 'string') dateStr = bd.split('T')[0];
@@ -60,10 +64,14 @@ export default function CheckInModal({ isOpen, onClose, visitorToEdit, onSuccess
           }
           return '';
         })(),
-        email: visitorToEdit.email || '',
-        phone: visitorToEdit.phone || '',
-        address: (visitorToEdit as any).address || '',
-        category: visitorToEdit.category
+        email: v.email || '',
+        phone: v.phone || '',
+        address: v.address || '',
+        category: v.category,
+        parentalAuthorization: v.parentalAuthorization || false,
+        responsibleName: v.responsibleName || '',
+        authorizationDocType: v.authorizationDocType || '',
+        authorizationPresented: v.authorizationPresented || false
       });
     } else {
       setFormData({
@@ -76,10 +84,24 @@ export default function CheckInModal({ isOpen, onClose, visitorToEdit, onSuccess
         email: '',
         phone: '',
         address: '',
-        category: VisitorCategory.GENERAL
+        category: VisitorCategory.GENERAL,
+        parentalAuthorization: false,
+        responsibleName: '',
+        authorizationDocType: '',
+        authorizationPresented: false
       });
     }
     setErrors({});
+    setSelectedResponsible(null);
+    setResponsibleSearch('');
+    setResponsibleResults([]);
+
+    if (visitorToEdit) {
+      const edit: any = visitorToEdit;
+      if (edit.responsibleId && edit.responsibleName) {
+        setSelectedResponsible({ id: edit.responsibleId, fullName: edit.responsibleName });
+      }
+    }
   }, [visitorToEdit, isOpen]);
 
   const calculateAge = (birthDateStr: string) => {
@@ -101,6 +123,24 @@ export default function CheckInModal({ isOpen, onClose, visitorToEdit, onSuccess
   };
 
   const age = calculateAge(formData.birthDate);
+
+  // Search responsible person from database
+  useEffect(() => {
+    if (responsibleSearch.trim().length < 3) {
+      setResponsibleResults([]);
+      return;
+    }
+    const timer = setTimeout(async () => {
+      const { data } = await visitorService.listAll();
+      if (!data) return;
+      const search = responsibleSearch.toLowerCase();
+      const results = data
+        .filter((v: any) => (v.fullName || '').toLowerCase().includes(search))
+        .slice(0, 5);
+      setResponsibleResults(results.map((v: any) => ({ id: v.id, fullName: v.fullName || v.full_name })));
+    }, 300);
+    return () => clearTimeout(timer);
+  }, [responsibleSearch]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -187,7 +227,7 @@ export default function CheckInModal({ isOpen, onClose, visitorToEdit, onSuccess
         }
       }
 
-      const dataToSave = {
+      const dataToSave: any = {
         full_name: formData.fullName,
         cpf: formData.isForeigner ? '' : cleanCPF,
         passport: formData.passport,
@@ -209,6 +249,7 @@ export default function CheckInModal({ isOpen, onClose, visitorToEdit, onSuccess
         category: formData.category,
         parentalAuthorization: formData.parentalAuthorization,
         responsibleName: formData.responsibleName,
+        responsibleId: selectedResponsible?.id || null,
         authorizationDocType: formData.authorizationDocType,
         authorizationPresented: formData.parentalAuthorization
       };
@@ -433,14 +474,55 @@ export default function CheckInModal({ isOpen, onClose, visitorToEdit, onSuccess
                           className="grid grid-cols-1 md:grid-cols-2 gap-3 pt-2 border-t border-amber-200/50"
                         >
                           <div>
-                            <label className="block text-[10px] font-bold text-amber-800 uppercase tracking-widest mb-1.5">Nome do Responsável *</label>
-                            <input
-                              type="text"
-                              value={formData.responsibleName}
-                              onChange={e => setFormData({ ...formData, responsibleName: e.target.value })}
-                              placeholder="Nome completo do tutor"
-                              className={`w-full bg-white border ${errors.responsibleName ? 'border-red-400' : 'border-amber-200'} rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-amber-500/20 outline-none`}
-                            />
+                            <label className="block text-[10px] font-bold text-amber-800 uppercase tracking-widest mb-1.5">Responsável *</label>
+                            {selectedResponsible ? (
+                              <div className="flex items-center gap-2 bg-white border border-amber-200 rounded-lg px-3 py-2">
+                                <span className="flex-1 text-sm font-medium text-amber-900">{selectedResponsible.fullName}</span>
+                                <button
+                                  type="button"
+                                  onClick={() => {
+                                    setSelectedResponsible(null);
+                                    setFormData({ ...formData, responsibleName: '' });
+                                    setResponsibleSearch('');
+                                  }}
+                                  className="text-amber-500 hover:text-amber-700"
+                                >
+                                  <X size={16} />
+                                </button>
+                              </div>
+                            ) : (
+                              <div className="relative">
+                                <input
+                                  type="text"
+                                  value={responsibleSearch}
+                                  onChange={e => {
+                                    setResponsibleSearch(e.target.value);
+                                    setFormData({ ...formData, responsibleName: e.target.value });
+                                  }}
+                                  placeholder="Buscar responsável cadastrado..."
+                                  className={`w-full bg-white border ${errors.responsibleName ? 'border-red-400' : 'border-amber-200'} rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-amber-500/20 outline-none`}
+                                />
+                                {responsibleResults.length > 0 && (
+                                  <div className="absolute z-10 mt-1 w-full bg-white border border-amber-200 rounded-lg shadow-lg max-h-40 overflow-y-auto">
+                                    {responsibleResults.map(r => (
+                                      <button
+                                        key={r.id}
+                                        type="button"
+                                        onClick={() => {
+                                          setSelectedResponsible(r);
+                                          setFormData({ ...formData, responsibleName: r.fullName });
+                                          setResponsibleSearch('');
+                                          setResponsibleResults([]);
+                                        }}
+                                        className="w-full text-left px-3 py-2 text-sm hover:bg-amber-50 border-b border-amber-100 last:border-0"
+                                      >
+                                        {r.fullName}
+                                      </button>
+                                    ))}
+                                  </div>
+                                )}
+                              </div>
+                            )}
                             {errors.responsibleName && <p className="text-[10px] text-red-500 font-bold mt-1 uppercase">{errors.responsibleName}</p>}
                           </div>
                           <div>

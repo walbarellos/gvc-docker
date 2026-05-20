@@ -17,9 +17,42 @@ export async function computadorRoutes(app: FastifyInstance) {
     return prisma.computador.findUnique({ where: { id } });
   });
 
-  // Criar
-  app.post('/', { preHandler: [app.authenticate] }, async (request: any) => {
+  // Criar (iniciar sessão no computador)
+  app.post('/', { preHandler: [app.authenticate] }, async (request: any, reply: any) => {
     const data = request.body as any;
+
+    // BUG 1 & 6: Validar check-in ativo antes de permitir uso do computador
+    if (data.usuarioId && data.usuarioId !== 'temp') {
+      const activeVisit = await prisma.visit.findFirst({
+        where: {
+          visitorId: data.usuarioId,
+          espacoId: data.espacoId,
+          status: 'ativo',
+          checkout: null,
+        },
+      });
+
+      if (!activeVisit) {
+        return reply.status(400).send({
+          error: 'Visitante não possui check-in ativo neste espaço. Realize o check-in primeiro.',
+        });
+      }
+
+      const activeComputer = await prisma.computador.findFirst({
+        where: {
+          usuarioId: data.usuarioId,
+          espacoId: data.espacoId,
+          status: 'EmUso',
+        },
+      });
+
+      if (activeComputer) {
+        return reply.status(409).send({
+          error: `Visitante já está utilizando o computador PC ${activeComputer.numero} neste espaço.`,
+        });
+      }
+    }
+
     return prisma.computador.create({ data });
   });
 

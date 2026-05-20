@@ -114,7 +114,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     const PERMISSIONS: Record<string, string[]> = {
       coordenador: ["painel", "visitantes", "relatorios"],
       funcionario: ["painel", "visitantes", "armarios"],
-      monitor: ["painel", "telecentro"]
+      monitor: ["painel", "visitantes", "telecentro"]
     };
 
     const perfil = userData?.perfil || 'vazio';
