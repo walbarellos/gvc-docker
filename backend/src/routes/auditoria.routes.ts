@@ -1,5 +1,6 @@
 import type { FastifyInstance } from 'fastify';
 import { prisma } from '../lib/prisma.js';
+import { auditoriaBodySchema, validateBody } from '../schemas/index.js';
 
 function mapAuditoriaFields(data: any): any {
   if (!data) return data;
@@ -8,7 +9,9 @@ function mapAuditoriaFields(data: any): any {
   if (data.usuario !== undefined) mapped.usuario = data.usuario || '';
   if (data.perfil !== undefined) mapped.perfil = data.perfil || null;
   if (data.acao !== undefined) mapped.acao = data.acao || '';
-  if (data.detalhes !== undefined) mapped.detalhes = data.detalhes || null;
+  if (data.detalhes !== undefined) {
+    mapped.detalhes = typeof data.detalhes === 'string' ? data.detalhes : JSON.stringify(data.detalhes);
+  }
   
   if (data.entidade_id !== undefined) mapped.entidadeId = data.entidade_id || null;
   if (data.entidadeId !== undefined) mapped.entidadeId = data.entidadeId || null;
@@ -40,8 +43,12 @@ export async function auditoriaRoutes(app: FastifyInstance) {
   });
 
   // Criar (sem auth para logs automáticos)
-  app.post('/', async (request: any) => {
-    const data = mapAuditoriaFields(request.body);
+  app.post('/', async (request: any, reply: any) => {
+    const parsed = validateBody(auditoriaBodySchema, request.body);
+    if (!parsed.success) {
+      return reply.status(400).send({ error: 'Dados inválidos', details: parsed.error?.details });
+    }
+    const data = mapAuditoriaFields(parsed.data);
     return prisma.auditoria.create({ data });
   });
 }

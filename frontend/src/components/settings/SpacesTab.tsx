@@ -46,12 +46,12 @@ const SpacesTab: React.FC = () => {
     if (data) {
       setSpaces(data.map(d => ({
         ...d,
-        totalArmarios: d.total_armarios || d.totalArmarios,
-        perfilArmarios: d.perfil_armarios || d.perfilArmarios,
-        perfilTelecentro: d.perfil_telecentro || d.perfilTelecentro,
-        totalComputadores: d.total_computadores || d.totalComputadores,
-        perfilAgendamento: d.perfil_agendamento || d.perfilAgendamento,
-        capacidadeAgendamento: d.capacidade_agendamento || d.capacidadeAgendamento,
+        totalArmarios: d.totalArmarios,
+        perfilArmarios: d.perfilArmarios,
+        perfilTelecentro: d.perfilTelecentro,
+        totalComputadores: d.totalComputadores,
+        perfilAgendamento: d.perfilAgendamento,
+        capacidadeAgendamento: d.capacidadeAgendamento,
       })));
     }
     setLoading(false);

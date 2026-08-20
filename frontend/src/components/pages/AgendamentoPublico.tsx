@@ -92,7 +92,7 @@ const initialFormData: FormData = {
   necessita_equipamentos: '',
   observacoes: '',
   termo_aceito: false,
-  responsabhilidade_evento: false,
+  responsabilidade_evento: false,
   danos_patrimonio: false,
   respeito_lotacao: false,
   autorizo_divulgacao: false,
@@ -412,7 +412,7 @@ if (parsed && (parsed.solicitante_nome || parsed.espaco_id)) {
     const loadSpaces = async () => {
       const { data } = await spaceService.list();
       if (data) {
-        setSpaces(data.filter((s) => s.perfil_agendamento));
+        setSpaces(data.filter((s) => s.perfilAgendamento));
       }
       setLoadingSpaces(false);
     };
@@ -447,7 +447,7 @@ if (parsed && (parsed.solicitante_nome || parsed.espaco_id)) {
     // Converter horários para minutos para calcular folga de 10min
     const toMinutes = (time: string) => {
       const [h, m] = time.split(':').map(Number);
-      return h * 60 + m;
+      return (h ?? 0) * 60 + (m ?? 0);
     };
     
     const inicioMin = toMinutes(formData.horario_inicio);
@@ -520,7 +520,7 @@ if (parsed && (parsed.solicitante_nome || parsed.espaco_id)) {
       case 5:
         return (
           formData.termo_aceito &&
-          formData.responsabhilidade_evento &&
+          formData.responsabilidade_evento &&
           formData.danos_patrimonio &&
           formData.respeito_lotacao
         );
@@ -581,7 +581,7 @@ try {
           try {
             const termoCompleto = JSON.stringify({
               termo_compromisso: formData.termo_aceito,
-              responsabilidade_evento: formData.responsabhilidade_evento,
+              responsabilidade_evento: formData.responsabilidade_evento,
               danos_patrimonio: formData.danos_patrimonio,
               respeito_lotacao: formData.respeito_lotacao,
             });
@@ -634,7 +634,7 @@ try {
       const [savedDate, savedSeq] = seq.split('-');
       const today = `${year}${month}${day}`;
       if (savedDate === today) {
-        nextSeq = parseInt(savedSeq) + 1;
+        nextSeq = parseInt(savedSeq ?? '0') + 1;
       }
     }
     const newSeq = String(nextSeq).padStart(2, '0');
@@ -707,7 +707,7 @@ try {
             <h3>📄 Termos e Compromisso (Portaria nº 169/2023 - FEM)</h3>
             <div style="margin-top: 10px;">
               ${formData.termo_aceito ? '✅' : '❌'} <strong>Declaro que li e aceito os termos da Portaria nº 169/2023</strong><br>
-              ${formData.responsabhilidade_evento ? '✅' : '❌'} <strong>Assumo total responsabilidade pela segurança e produção do evento</strong><br>
+              ${formData.responsabilidade_evento ? '✅' : '❌'} <strong>Assumo total responsabilidade pela segurança e produção do evento</strong><br>
               ${formData.danos_patrimonio ? '✅' : '❌'} <strong>Responsabilizo-me por eventuais danos ao patrimônio público</strong><br>
               ${formData.respeito_lotacao ? '✅' : '❌'} <strong>Comprometo-me a respeitar a lotação máxima do espaço</strong><br>
               ${formData.autorizo_divulgacao ? '✅' : '❌'} <strong>Autorizo a FEM a utilizar imagens do evento para divulgação</strong>
@@ -1145,9 +1145,9 @@ try {
                           <p className="text-sm text-slate-600">
                             <strong>Endereço:</strong> {spaces.find((s) => s.id === formData.espaco_id)?.endereco || 'Não informado'}
                           </p>
-                          {spaces.find((s) => s.id === formData.espaco_id)?.horario_funcionamento && (
+                          {spaces.find((s) => s.id === formData.espaco_id)?.horarioFuncionamento && (
                             <p className="text-sm text-slate-600 mt-1">
-                              <strong>Funcionamento:</strong> {spaces.find((s) => s.id === formData.espaco_id)?.horario_funcionamento}
+                              <strong>Funcionamento:</strong> {spaces.find((s) => s.id === formData.espaco_id)?.horarioFuncionamento}
                             </p>
                           )}
                         </div>
@@ -1452,8 +1452,8 @@ try {
                     <label className="flex items-start gap-3 p-4 border border-red-300 rounded-xl cursor-pointer hover:bg-red-100">
                       <input
                         type="checkbox"
-                        checked={formData.responsabhilidade_evento}
-                        onChange={(e) => updateFormData('responsabhilidade_evento', e.target.checked)}
+                        checked={formData.responsabilidade_evento}
+                        onChange={(e) => updateFormData('responsabilidade_evento', e.target.checked)}
                         className="mt-1 w-5 h-5 text-red-600 rounded focus:ring-red-500"
                       />
                       <span className="text-sm text-red-800">
@@ -1489,7 +1489,7 @@ try {
                   </div>
                 </div>
 
-                {formData.termo_aceito && formData.responsabhilidade_evento && formData.danos_patrimonio && formData.respeito_lotacao && (
+                {formData.termo_aceito && formData.responsabilidade_evento && formData.danos_patrimonio && formData.respeito_lotacao && (
                   <div className="bg-green-50 border border-green-300 rounded-xl p-6">
                     <h3 className="font-semibold text-green-900 mb-4 flex items-center gap-2">
                       <Shield size={20} />

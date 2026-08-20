@@ -1,5 +1,6 @@
 import type { FastifyInstance } from 'fastify';
 import { prisma } from '../lib/prisma.js';
+import { createLockerBodySchema, updateLockerBodySchema, alocarLockerBodySchema, validateBody } from '../schemas/index.js';
 
 type LockerStatus = 'Livre' | 'Ocupado' | 'Manutencao';
 
@@ -9,6 +10,9 @@ const lockerStatusMap: Record<string, LockerStatus> = {
   'Manutencao': 'Manutencao',
   'disponivel': 'Livre',
   'ocupado': 'Ocupado',
+  'occupied': 'Ocupado',
+  'available': 'Livre',
+  'manutencao': 'Manutencao',
 };
 
 export async function lockerRoutes(app: FastifyInstance) {
@@ -29,19 +33,15 @@ export async function lockerRoutes(app: FastifyInstance) {
 
   // Criar
   app.post('/', { preHandler: [app.authenticate] }, async (request: any, reply: any) => {
-    const data = request.body as any;
-    
-    if (!data.number) {
-      return reply.status(400).send({ error: 'Número do armário é obrigatório' });
+    const parsed = validateBody(createLockerBodySchema, request.body);
+    if (!parsed.success) {
+      return reply.status(400).send({ error: 'Dados inválidos', details: parsed.error?.details });
     }
-    
-    if (!data.espaco_id && !data.espacoId) {
-      return reply.status(400).send({ error: 'Espaço é obrigatório' });
-    }
+    const data = parsed.data!;
 
     // Verificar limite de armários por visitante (1 por vez por espaço)
     const visitorId = data.visitor_id || data.visitorId;
-    if (visitorId && data.espaco_id) {
+    if (visitorId) {
       const existingLocker = await prisma.locker.findFirst({
         where: {
           visitorId: visitorId,
@@ -61,9 +61,9 @@ export async function lockerRoutes(app: FastifyInstance) {
       }
     }
 
-    const mappedData: any = {
-      number: data.number,
-      status: data.status === 'occupied' ? 'Ocupado' : (data.status === 'available' ? 'Livre' : data.status),
+    const mappedData = {
+      number: Number(data.number),
+      status: lockerStatusMap[data.status ?? ''] || data.status || 'Livre',
       visitorId: data.visitor_id || data.visitorId || null,
       visitorName: data.visitor_name || data.visitorName || null,
       espacoId: data.espaco_id || data.espacoId || null,
@@ -84,16 +84,20 @@ export async function lockerRoutes(app: FastifyInstance) {
   // Atualizar
   app.put('/:id', { preHandler: [app.authenticate] }, async (request: any, reply: any) => {
     const { id } = request.params;
-    const data = request.body as any;
+    const parsed = validateBody(updateLockerBodySchema, request.body);
+    if (!parsed.success) {
+      return reply.status(400).send({ error: 'Dados inválidos', details: parsed.error?.details });
+    }
+    const data = parsed.data!;
 
     // Se estiver liberando o armário (status = Livre), permitir
     // Se estiver ocupando, verificar limite
     const visitorId = data.visitor_id || data.visitorId;
-    if (visitorId && data.espacoId && data.status === 'Ocupado') {
+    if (visitorId && (data.espacoId || data.espaco_id) && (data.status === 'Ocupado' || data.status === 'occupied' || data.status === 'ocupado')) {
       const existingLocker = await prisma.locker.findFirst({
         where: {
           visitorId: visitorId,
-          espacoId: data.espacoId,
+          espacoId: data.espacoId || data.espaco_id,
           status: 'Ocupado',
           id: { not: id },
         },
@@ -111,8 +115,8 @@ export async function lockerRoutes(app: FastifyInstance) {
     }
 
     const mappedData: any = {};
-    if (data.number !== undefined) mappedData.number = data.number;
-    if (data.status !== undefined) mappedData.status = data.status;
+    if (data.number !== undefined) mappedData.number = Number(data.number);
+    if (data.status !== undefined) mappedData.status = lockerStatusMap[data.status] || data.status;
     if (data.visitor_id !== undefined || data.visitorId !== undefined) mappedData.visitorId = data.visitor_id || data.visitorId;
     if (data.visitor_name !== undefined || data.visitorName !== undefined) mappedData.visitorName = data.visitor_name || data.visitorName;
     if (data.espaco_id !== undefined || data.espacoId !== undefined) mappedData.espacoId = data.espaco_id || data.espacoId;
@@ -135,7 +139,16 @@ export async function lockerRoutes(app: FastifyInstance) {
 
   // Alocar armário
   app.post('/alocar', { preHandler: [app.authenticate] }, async (request: any, reply: any) => {
-    const { numero, visitorId, espacoId } = request.body as any;
+    const parsed = validateBody(alocarLockerBodySchema, request.body);
+    if (!parsed.success) {
+      return reply.status(400).send({ error: 'Dados inválidos', details: parsed.error?.details });
+    }
+    const body = parsed.data!;
+    const { numero, visitorId, espacoId } = {
+      numero: body.numero,
+      visitorId: body.visitorId ?? body.visitor_id,
+      espacoId: body.espacoId ?? body.espaco_id,
+    };
 
     // Verificar limite de armários por visitante (1 por vez por espaço)
     if (visitorId && espacoId) {
@@ -161,7 +174,7 @@ export async function lockerRoutes(app: FastifyInstance) {
     try {
       const locker = await prisma.locker.create({
         data: {
-          number: parseInt(numero),
+          number: Number(numero),
           status: 'Ocupado',
           espacoId,
           visitorId,

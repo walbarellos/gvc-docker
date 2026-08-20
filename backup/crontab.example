@@ -1,0 +1,6 @@
+# Backup diário às 02:00 (adicione ao crontab do host com: crontab -e)
+0 2 * * * /home/fem/FEM/Projetos/Bibliotecas/gvc-docker/backup/pg_backup.sh >> /home/fem/FEM/Projetos/Bibliotecas/gvc-docker/backup/backup.log 2>&1
+
+# Teste manual: ./backup/pg_backup.sh
+# Restauração:  gzip -dc backups/gvc_latest.sql.gz | docker exec -i gvc-db pg_restore -U gvc_admin -d gvc
+# Rotação:      backups/gvc_*.sql.gz com mais de 14 dias são apagados automaticamente

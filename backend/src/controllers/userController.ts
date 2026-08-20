@@ -17,7 +17,7 @@ export async function createUser(request: FastifyRequest, reply: FastifyReply) {
   if (!['administrador', 'coordenador'].includes(admin?.perfil)) {
     return reply.status(403).send({ error: 'Sem permissão para criar usuários' });
   }
-  
+
   const {
     nome,
     email,
@@ -29,6 +29,17 @@ export async function createUser(request: FastifyRequest, reply: FastifyReply) {
   // Validações básicas
   if (!nome || !email || !senha || !perfil) {
     return reply.status(400).send({ error: 'Campos obrigatórios: nome, email, senha, perfil' });
+  }
+
+  // Escalonamento de privilégio: coordenador não cria administrador
+  if (perfil === 'administrador' && admin.perfil !== 'administrador') {
+    return reply.status(403).send({ error: 'Somente administradores podem criar outros administradores' });
+  }
+
+  // Coordenador só cria usuários no próprio espaço
+  const finalEspacoId = admin.perfil === 'coordenador' ? (admin.espacoId || espaco_id) : espaco_id;
+  if (admin.perfil === 'coordenador' && finalEspacoId !== admin.espacoId) {
+    return reply.status(403).send({ error: 'Coordenadores só podem criar usuários no próprio espaço' });
   }
 
   // Verificar e‑mail duplicado (ativos e inativos)
@@ -60,7 +71,7 @@ export async function createUser(request: FastifyRequest, reply: FastifyReply) {
       email,
       senha: hashedSenha,
       perfil,
-      espacoId: espaco_id || null,
+      espacoId: finalEspacoId || null,
       espacoNome: espacoNome,
       ativo: true,
     },

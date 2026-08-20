@@ -2,6 +2,8 @@ import type { FastifyInstance } from 'fastify';
 import { VisitStatus } from '@prisma/client';
 import { prisma } from '../lib/prisma.js';
 import { Visitor, Gender } from '../domain/entities/Visitor.js';
+import { checkinBodySchema, validateBody } from '../schemas/index.js';
+import { scopedSpaceId, assertSameSpace } from '../middleware/authorization.js';
 
 const statusMap: Record<string, VisitStatus | VisitStatus[]> = {
   'Ativo': 'ativo' as VisitStatus,
@@ -65,6 +67,9 @@ export async function visitRoutes(app: FastifyInstance) {
     
     const where: any = {};
     if (espaco_id) where.espacoId = espaco_id;
+
+    const scopeSpace = scopedSpaceId(request.user);
+    if (scopeSpace) where.espacoId = scopeSpace;
     
     // Handle multiple status values (e.g., status=Ativo,active)
     if (status) {
@@ -132,13 +137,14 @@ export async function visitRoutes(app: FastifyInstance) {
   });
 
   // Buscar por ID
-  app.get('/:id', { preHandler: [app.authenticate] }, async (request: any) => {
+  app.get('/:id', { preHandler: [app.authenticate] }, async (request: any, reply: any) => {
     const { id } = request.params;
     const visit = await prisma.visit.findUnique({ 
       where: { id }, 
       include: { visitor: true }
     });
-    if (!visit) return { error: 'Visita não encontrada' };
+    if (!visit) return reply.status(404).send({ error: 'Visita não encontrada' });
+    if (!assertSameSpace(request, reply, visit.espacoId)) return;
     return visit;
   });
 
@@ -173,6 +179,8 @@ export async function visitRoutes(app: FastifyInstance) {
     
     const where: any = {};
     if (espaco_id) where.espacoId = espaco_id;
+    const scopeSpace = scopedSpaceId(request.user);
+    if (scopeSpace) where.espacoId = scopeSpace;
     if (date) {
       const start = new Date(date);
       start.setHours(0, 0, 0, 0);
@@ -187,10 +195,24 @@ export async function visitRoutes(app: FastifyInstance) {
 
   // Check-in
   app.post('/checkin', { preHandler: [app.authenticate] }, async (request: any, reply: any) => {
-    const { visitorId, espacoId, perfil, responsibleAccompanied } = request.body as any;
-    
-    if (request.user.perfil !== 'administrador' && request.user.espacoId && request.user.espacoId !== espacoId) {
-      return reply.status(403).send({ error: 'Espaço não autorizado para este usuário' });
+    const parsed = validateBody(checkinBodySchema, request.body);
+    if (!parsed.success) {
+      return reply.status(400).send({ error: 'Dados inválidos', details: parsed.error?.details });
+    }
+    const body = parsed.data!;
+    const visitorId = body.visitorId ?? body.visitor_id;
+    const responsibleAccompanied = body.responsibleAccompanied ?? body.responsible_accompanied;
+
+    // Problema-11: espaço e teto derivados EXCLUSIVAMENTE do token JWT (nunca do body)
+    const userPerfil = request.user?.perfil;
+    const userSpaceId = request.user?.espacoId;
+    let espacoId = body.espacoId ?? body.espaco_id;
+    if (userPerfil !== 'administrador') {
+      if (userSpaceId) {
+        espacoId = userSpaceId;
+      } else {
+        return reply.status(403).send({ error: 'Usuário sem espaço vinculado não pode fazer check-in' });
+      }
     }
     
     const visitor = await prisma.visitor.findUnique({ where: { id: visitorId } });
@@ -292,21 +314,21 @@ export async function visitRoutes(app: FastifyInstance) {
       },
     });
 
-    // Limite baseado no perfil do visitante
-    let limiteDiario = 2; // padrão para cidadãos
-    if (perfil === 'funcionario' || perfil === 'monitor') {
+    // Limite baseado no perfil do USUÁRIO AUTENTICADO (token JWT), nunca no body
+    let limiteDiario = 2; // padrão
+    if (userPerfil === 'funcionario' || userPerfil === 'monitor') {
       limiteDiario = 5;
-    } else if (perfil === 'coordenador' || perfil === 'administrador') {
+    } else if (userPerfil === 'coordenador' || userPerfil === 'administrador') {
       limiteDiario = 10;
     }
 
     if (checkinsHoje >= limiteDiario) {
       return reply.status(400).send({ 
-        error: `Limite de check-ins diários atingido para este perfil (${perfil}). Máximo: ${limiteDiario} por dia.`,
+        error: `Limite de check-ins diários atingido para este perfil (${userPerfil || 'visitante'}). Máximo: ${limiteDiario} por dia.`,
         detalhes: {
           checkinsHoje,
           limiteDiario,
-          perfil
+          perfil: userPerfil || 'visitante'
         }
       });
     }
@@ -316,7 +338,7 @@ export async function visitRoutes(app: FastifyInstance) {
         visitorId, 
         espacoId, 
         nome: visitor.fullName, 
-        perfil: perfil || 'general', 
+        perfil: body.perfil || 'general', 
         status: 'ativo',
         responsibleAccompanied: responsibleAccompanied || false
       },
@@ -335,6 +357,7 @@ export async function visitRoutes(app: FastifyInstance) {
     if (!existingVisit) {
       return reply.status(404).send({ error: 'Visita não encontrada' });
     }
+    if (!assertSameSpace(request, reply, existingVisit.espacoId)) return;
     
     if (existingVisit.status === 'finalizado') {
       return reply.status(400).send({ error: 'Checkout já realizado anteriormente' });
@@ -355,9 +378,10 @@ export async function visitRoutes(app: FastifyInstance) {
 
   // Visitas ativas do espaço
   app.get('/active', { preHandler: [app.authenticate] }, async (request: any) => {
-    const visits = await prisma.visit.findMany({
-      where: { espacoId: request.user.espacoId, status: 'ativo' },
-    });
+    const where: any = { status: 'ativo' };
+    const scopeSpace = scopedSpaceId(request.user);
+    if (scopeSpace) where.espacoId = scopeSpace;
+    const visits = await prisma.visit.findMany({ where });
     return visits;
   });
 
@@ -366,8 +390,12 @@ export async function visitRoutes(app: FastifyInstance) {
     const today = new Date();
     today.setHours(0, 0, 0, 0);
     
+    const where: any = { checkin: { gte: today } };
+    const scopeSpace = scopedSpaceId(request.user);
+    if (scopeSpace) where.espacoId = scopeSpace;
+    
     const visits = await prisma.visit.findMany({
-      where: { checkin: { gte: today } },
+      where,
       include: { visitor: true },
     });
     return visits;
@@ -423,6 +451,7 @@ export async function visitRoutes(app: FastifyInstance) {
     if (!existingVisit) {
       return reply.status(404).send({ error: 'Visita não encontrada' });
     }
+    if (!assertSameSpace(request, reply, existingVisit.espacoId)) return;
     
     await prisma.visit.delete({ where: { id } });
     return { success: true };

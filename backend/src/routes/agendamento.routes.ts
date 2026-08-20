@@ -1,6 +1,70 @@
 import type { FastifyInstance } from 'fastify';
 import { AgendamentoStatus } from '@prisma/client';
+import { z } from 'zod';
 import { prisma } from '../lib/prisma.js';
+import {
+  agendamentoStatusBodySchema,
+  aprovacaoBodySchema,
+  rascunhoBodySchema,
+  updateAgendamentoSchema,
+  validateBody,
+} from '../schemas/index.js';
+
+const emptyToNull = (v: string | null | undefined) => (v === '' ? null : v);
+
+// Whitelist do agendamento público (snake_case = payload real do frontend)
+// .strict() rejeita campos fora da lista — NUNCA aceitar status, coordenadorId etc.
+const publicAgendamentoSchema = z
+  .object({
+    espaco_id: z.string().uuid('ID de espaço inválido'),
+    solicitante_nome: z.string().min(3).max(200),
+    solicitante_email: z.string().email().max(200),
+    solicitante_telefone: z.string().min(10).max(20),
+    solicitante_documento: z
+      .string()
+      .max(20)
+      .optional()
+      .nullable()
+      .transform(emptyToNull),
+    tipo_solicitante: z.enum([
+      'pessoa_fisica',
+      'pessoa_juridica',
+      'escola',
+      'universidade',
+      'governo',
+    ]),
+    razao_social: z.string().max(200).optional().nullable().transform(emptyToNull),
+    nome_instituicao: z.string().max(200).optional().nullable().transform(emptyToNull),
+    secretaria_governo: z.string().max(200).optional().nullable().transform(emptyToNull),
+    unidade_governo: z.string().max(200).optional().nullable().transform(emptyToNull),
+    tipo_espaco: z.enum([
+      'auditorio',
+      'sala_estudos',
+      'teatro',
+      'filmoteca',
+      'espaco_aberto',
+      'visita_guiada',
+    ]),
+    espaco_solicitado: z.string().min(3).max(200),
+    data_pretendida: z.string().regex(/^\d{4}-\d{2}-\d{2}$/),
+    horario_inicio: z.string().regex(/^\d{2}:\d{2}$/),
+    horario_fim: z.string().regex(/^\d{2}:\d{2}$/),
+    numero_participantes: z.coerce.number().int().min(1).max(5000),
+    descricao_evento: z.string().min(10).max(5000),
+    natureza_evento: z.string().min(3).max(200),
+    gratuito: z.boolean().default(true),
+    valor_ingresso: z.coerce.number().positive().optional().nullable(),
+    necessita_equipamentos: z.string().max(1000).optional().nullable().transform(emptyToNull),
+    observacoes: z.string().max(2000).optional().nullable().transform(emptyToNull),
+    termo_aceito: z.boolean().default(false),
+    termo_aceito_em: z.string().optional().nullable(),
+    responsabhilidade_evento: z.boolean().default(false),
+    responsabilidade_evento: z.boolean().default(false),
+    danos_patrimonio: z.boolean().default(false),
+    respeito_lotacao: z.boolean().default(false),
+    autorizo_divulgacao: z.boolean().default(false),
+  })
+  .strict();
 
 function parseDate(value: any): Date | null {
   if (!value) return null;
@@ -101,6 +165,7 @@ function mapAgendamentoFields(data: any): any {
   }
   
   if (data.responsabhilidade_evento !== undefined) mapped.responsabilidadeEvento = data.responsabhilidade_evento;
+  if (data.responsabilidade_evento !== undefined) mapped.responsabilidadeEvento = data.responsabilidade_evento;
   if (data.responsabhilidadeEvento !== undefined) mapped.responsabilidadeEvento = data.responsabhilidadeEvento;
   
   if (data.danos_patrimonio !== undefined) mapped.danosPatrimonio = data.danos_patrimonio;
@@ -150,31 +215,193 @@ export async function agendamentoRoutes(app: FastifyInstance) {
     return prisma.agendamento.findMany({ 
       where, 
       orderBy: { createdAt: 'desc' },
-      take: limit ? parseInt(limit) : undefined,
+      take: limit ? Math.min(Math.max(parseInt(limit), 1), 100) : 100,
       include: { espaco: true }
     });
   });
 
-  // Buscar por ID
-  app.get('/:id', { preHandler: [app.authenticate] }, async (request: any) => {
+  // Buscar por ID — escopo por perfil (mitigação de IDOR)
+  app.get('/:id', { preHandler: [app.authenticate] }, async (request: any, reply: any) => {
     const { id } = request.params;
-    return prisma.agendamento.findUnique({ 
+    const agendamento = await prisma.agendamento.findUnique({ 
       where: { id },
       include: { espaco: true }
     });
+
+    if (!agendamento) {
+      return reply.status(404).send({ error: 'Agendamento não encontrado' });
+    }
+
+    if (request.user.perfil === 'cidadao' && agendamento.solicitanteEmail !== request.user.email) {
+      return reply.status(403).send({ error: 'Sem permissão para este agendamento' });
+    }
+    if (
+      request.user.perfil !== 'cidadao' &&
+      request.user.perfil !== 'administrador' &&
+      agendamento.espacoId !== request.user.espacoId
+    ) {
+      return reply.status(403).send({ error: 'Sem permissão para este agendamento' });
+    }
+
+    return agendamento;
   });
 
-  // Criar
-  app.post('/', async (request: any) => {
-    const data = mapAgendamentoFields(request.body);
-    data.termoAceitoEm = data.termoAceito ? new Date() : null;
-    return prisma.agendamento.create({ data });
+  // Criar (público, sem auth — whitelist Zod, status FORÇADO a pendente)
+  app.post('/', async (request: any, reply: any) => {
+    const parsed = publicAgendamentoSchema.safeParse(request.body);
+    if (!parsed.success) {
+      return reply.status(400).send({
+        error: 'Dados inválidos',
+        details: parsed.error.flatten(),
+      });
+    }
+
+    const data = parsed.data;
+
+    // Validar que o espaço existe e aceita agendamento
+    const espaco = await prisma.espaco.findFirst({
+      where: { id: data.espaco_id, ativo: true, perfilAgendamento: true },
+      select: { id: true, capacidadeAgendamento: true },
+    });
+    if (!espaco) {
+      return reply.status(400).send({ error: 'Espaço inválido ou indisponível para agendamento' });
+    }
+
+    if (
+      espaco.capacidadeAgendamento &&
+      data.numero_participantes > espaco.capacidadeAgendamento
+    ) {
+      return reply.status(400).send({
+        error: `Número de participantes excede a capacidade (${espaco.capacidadeAgendamento})`,
+      });
+    }
+
+    const dataBase = data.data_pretendida; // YYYY-MM-DD
+    const horarioInicio = new Date(`${dataBase}T${data.horario_inicio}:00`);
+    const horarioFim = new Date(`${dataBase}T${data.horario_fim}:00`);
+
+    if (horarioFim <= horarioInicio) {
+      return reply.status(400).send({ error: 'Horário de fim deve ser posterior ao de início' });
+    }
+
+    // Verificar conflito (status pendente/aprovado)
+    const conflicts = await prisma.agendamento.findMany({
+      where: {
+        espacoId: data.espaco_id,
+        dataPretendida: new Date(dataBase),
+        status: { in: ['pendente', 'aprovado'] },
+        OR: [
+          {
+            AND: [
+              { horarioInicio: { lte: horarioInicio } },
+              { horarioFim: { gt: horarioInicio } },
+            ],
+          },
+          {
+            AND: [
+              { horarioInicio: { lt: horarioFim } },
+              { horarioFim: { gte: horarioFim } },
+            ],
+          },
+          {
+            AND: [
+              { horarioInicio: { gte: horarioInicio } },
+              { horarioFim: { lte: horarioFim } },
+            ],
+          },
+        ],
+      },
+      select: { id: true },
+    });
+
+    if (conflicts.length > 0) {
+      return reply.status(409).send({
+        error: 'Conflito de horário. Espaço indisponível neste horário.',
+      });
+    }
+
+    // Whitelist explícita — status SEMPRE pendente; nunca aceitar campos privilegiados
+    const agendamento = await prisma.agendamento.create({
+      data: {
+        espacoId: data.espaco_id,
+        solicitanteNome: data.solicitante_nome,
+        solicitanteEmail: data.solicitante_email,
+        solicitanteTelefone: data.solicitante_telefone,
+        solicitanteDocumento: data.solicitante_documento ?? null,
+        tipoSolicitante: data.tipo_solicitante,
+        razaoSocial: data.razao_social ?? null,
+        nomeInstituicao: data.nome_instituicao ?? null,
+        secretariaGoverno: data.secretaria_governo ?? null,
+        unidadeGoverno: data.unidade_governo ?? null,
+        tipoEspaco: data.tipo_espaco,
+        espacoSolicitado: data.espaco_solicitado,
+        dataPretendida: new Date(dataBase),
+        horarioInicio,
+        horarioFim,
+        numeroParticipantes: data.numero_participantes,
+        descricaoEvento: data.descricao_evento,
+        naturezaEvento: data.natureza_evento,
+        gratuito: data.gratuito,
+        valorIngresso: data.valor_ingresso ?? null,
+        necessitaEquipamentos: data.necessita_equipamentos ?? null,
+        observacoes: data.observacoes ?? null,
+        termoAceito: data.termo_aceito,
+        termoAceitoEm: data.termo_aceito ? new Date() : null,
+        responsabilidadeEvento: data.responsabilidade_evento ?? data.responsabhilidade_evento ?? false,
+        danosPatrimonio: data.danos_patrimonio,
+        respeitoLotacao: data.respeito_lotacao,
+        autorizoDivulgacao: data.autorizo_divulgacao,
+        status: 'pendente', // FORÇADO no servidor
+      },
+      select: {
+        id: true,
+        status: true,
+        dataPretendida: true,
+        horarioInicio: true,
+        horarioFim: true,
+        espacoSolicitado: true,
+        solicitanteNome: true,
+        createdAt: true,
+      },
+    });
+
+    return reply.status(201).send(agendamento);
   });
 
-  // Atualizar
-  app.put('/:id', { preHandler: [app.authenticate] }, async (request: any) => {
+  // Atualizar — restrito a coordenador/admin; sem campos privilegiados do client
+  app.put('/:id', { preHandler: [app.authenticate] }, async (request: any, reply: any) => {
+    if (!['coordenador', 'administrador'].includes(request.user.perfil)) {
+      return reply.status(403).send({ error: 'Apenas coordenador pode editar agendamentos' });
+    }
+
     const { id } = request.params;
+    const existing = await prisma.agendamento.findUnique({
+      where: { id },
+      select: { espacoId: true },
+    });
+    if (!existing) {
+      return reply.status(404).send({ error: 'Agendamento não encontrado' });
+    }
+    if (request.user.perfil !== 'administrador' && existing.espacoId !== request.user.espacoId) {
+      return reply.status(403).send({ error: 'Sem permissão para este agendamento' });
+    }
+
+    const parsed = updateAgendamentoSchema.safeParse(request.body);
+    if (!parsed.success) {
+      return reply.status(400).send({ error: 'Dados inválidos', details: parsed.error.issues });
+    }
+
     const data = mapAgendamentoFields(request.body);
+    // Nunca aceitar campos privilegiados do client — status só via /:id/resposta e /:id/approve
+    delete data.status;
+    delete data.coordenadorId;
+    delete data.respostaCoordenador;
+    delete data.respondidoEm;
+    delete data.documentoAnexoUrl;
+    delete data.assinaturaId;
+    delete data.ipConfirmacao;
+    delete data.userAgent;
+
     return prisma.agendamento.update({ where: { id }, data });
   });
 
@@ -191,17 +418,22 @@ export async function agendamentoRoutes(app: FastifyInstance) {
   // Responder agendamento
   app.put('/:id/resposta', { preHandler: [app.authenticate] }, async (request: any, reply: any) => {
     const { id } = request.params;
-    const { status, respostaCoordenador } = request.body as any;
 
     if (request.user.perfil === 'cidadao') {
       return reply.status(403).send({ error: 'Perfil sem permissão' });
     }
 
+    const parsed = validateBody(agendamentoStatusBodySchema, request.body);
+    if (!parsed.success) {
+      return reply.status(400).send({ error: 'Dados inválidos', details: parsed.error?.details });
+    }
+    const body = parsed.data!;
+
     const agendamento = await prisma.agendamento.update({
       where: { id },
       data: {
-        status,
-        respostaCoordenador,
+        status: body.status,
+        respostaCoordenador: body.respostaCoordenador ?? body.resposta_coordenador ?? null,
         coordenadorId: request.user.id,
         respondidoEm: new Date()
       },
@@ -216,7 +448,11 @@ export async function agendamentoRoutes(app: FastifyInstance) {
       return reply.status(403).send({ error: 'Apenas coordenador pode aprovar' });
     }
     const { id } = request.params;
-    const { resposta } = request.body as any;
+    const parsed = validateBody(aprovacaoBodySchema, request.body);
+    if (!parsed.success) {
+      return reply.status(400).send({ error: 'Dados inválidos', details: parsed.error?.details });
+    }
+    const { resposta } = parsed.data!;
     return prisma.agendamento.update({
       where: { id },
       data: {
@@ -250,28 +486,100 @@ export async function agendamentoRoutes(app: FastifyInstance) {
     return { total, pendentes, aprovados, rejeitados, cancelados };
   });
 
+const rascunhoSnakeToCamel: Record<string, string> = {
+  solicitante_nome: 'solicitanteNome',
+  solicitante_email: 'solicitanteEmail',
+  solicitante_telefone: 'solicitanteTelefone',
+  solicitante_documento: 'solicitanteDocumento',
+  tipo_solicitante: 'tipoSolicitante',
+  razao_social: 'razaoSocial',
+  nome_instituicao: 'nomeInstituicao',
+  secretaria_governo: 'secretariaGoverno',
+  unidade_governo: 'unidadeGoverno',
+  espaco_id: 'espacoId',
+  tipo_espaco: 'tipoEspaco',
+  espaco_solicitado: 'espacoSolicitado',
+  data_pretendida: 'dataPretendida',
+  horario_inicio: 'horarioInicio',
+  horario_fim: 'horarioFim',
+  numero_participantes: 'numeroParticipantes',
+  descricao_evento: 'descricaoEvento',
+  natureza_evento: 'naturezaEvento',
+  gratuito: 'gratuito',
+  valor_ingresso: 'valorIngresso',
+  necessita_equipamentos: 'necessitaEquipamentos',
+  observacoes: 'observacoes',
+  termo_aceito: 'termoAceito',
+  responsabilidade_evento: 'responsabilidadeEvento',
+  danos_patrimonio: 'danosPatrimonio',
+  respeito_lotacao: 'respeitoLotacao',
+  autorizo_divulgacao: 'autorizoDivulgacao',
+  termo_compromisso_assinado: 'termoCompromissoAssinado',
+  termo_compromisso_data: 'termoCompromissoData',
+  termo_compromisso_ip: 'termoCompromissoIp',
+  termo_compromisso_arquivo: 'termoCompromissoArquivo',
+  current_step: 'currentStep',
+  session_id: 'sessionId',
+};
+const rascunhoCamelToSnake: Record<string, string> = Object.fromEntries(
+  Object.entries(rascunhoSnakeToCamel).map(([k, v]) => [v, k])
+);
+const toRascunhoCamel = (raw: any): any => {
+  const out: any = {};
+  for (const [k, v] of Object.entries(raw)) {
+    const key = rascunhoSnakeToCamel[k] || k;
+    if (key === 'id' || key === 'sessionId' || key === 'createdAt' || key === 'updatedAt') continue;
+    if (v === undefined) continue;
+    out[key] = v;
+  }
+  return out;
+};
+const toRascunhoSnake = (raw: any): any => {
+  const out: any = {};
+  for (const [k, v] of Object.entries(raw)) {
+    const key = rascunhoCamelToSnake[k] || k;
+    out[key] = v;
+  }
+  return out;
+};
+
   // Buscar rascunho
-  app.get('/rascunho/:sessionId', async (request: any) => {
+  app.get('/rascunho/:sessionId', async (request: any, reply: any) => {
     const { sessionId } = request.params;
-    return prisma.agendamentoRascunho.findUnique({ 
+    if (!/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(sessionId)) {
+      return reply.status(400).send({ error: 'sessionId inválido' });
+    }
+    const rascunho = await prisma.agendamentoRascunho.findUnique({ 
       where: { sessionId } 
     });
+    if (!rascunho) return reply.status(404).send({ error: 'Rascunho não encontrado' });
+    return { ...toRascunhoSnake(rascunho), session_id: rascunho.sessionId };
   });
 
   // Salvar rascunho
-  app.post('/rascunho', async (request: any) => {
-    const { sessionId, data } = request.body as any;
+  app.post('/rascunho', async (request: any, reply: any) => {
+    const parsed = validateBody(rascunhoBodySchema, request.body);
+    if (!parsed.success) {
+      return reply.status(400).send({ error: 'Dados inválidos', details: parsed.error?.details });
+    }
+    const body = parsed.data!;
+    const sessionId = body.sessionId ?? body.session_id;
+    const data = toRascunhoCamel(body.data ?? {});
     
-    return prisma.agendamentoRascunho.upsert({
+    const rascunho = await prisma.agendamentoRascunho.upsert({
       where: { sessionId },
       update: { ...data, updatedAt: new Date() },
       create: { sessionId, ...data }
     });
+    return { ...toRascunhoSnake(rascunho), session_id: rascunho.sessionId };
   });
 
   // Deletar rascunho
-  app.delete('/rascunho/:sessionId', async (request: any) => {
+  app.delete('/rascunho/:sessionId', async (request: any, reply: any) => {
     const { sessionId } = request.params;
+    if (!/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(sessionId)) {
+      return reply.status(400).send({ error: 'sessionId inválido' });
+    }
     await prisma.agendamentoRascunho.delete({ 
       where: { sessionId } 
     });

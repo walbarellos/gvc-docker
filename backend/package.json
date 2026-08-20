@@ -26,5 +26,9 @@
     "prisma": "5.22.0",
     "tsx": "^4.11.0",
     "typescript": "^5.9.3"
+  },
+  "allowScripts": {
+    "prisma@5.22.0": true,
+    "esbuild@0.27.7": true
   }
 }

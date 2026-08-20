@@ -26,7 +26,7 @@ export interface AgendamentoDraft {
   necessita_equipamentos: string;
   observacoes: string;
   termo_aceito: boolean;
-  responsabhilidade_evento: boolean;
+  responsabilidade_evento: boolean;
   danos_patrimonio: boolean;
   respeito_lotacao: boolean;
   autorizo_divulgacao: boolean;
@@ -41,7 +41,9 @@ const SESSION_KEY = 'gvc_session_id';
 function getSessionId(): string {
   let sessionId = sessionStorage.getItem(SESSION_KEY);
   if (!sessionId) {
-    sessionId = 'gvc_' + Date.now() + '_' + Math.random().toString(36).substr(2, 9);
+    sessionId = typeof crypto !== 'undefined' && crypto.randomUUID
+      ? crypto.randomUUID()
+      : 'gvc_' + Date.now() + '_' + Math.random().toString(36).substr(2, 9);
     sessionStorage.setItem(SESSION_KEY, sessionId);
   }
   return sessionId;
@@ -52,8 +54,8 @@ export const draftService = {
     try {
       const sessionId = getSessionId();
       const { error } = await api.post('/agendamentos/rascunho', {
-        session_id: sessionId,
-        ...data
+        ...data,
+        session_id: sessionId
       });
 
       if (error) {
@@ -70,15 +72,16 @@ export const draftService = {
   async loadDraft(): Promise<AgendamentoDraft | null> {
     try {
       const sessionId = getSessionId();
-      const { data, error } = await api.get<AgendamentoDraft[]>(
-        `/agendamentos/rascunho?session_id=${sessionId}`
+      const { data, error } = await api.get<AgendamentoDraft>(
+        `/agendamentos/rascunho/${sessionId}`
       );
 
-      if (error || !data || data.length === 0) {
+      if (error || !data) {
         return null;
       }
 
-      const d = data[0];
+      const d = data;
+      if (!d) return null;
       return {
         id: d.id,
         session_id: d.session_id,
@@ -105,7 +108,7 @@ export const draftService = {
         necessita_equipamentos: d.necessita_equipamentos || '',
         observacoes: d.observacoes || '',
         termo_aceito: d.termo_aceito || false,
-        responsabhilidade_evento: d.responsabhilidade_evento || false,
+        responsabilidade_evento: d.responsabilidade_evento || false,
         danos_patrimonio: d.danos_patrimonio || false,
         respeito_lotacao: d.respeito_lotacao || false,
         autorizo_divulgacao: d.autorizo_divulgacao || false,

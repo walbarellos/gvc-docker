@@ -4,16 +4,17 @@ services:
     container_name: gvc-db
     restart: unless-stopped
     environment:
-      POSTGRES_DB: ${DB_NAME:-gvc}
-      POSTGRES_USER: ${DB_USER:-gvc_admin}
-      POSTGRES_PASSWORD: ${DB_PASSWORD:-Admin@fem2026}
-    ports:
-      - "${DB_PORT:-5432}:5432"
+      POSTGRES_DB: ${DB_NAME}
+      POSTGRES_USER: ${DB_USER}
+      POSTGRES_PASSWORD: ${DB_PASSWORD}   # OBRIGATÓRIO — sem default
+    # Em produção: NÃO publicar 5432. Use apenas a rede interna.
+    # ports:
+    #   - "${DB_PORT:-5432}:5432"
     volumes:
       - pgdata:/var/lib/postgresql/data
       - ./database/init:/docker-entrypoint-initdb.d
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U ${DB_USER:-gvc_admin} -d ${DB_NAME:-gvc}"]
+      test: ["CMD-SHELL", "pg_isready -U ${DB_USER} -d ${DB_NAME}"]
       interval: 10s
       timeout: 5s
       retries: 5
@@ -27,16 +28,20 @@ services:
     container_name: gvc-api
     restart: unless-stopped
     environment:
-      DATABASE_URL: "postgresql://${DB_USER:-gvc_admin}:${DB_PASSWORD:-Admin@fem2026}@db:5432/${DB_NAME:-gvc}"
-      JWT_SECRET: ${JWT_SECRET:-gvc-sistema-cultura-2026-secret-key-muito-longa}
-      JWT_EXPIRES_IN: ${JWT_EXPIRES_IN:-24h}
+      DATABASE_URL: "postgresql://${DB_USER}:${DB_PASSWORD}@db:5432/${DB_NAME}"
+      JWT_SECRET: ${JWT_SECRET}           # OBRIGATÓRIO — sem default
+      JWT_EXPIRES_IN: ${JWT_EXPIRES_IN:-8h}
       NODE_ENV: ${NODE_ENV:-production}
       PORT: ${API_PORT:-3001}
-      CORS_ORIGIN: ${CORS_ORIGIN:-http://localhost}
+      CORS_ORIGIN: ${CORS_ORIGIN}         # OBRIGATÓRIO em produção (não *)
       BRASIL_API_URL: ${BRASIL_API_URL:-https://brasilapi.com.br/api/cpf/v1}
       TZ: America/Rio_Branco
-    ports:
-      - "${API_PORT:-3001}:3001"
+      SENTRY_DSN: ${SENTRY_DSN:-}
+    # API não exposta publicamente — acesso só via proxy do frontend (nginx)
+    # ports:
+    #   - "${API_PORT:-3001}:3001"
+    security_opt:
+      - no-new-privileges:true
     depends_on:
       db:
         condition: service_healthy
@@ -50,7 +55,9 @@ services:
     container_name: gvc-frontend
     restart: unless-stopped
     ports:
-      - "${FRONTEND_PORT:-3000}:80"
+      - "${FRONTEND_PORT:-3000}:8080"
+    security_opt:
+      - no-new-privileges:true
     depends_on:
       - api
     networks:

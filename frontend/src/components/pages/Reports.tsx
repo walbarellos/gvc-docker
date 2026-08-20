@@ -184,7 +184,7 @@ export default function Reports() {
       }
 
       // Obter IDs únicos de visitantes no período
-      const visitorIds = [...new Set((visitsData || []).map(v => v.visitorId || v.visitor_id))];
+      const visitorIds = [...new Set((visitsData || []).map(v => v.visitorId))];
 
       // Buscar dados dos visitantes
       const { data: allVisitorsRaw } = await api.get<{id: string; gender: string; birthDate: string}[]>('/visitantes');
@@ -322,7 +322,7 @@ export default function Reports() {
         let tempoMedio = 0;
         if (activeWithTime.length > 0) {
           const totalMinutos = activeWithTime.reduce((acc, c) =>
-            acc + Math.floor((agora.getTime() - new Date(c.horarioInicio).getTime()) / 60000), 0);
+            acc + Math.floor((agora.getTime() - new Date(c.horarioInicio ?? 0).getTime()) / 60000), 0);
           tempoMedio = Math.round(totalMinutos / activeWithTime.length);
         }
 
@@ -469,8 +469,8 @@ export default function Reports() {
 
     const counts: Record<number, number> = {};
     hours.forEach(h => counts[h] = (counts[h] || 0) + 1);
-    const peak = Object.keys(counts).reduce((a, b) => counts[Number(a)] > counts[Number(b)] ? a : b);
-    return `${peak}h - ${Number(peak) + 1}h (${counts[Number(peak)]} visitas)`;
+    const peak = Object.keys(counts).reduce((a, b) => (counts[Number(a)] ?? 0) > (counts[Number(b)] ?? 0) ? a : b);
+    return `${peak}h - ${Number(peak) + 1}h (${counts[Number(peak)] ?? 0} visitas)`;
   }, [visits]);
 
   const formatVisitTime = (timestamp: any) => {
@@ -483,7 +483,7 @@ export default function Reports() {
     if (!name) return '?';
     const parts = name.split(' ').filter(p => p.length > 0);
     if (parts.length >= 2) {
-      return (parts[0][0] + parts[parts.length - 1][0]).toUpperCase();
+      return ((parts[0]?.[0] ?? '') + (parts[parts.length - 1]?.[0] ?? '')).toUpperCase();
     }
     return parts[0]?.slice(0, 2).toUpperCase() || '?';
   };
@@ -849,7 +849,7 @@ export default function Reports() {
                   cx="50%"
                   cy="50%"
                   labelLine={false}
-                  label={({ name, percent }) => `${name}: ${(percent * 100).toFixed(0)}%`}
+                  label={({ name, percent }) => `${name}: ${((percent ?? 0) * 100).toFixed(0)}%`}
                   outerRadius={100}
                   dataKey="value"
                 >
@@ -857,7 +857,7 @@ export default function Reports() {
                     <Cell key={`cell-${index}`} fill={entry.color} />
                   ))}
                 </Pie>
-                <Tooltip formatter={(value: number) => [`${value} visitantes`, 'Quantidade']} />
+                <Tooltip formatter={(value) => [`${value} visitantes`, 'Quantidade']} />
                 <Legend />
               </PieChart>
             </ResponsiveContainer>
@@ -896,7 +896,7 @@ export default function Reports() {
                   tick={{ fontSize: 10, fill: '#64748b' }} 
                 />
                 <Tooltip 
-                  formatter={(value: number) => [`${value} visitantes`, 'Quantidade']}
+                  formatter={(value) => [`${value} visitantes`, 'Quantidade']}
                 />
                 <Bar dataKey="value" fill="#6366F1" radius={[4, 4, 0, 0]} />
               </BarChart>

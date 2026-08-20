@@ -46,7 +46,7 @@ interface AgendamentoWithSpace {
   observacoes?: string;
   status: string;
   termo_aceito: boolean;
-  responsabhilidade_evento?: boolean;
+  responsabilidadeEvento?: boolean;
   danos_patrimonio?: boolean;
   respeito_lotacao?: boolean;
   autorizo_divulgacao?: boolean;
@@ -417,10 +417,10 @@ export default function Agendamento() {
                       </td>
                       <td className="px-6 py-4">
                         <span
-                          className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-medium ${statusColors[agendamento.status]?.bg || 'bg-slate-50'} ${statusColors[agendamento.status]?.text || 'text-slate-600'}`}
+                          className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-medium ${statusColors[agendamento.status ?? '']?.bg || 'bg-slate-50'} ${statusColors[agendamento.status ?? '']?.text || 'text-slate-600'}`}
                         >
-                          {statusColors[agendamento.status]?.icon}
-                          {agendamento.status.charAt(0).toUpperCase() + agendamento.status.slice(1)}
+                          {statusColors[agendamento.status ?? '']?.icon}
+                          {(agendamento.status ?? '').charAt(0).toUpperCase() + (agendamento.status ?? '').slice(1)}
                         </span>
                       </td>
                       <td className="px-6 py-4">
@@ -433,7 +433,7 @@ export default function Agendamento() {
                             Ver
                           </button>
                           <button
-                            onClick={() => handleDelete(agendamento.id)}
+                            onClick={() => handleDelete(agendamento.id ?? '')}
                             className="inline-flex items-center gap-1.5 px-3 py-1.5 text-sm font-medium text-red-600 bg-red-50 rounded-lg hover:bg-red-100 transition-colors"
                             title="Excluir agendamento"
                           >

@@ -14,9 +14,9 @@ export const dashboardService = {
         return { data, error };
     },
 
-    async getVisitasPorHora(espacoId: string, data: string) {
+    async getVisitasPorHora(espacoId: string, dataParam: string) {
         const { data, error } = await api.get<Record<number, number>>(
-            `/dashboard/visitas-hora?espaco_id=${espacoId}&data=${data}`
+            `/dashboard/visitas-hora?espaco_id=${espacoId}&data=${dataParam}`
         );
         return { data, error };
     }

@@ -17,13 +17,13 @@ export interface Agendamento {
   descricao_evento: string;
   natureza_evento: string;
   gratuito: boolean;
-  valor_ingresso?: number;
+  valor_ingresso?: number | null;
   necessita_equipamentos?: string;
   observacoes?: string;
   status?: string;
   termo_aceito: boolean;
   termo_aceito_em?: string;
-  responsabhilidade_evento?: boolean;
+  responsabilidadeEvento?: boolean;
   danos_patrimonio?: boolean;
   respeito_lotacao?: boolean;
   autorizo_divulgacao?: boolean;

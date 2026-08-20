@@ -151,7 +151,7 @@ export default function UserModal({ isOpen, onClose, userToEdit, onSave }: UserM
         
         if (onSave) onSave();
       } else {
-    const { data: responseData, error: fnError } = await api.post('/auth/create-user', {
+    const { data: responseData, error: fnError } = await api.post<{ user?: { id: string }; error?: string }>('/auth/create-user', {
         email: formData.email,
         senha: formData.senha,
         nome: formData.nome,

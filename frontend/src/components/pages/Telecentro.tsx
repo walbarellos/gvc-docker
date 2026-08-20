@@ -63,7 +63,7 @@ export default function Telecentro() {
           const telecentroSpaces = data.filter((s: any) => s.perfilTelecentro === true);
           setSpaces(telecentroSpaces);
           if (telecentroSpaces.length === 1) {
-            setSelectedSpaceId(telecentroSpaces[0].id);
+            setSelectedSpaceId(telecentroSpaces[0]?.id ?? '');
           }
         }
       });
@@ -126,7 +126,7 @@ export default function Telecentro() {
             (/^\d+$/.test(token) && (v.cpf || '').replace(/\D/g, '').includes(token))
           );
         });
-        setSearchResults((filtered || []).map(v => ({ id: v.id, fullName: v.fullName || v.full_name, cpf: v.cpf })).slice(0, 5));
+        setSearchResults((filtered || []).map(v => ({ id: v.id, fullName: v.full_name, cpf: v.cpf })).slice(0, 5));
       });
     } else {
       setSearchResults([]);

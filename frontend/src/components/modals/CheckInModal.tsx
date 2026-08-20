@@ -49,7 +49,7 @@ export default function CheckInModal({ isOpen, onClose, visitorToEdit, onSuccess
           const bd = v.birthDate;
           if (!bd) return '';
           let dateStr = '';
-          if (typeof bd === 'string') dateStr = bd.split('T')[0];
+          if (typeof bd === 'string') dateStr = bd.split('T')[0] ?? '';
           else if (bd instanceof Date) {
             const y = bd.getFullYear();
             const m = String(bd.getMonth() + 1).padStart(2, '0');
@@ -58,7 +58,7 @@ export default function CheckInModal({ isOpen, onClose, visitorToEdit, onSuccess
           }
           if (dateStr) {
             const parts = dateStr.split('-');
-            const year = parts[0];
+            const year = parts[0] ?? '';
             if (year.length > 4) return '';
             return `${parts[2]}/${parts[1]}/${parts[0]}`;
           }
@@ -108,9 +108,9 @@ export default function CheckInModal({ isOpen, onClose, visitorToEdit, onSuccess
     if (!birthDateStr) return null;
     const parts = birthDateStr.split('/');
     if (parts.length !== 3) return null;
-    const day = parseInt(parts[0], 10);
-    const month = parseInt(parts[1], 10);
-    const year = parseInt(parts[2], 10);
+    const day = parseInt(parts[0] ?? '', 10);
+    const month = parseInt(parts[1] ?? '', 10);
+    const year = parseInt(parts[2] ?? '', 10);
     if (isNaN(day) || isNaN(month) || isNaN(year)) return null;
     const birth = new Date(year, month - 1, day);
     const now = new Date();
@@ -169,9 +169,9 @@ export default function CheckInModal({ isOpen, onClose, visitorToEdit, onSuccess
       if (parts.length !== 3) {
         newErrors.birthDate = 'Data inválida';
       } else {
-        const day = parseInt(parts[0], 10);
-        const month = parseInt(parts[1], 10);
-        const year = parseInt(parts[2], 10);
+        const day = parseInt(parts[0] ?? '', 10);
+        const month = parseInt(parts[1] ?? '', 10);
+        const year = parseInt(parts[2] ?? '', 10);
         
         if (year < 1900 || year > 2100) {
           newErrors.birthDate = 'Ano inválido';
@@ -219,7 +219,7 @@ export default function CheckInModal({ isOpen, onClose, visitorToEdit, onSuccess
         const { data: existingVisitors } = await visitorService.findByDocument(cleanCPF, false);
         if (existingVisitors) {
           if (!(visitorToEdit && existingVisitors.id === visitorToEdit.id)) {
-            const existingName = existingVisitors?.full_name || existingVisitors?.fullName || 'Visitante';
+            const existingName = existingVisitors?.full_name || 'Visitante';
             alert(`CPF já cadastrado para: ${existingName}`);
             setLoading(false);
             return;
@@ -237,7 +237,7 @@ export default function CheckInModal({ isOpen, onClose, visitorToEdit, onSuccess
           if (!formData.birthDate) return '';
           const parts = formData.birthDate.split('/');
           if (parts.length === 3) {
-            const year = parts[2];
+            const year = parts[2] ?? '';
             if (year.length > 4) return '';
             return `${parts[2]}-${parts[1]}-${parts[0]}`;
           }
@@ -412,8 +412,8 @@ export default function CheckInModal({ isOpen, onClose, visitorToEdit, onSuccess
                           }
                           if (val.length === 10) {
                             const parts = val.split('/');
-                            if (parts[2].length > 4) parts[2] = parts[2].slice(0, 4);
-                            val = parts[0] + '/' + parts[1] + '/' + parts[2];
+                            if ((parts[2] ?? '').length > 4) parts[2] = (parts[2] ?? '').slice(0, 4);
+                            val = (parts[0] ?? '') + '/' + (parts[1] ?? '') + '/' + (parts[2] ?? '');
                           }
                           setFormData({ ...formData, birthDate: val });
                         }}

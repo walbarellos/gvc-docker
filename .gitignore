@@ -9,3 +9,13 @@ node_modules/
 .env.*.local
 .env.*.development
 .env.*.production
+# ensure production env files are never tracked
+.env.production
+
+# Backups do banco (dump local, fora do git)
+backups/
+backup/backup.log
+
+# Build output
+frontend/dist/
+frontend/tsconfig.tsbuildinfo

@@ -1,5 +1,6 @@
 import type { FastifyInstance } from 'fastify';
 import { prisma } from '../lib/prisma.js';
+import { createAssinaturaBodySchema, validateBody } from '../schemas/index.js';
 
 export async function assinaturaRoutes(app: FastifyInstance) {
   // Listar todos
@@ -12,9 +13,23 @@ export async function assinaturaRoutes(app: FastifyInstance) {
   });
 
   // Criar
-  app.post('/', async (request: any) => {
-    const data = request.body as any;
-    return prisma.assinaturaDigital.create({ data });
+  app.post('/', async (request: any, reply: any) => {
+    const parsed = validateBody(createAssinaturaBodySchema, request.body);
+    if (!parsed.success) {
+      return reply.status(400).send({ error: 'Dados inválidos', details: parsed.error?.details });
+    }
+    const body = parsed.data!;
+    return prisma.assinaturaDigital.create({
+      data: {
+        nomeAssinante: body.nomeAssinante ?? body.nome_assinante!,
+        cpfAssinante: body.cpfAssinante ?? body.cpf_assinante!,
+        tipoDocumento: body.tipoDocumento ?? body.tipo_documento!,
+        documentoId: body.documentoId ?? body.documento_id ?? null,
+        documentoHash: body.documentoHash ?? body.documento_hash!,
+        ipPublico: body.ipPublico ?? body.ip_publico!,
+        userAgent: body.userAgent ?? body.user_agent ?? null,
+      },
+    });
   });
 
   // Buscar por ID

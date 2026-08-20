@@ -129,7 +129,7 @@ export const createUserSchema = z.object({
   nome: z.string().min(3, 'Nome deve ter pelo menos 3 caracteres'),
   email: z.string().email('Email inválido'),
   senha: z.string().min(6, 'Senha deve ter pelo menos 6 caracteres'),
-  perfil: z.enum(['administrador', 'coordenador', 'funcionario', 'monitor']).default('funcionario'),
+  perfil: z.enum(['administrador', 'coordenador', 'operador', 'funcionario', 'monitor']).default('funcionario'),
   espacoId: z.string().uuid('ID do espaço inválido').optional().nullable(),
   ativo: z.boolean().default(true),
 });
@@ -138,7 +138,7 @@ export const updateUserSchema = z.object({
   nome: z.string().min(3).optional(),
   email: z.string().email('Email inválido').optional(),
   senha: z.string().min(6).optional(),
-  perfil: z.enum(['administrador', 'coordenador', 'funcionario', 'monitor']).optional(),
+  perfil: z.enum(['administrador', 'coordenador', 'operador', 'funcionario', 'monitor']).optional(),
   espacoId: z.string().uuid().nullable().optional(),
   ativo: z.boolean().optional(),
 });
@@ -184,3 +184,7 @@ export const updateAgendamentoStatusSchema = z.object({
   status: z.enum(['aprovado', 'rejeitado', 'cancelado']),
   resposta_coordenador: z.string().optional(),
 });
+// ============================================
+// Schemas extras (problema-18) — rotas que usavam `as any`
+// ============================================
+export * from './extra.js';

@@ -7,14 +7,14 @@ const configSchema = z.object({
   nodeEnv: z.enum(['development', 'test', 'production']).default('development'),
   api: z.object({
     port: z.coerce.number().default(3001),
-    corsOrigin: z.string().default('*'),
+    corsOrigin: z.string().default('http://localhost:3000'),
   }),
   db: z.object({
     url: z.string(),
   }),
   auth: z.object({
     jwtSecret: z.string(),
-    jwtExpiresIn: z.string().default('24h'),
+    jwtExpiresIn: z.string().default('8h'),
   }),
   sentry: z.object({
     dsn: z.string().optional(),

@@ -19,7 +19,7 @@ import { assinaturaRoutes } from './routes/assinatura.routes.js';
 import { userRoutes } from './routes/user.routes.js';
 import { configuracaoRoutes } from './routes/configuracao.routes.js';
 
-const app = Fastify({ logger: true });
+const app = Fastify({ logger: true, trustProxy: true });
 
 // Registros
 app.register(helmet);
@@ -29,8 +29,12 @@ app.register(rateLimit, {
   timeWindow: '1 minute'
 });
 
+// CORS: whitelist rígida. Nunca refletir a origem (reflexivo = qualquer site dispara chamadas autenticadas).
+const corsOrigins = config.api.corsOrigin === '*'
+  ? config.api.corsOrigin.split(',')
+  : config.api.corsOrigin.split(',');
 app.register(cors, {
-  origin: config.api.corsOrigin === '*' ? true : config.api.corsOrigin.split(','),
+  origin: corsOrigins.includes('*') ? false : corsOrigins,
   credentials: true,
 });
 

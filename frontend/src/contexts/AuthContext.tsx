@@ -1,6 +1,6 @@
 import React, { createContext, useContext, useEffect, useState } from 'react';
 import { api, getTokenStored, removeToken } from '../lib/api';
-import { SystemUser, SpaceConfig } from '../types';
+import { SystemUser, SpaceConfig, UserRole } from '../types';
 
 interface AuthContextType {
   user: any;
@@ -40,7 +40,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
               id: data.id,
               nome: data.nome,
               email: data.email,
-              perfil: data.perfil,
+              perfil: data.perfil as UserRole,
               espacoId: data.espacoId,
               espacoNome: data.espacoNome,
               ativo: true

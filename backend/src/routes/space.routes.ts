@@ -1,5 +1,6 @@
 import type { FastifyInstance } from 'fastify';
 import { prisma } from '../lib/prisma.js';
+import { createEspacoBodySchema, updateEspacoBodySchema, validateBody } from '../schemas/index.js';
 
 function mapSpaceFields(data: any): any {
   if (!data) return data;
@@ -86,8 +87,12 @@ export async function spaceRoutes(app: FastifyInstance) {
     if (request.user.perfil !== 'administrador') {
       return reply.status(403).send({ error: 'Apenas administrador pode criar espaço' });
     }
-    const body = Array.isArray(request.body) ? request.body[0] : request.body;
-    const data = mapSpaceFields(body);
+    const rawBody = Array.isArray(request.body) ? request.body[0] : request.body;
+    const parsed = validateBody(createEspacoBodySchema, rawBody);
+    if (!parsed.success) {
+      return reply.status(400).send({ error: 'Dados inválidos', details: parsed.error?.details });
+    }
+    const data = mapSpaceFields(parsed.data);
     return prisma.espaco.create({ data });
   });
 
@@ -97,7 +102,11 @@ export async function spaceRoutes(app: FastifyInstance) {
       return reply.status(403).send({ error: 'Apenas administrador pode atualizar' });
     }
     const { id } = request.params;
-    const data = mapSpaceFields(request.body);
+    const parsed = validateBody(updateEspacoBodySchema, request.body);
+    if (!parsed.success) {
+      return reply.status(400).send({ error: 'Dados inválidos', details: parsed.error?.details });
+    }
+    const data = mapSpaceFields(parsed.data);
     return prisma.espaco.update({ where: { id }, data });
   });
 
@@ -107,7 +116,11 @@ export async function spaceRoutes(app: FastifyInstance) {
       return reply.status(403).send({ error: 'Apenas administrador pode atualizar' });
     }
     const { id } = request.params;
-    const data = mapSpaceFields(request.body);
+    const parsed = validateBody(updateEspacoBodySchema, request.body);
+    if (!parsed.success) {
+      return reply.status(400).send({ error: 'Dados inválidos', details: parsed.error?.details });
+    }
+    const data = mapSpaceFields(parsed.data);
     return prisma.espaco.update({ where: { id }, data });
   });
 

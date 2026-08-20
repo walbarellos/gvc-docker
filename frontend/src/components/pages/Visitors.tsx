@@ -150,8 +150,9 @@ const mapped = (data || []).map((d: any) => ({
           let checkinTime = now.toISOString();
 
           // Se o backend retornou detalhes (nossa nova implementação)
-          if (error.detalhes?.espacos?.[0]) {
-            const detail = error.detalhes.espacos[0];
+          const errorDetails = (error as { message: string; detalhes?: { espacos?: Array<{ nome?: string; checkin?: string; tempoRestante?: number; minutosParaEncerrar?: number }> } }).detalhes;
+          if (errorDetails?.espacos?.[0]) {
+            const detail = errorDetails.espacos[0];
             currentSpace = detail.nome || currentSpace;
             checkinTime = detail.checkin || checkinTime;
             remainingMinutes = detail.tempoRestante ?? detail.minutosParaEncerrar ?? remainingMinutes;
@@ -162,10 +163,10 @@ const mapped = (data || []).map((d: any) => ({
               limit: 10
             });
             
-            const activeVisit = activeVisits?.find(v => v.visitorId === visitor.id || v.visitor_id === visitor.id);
+            const activeVisit = activeVisits?.find(v => v.visitorId === visitor.id);
             
             if (activeVisit) {
-              currentSpace = activeVisit.local || activeVisit.espaco?.nome || currentSpace;
+              currentSpace = activeVisit.local || currentSpace;
               checkinTime = activeVisit.checkin || checkinTime;
               const diffMin = Math.floor((now.getTime() - new Date(activeVisit.checkin).getTime()) / 60000);
               remainingMinutes = Math.max(0, 60 - diffMin);
@@ -173,7 +174,7 @@ const mapped = (data || []).map((d: any) => ({
               // Extrair tempo restante da mensagem de erro como último fallback
               const match = error.message.match(/Tempo restante[:\s]*(\d+)/i);
               if (match) {
-                remainingMinutes = parseInt(match[1], 10);
+                remainingMinutes = parseInt(match?.[1] ?? '', 10);
               }
             }
           }
@@ -481,7 +482,7 @@ const mapped = (data || []).map((d: any) => ({
                         const d = new Date(visitor.birthDate);
                         if (isNaN(d.getTime())) return '-';
                         // Criar data no timezone local para evitar diferença de dia
-                        const dateStr = visitor.birthDate.split('T')[0];
+                        const dateStr = visitor.birthDate.split('T')[0] ?? '';
                         const [year, month, day] = dateStr.split('-');
                         return `${day}/${month}/${year}`;
                       })() : '-'}

@@ -52,7 +52,7 @@ export default function Lockers() {
           const lockerSpaces = data.filter((s: any) => s.perfilArmarios === true);
           setSpaces(lockerSpaces);
           if (lockerSpaces.length === 1) {
-            setSelectedSpaceId(lockerSpaces[0].id);
+            setSelectedSpaceId(lockerSpaces[0]?.id ?? '');
           }
         }
       });
@@ -113,7 +113,7 @@ export default function Lockers() {
             (v.cpf || '').replace(/\D/g, '').includes(token.replace(/\D/g, ''))
           );
         });
-        setSearchResults((filtered || []).map(v => ({ id: v.id, fullName: v.fullName || v.full_name, cpf: v.cpf })).slice(0, 5));
+        setSearchResults((filtered || []).map(v => ({ id: v.id, fullName: v.full_name, cpf: v.cpf })).slice(0, 5));
       });
     } else {
       setSearchResults([]);

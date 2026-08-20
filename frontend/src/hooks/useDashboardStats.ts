@@ -130,7 +130,7 @@ async function fetchChartData(spaceId: string): Promise<ChartData[]> {
 
 function formatDayName(date: Date): string {
   const days = ['DOM', 'SEG', 'TER', 'QUA', 'QUI', 'SEX', 'SAB'];
-  return days[date.getDay()];
+  return days[date.getDay()] ?? '';
 }
 
 function formatDate(date: Date): string {

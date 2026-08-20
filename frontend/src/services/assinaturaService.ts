@@ -90,7 +90,7 @@ export const registrarAssinaturaDigital = async (dados: AssinaturaData): Promise
 
 
 export interface AssinaturaCreateParams {
-  visitorId: string;
+  visitorId: string | null;
   nomeAssinante: string;
   cpfAssinante: string;
   tipoDocumento: string;

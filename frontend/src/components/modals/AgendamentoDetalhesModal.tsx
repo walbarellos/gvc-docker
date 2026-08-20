@@ -33,12 +33,12 @@ interface AgendamentoDetalhesModalProps {
     descricao_evento: string;
     natureza_evento: string;
     gratuito: boolean;
-    valor_ingresso?: number;
+    valor_ingresso?: number | null;
     necessita_equipamentos?: string;
     observacoes?: string;
     status?: string;
     termo_aceito: boolean;
-    responsabhilidade_evento?: boolean;
+    responsabilidadeEvento?: boolean;
     danos_patrimonio?: boolean;
     respeito_lotacao?: boolean;
     autorizo_divulgacao?: boolean;
@@ -105,9 +105,9 @@ export default function AgendamentoDetalhesModal({
 
   const handleConfirm = () => {
     if (showConfirm === 'aprovar') {
-      onStatusChange(agendamento.id, 'aprovado', resposta || undefined);
+      onStatusChange(agendamento.id ?? '', 'aprovado', resposta || undefined);
     } else if (showConfirm === 'rejeitar') {
-      onStatusChange(agendamento.id, 'rejeitado', resposta);
+      onStatusChange(agendamento.id ?? '', 'rejeitado', resposta);
     }
     setShowConfirm(null);
   };
@@ -125,7 +125,7 @@ export default function AgendamentoDetalhesModal({
           <div>
             <h2 id="agendamento-detalhes-title" className="text-2xl font-display font-bold text-slate-900">Detalhes do Agendamento</h2>
             <p className="text-slate-500 text-sm mt-1">
-              Solicitação #{agendamento.id.slice(0, 8).toUpperCase()}
+              Solicitação #{(agendamento.id ?? '').slice(0, 8).toUpperCase()}
             </p>
           </div>
           <button
@@ -263,8 +263,8 @@ export default function AgendamentoDetalhesModal({
                 {agendamento.termo_aceito ? <CheckCircle size={16} /> : <XCircle size={16} />}
                 <span className="text-sm font-medium">Termo da Portaria 169/2023</span>
               </div>
-              <div className={`flex items-center gap-2 p-3 rounded-xl ${agendamento.responsabhilidade_evento ? 'bg-emerald-50 text-emerald-700' : 'bg-red-50 text-red-700'}`}>
-                {agendamento.responsabhilidade_evento ? <CheckCircle size={16} /> : <XCircle size={16} />}
+              <div className={`flex items-center gap-2 p-3 rounded-xl ${agendamento.responsabilidadeEvento ? 'bg-emerald-50 text-emerald-700' : 'bg-red-50 text-red-700'}`}>
+                {agendamento.responsabilidadeEvento ? <CheckCircle size={16} /> : <XCircle size={16} />}
                 <span className="text-sm font-medium">Responsabilidade pelo evento</span>
               </div>
               <div className={`flex items-center gap-2 p-3 rounded-xl ${agendamento.danos_patrimonio ? 'bg-emerald-50 text-emerald-700' : 'bg-red-50 text-red-700'}`}>

@@ -1,8 +1,15 @@
 import bcrypt from 'bcryptjs';
 import { prisma } from '../src/lib/prisma.js';
 
+const adminPassword = process.env.ADMIN_PASSWORD;
+if (!adminPassword || adminPassword.length < 12) {
+  console.error('Defina ADMIN_PASSWORD (mín. 12 chars) no ambiente.');
+  process.exit(1);
+}
+const ADMIN_PASSWORD: string = adminPassword;
+
 async function resetAdmin() {
-  const hash = await bcrypt.hash('admin123', 10);
+  const hash = await bcrypt.hash(ADMIN_PASSWORD, 10);
   
   const admin = await prisma.usuario.upsert({
     where: { email: 'admin@cultura.gov.br' },
@@ -22,8 +29,7 @@ async function resetAdmin() {
     },
   });
   
-  console.log('✅ Admin criado/atualizado:', admin.email);
-  console.log('📝 Senha: admin123');
+  console.log('Admin criado/atualizado:', admin.email);
 }
 
 resetAdmin()
