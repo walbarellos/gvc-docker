@@ -111,15 +111,14 @@ export function mapAgendamentoFields(data: any): any {
   }
   
   const horario_inicio = data.horario_inicio || data.horarioInicio;
-  if (horario_inicio) {
-    const parsed = parseDate(horario_inicio);
-    if (parsed) mapped.horario_inicio = parsed;
+  const horario_fim = data.horario_fim || data.horarioFim;
+  
+  if (data_pretendida && horario_inicio) {
+    mapped.horario_inicio = new Date(`${typeof data_pretendida === 'string' ? data_pretendida.split('T')[0] : data_pretendida.toISOString().split('T')[0]}T${horario_inicio}:00`);
   }
   
-  const horario_fim = data.horario_fim || data.horarioFim;
-  if (horario_fim) {
-    const parsed = parseDate(horario_fim);
-    if (parsed) mapped.horario_fim = parsed;
+  if (data_pretendida && horario_fim) {
+    mapped.horario_fim = new Date(`${typeof data_pretendida === 'string' ? data_pretendida.split('T')[0] : data_pretendida.toISOString().split('T')[0]}T${horario_fim}:00`);
   }
   
   if (data.numero_participantes !== undefined) mapped.numero_participantes = parseInt(data.numero_participantes) || 0;

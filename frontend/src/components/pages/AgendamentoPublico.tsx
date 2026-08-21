@@ -456,7 +456,8 @@ if (parsed && (parsed.solicitante_nome || parsed.espaco_id)) {
     
     // Busca agendamentos existentes no espaço, data e tipo de evento
     const { data } = await api.get<any[]>(
-      `/agendamentos?espaco_id=${formData.espaco_id}&data_inicio=${formData.data_pretendida}&data_fim=${formData.data_pretendida}`
+      `/public/agendamentos/disponibilidade?espaco_id=${formData.espaco_id}&data=${formData.data_pretendida}`,
+      false // do not send auth token to use public route correctly
     );
     
     // Verificar conflitos com 10min de folga

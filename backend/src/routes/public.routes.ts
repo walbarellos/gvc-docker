@@ -71,6 +71,25 @@ const publicCadastroSchema = z.object({
 });
 
 export async function publicRoutes(app: FastifyInstance) {
+  app.get('/agendamentos/disponibilidade', async (request: any, reply: any) => {
+    const { espaco_id, data } = request.query;
+    if (!espaco_id || !data) return reply.status(400).send({ error: 'Faltam parametros' });
+
+    const agendamentos = await prisma.agendamento.findMany({
+      where: {
+        espacoId: espaco_id,
+        dataPretendida: new Date(data),
+        status: { in: ['pendente', 'aprovado'] },
+      },
+      select: {
+        horarioInicio: true,
+        horarioFim: true,
+      },
+    });
+
+    return agendamentos;
+  });
+
   // Criar agendamento público
   app.post('/agendamentos', { config: { rateLimit: { max: 5, timeWindow: '1 minute' } } }, async (request, reply) => {
     const parsed = publicAgendamentoSchema.safeParse(request.body);
