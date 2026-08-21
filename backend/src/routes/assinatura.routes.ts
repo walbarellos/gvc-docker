@@ -13,7 +13,7 @@ export async function assinaturaRoutes(app: FastifyInstance) {
   });
 
   // Criar
-  app.post('/', async (request: any, reply: any) => {
+  app.post('/', { preHandler: [app.authenticate] }, async (request: any, reply: any) => {
     const parsed = validateBody(createAssinaturaBodySchema, request.body);
     if (!parsed.success) {
       return reply.status(400).send({ error: 'Dados inválidos', details: parsed.error?.details });

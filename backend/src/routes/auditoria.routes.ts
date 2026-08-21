@@ -43,7 +43,7 @@ export async function auditoriaRoutes(app: FastifyInstance) {
   });
 
   // Criar (sem auth para logs automáticos)
-  app.post('/', async (request: any, reply: any) => {
+  app.post('/', { preHandler: [app.authenticate] }, async (request: any, reply: any) => {
     const parsed = validateBody(auditoriaBodySchema, request.body);
     if (!parsed.success) {
       return reply.status(400).send({ error: 'Dados inválidos', details: parsed.error?.details });
