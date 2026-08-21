@@ -1,4 +1,5 @@
 import type { FastifyInstance } from 'fastify';
+import { requireRole } from '../middleware/authorization.js';
 import { AgendamentoStatus } from '@prisma/client';
 import { z } from 'zod';
 import { prisma } from '../lib/prisma.js';
@@ -211,13 +212,13 @@ function mapAgendamentoFields(data: any): any {
 }
 
 export async function agendamentoRoutes(app: FastifyInstance) {
-  app.post('/notificar', { preHandler: [app.authenticate] }, async (request: any, reply: any) => {
+  app.post('/notificar', { preHandler: [app.authenticate, requireRole('monitor')] }, async (request: any, reply: any) => {
     // just a mock endpoint since real email logic is probably elsewhere
     return { success: true };
   });
 
   // Listar (com filtros)
-  app.get('/', { preHandler: [app.authenticate] }, async (request: any) => {
+  app.get('/', { preHandler: [app.authenticate, requireRole('monitor')] }, async (request: any) => {
     const { espaco_id, status, data_inicio, data_fim, limit } = request.query as any;
     
     const where: any = {};
@@ -251,7 +252,7 @@ export async function agendamentoRoutes(app: FastifyInstance) {
   });
 
   // Buscar por ID — escopo por perfil (mitigação de IDOR)
-  app.get('/:id', { preHandler: [app.authenticate] }, async (request: any, reply: any) => {
+  app.get('/:id', { preHandler: [app.authenticate, requireRole('monitor')] }, async (request: any, reply: any) => {
     const { id } = request.params;
     const agendamento = await prisma.agendamento.findUnique({ 
       where: { id },
@@ -405,7 +406,7 @@ export async function agendamentoRoutes(app: FastifyInstance) {
   });
 
   // Atualizar — restrito a coordenador/admin; sem campos privilegiados do client
-  app.put('/:id', { preHandler: [app.authenticate] }, async (request: any, reply: any) => {
+  app.put('/:id', { preHandler: [app.authenticate, requireRole('monitor')] }, async (request: any, reply: any) => {
     if (!['coordenador', 'administrador'].includes(request.user.perfil)) {
       return reply.status(403).send({ error: 'Apenas coordenador pode editar agendamentos' });
     }
@@ -442,7 +443,7 @@ export async function agendamentoRoutes(app: FastifyInstance) {
   });
 
   // Deletar
-  app.delete('/:id', { preHandler: [app.authenticate] }, async (request: any, reply: any) => {
+  app.delete('/:id', { preHandler: [app.authenticate, requireRole('monitor')] }, async (request: any, reply: any) => {
     if (!['coordenador', 'administrador'].includes(request.user.perfil)) {
       return reply.status(403).send({ error: 'Apenas coordenador pode excluir' });
     }
@@ -452,7 +453,7 @@ export async function agendamentoRoutes(app: FastifyInstance) {
   });
 
   // Responder agendamento
-  app.put('/:id/resposta', { preHandler: [app.authenticate] }, async (request: any, reply: any) => {
+  app.put('/:id/resposta', { preHandler: [app.authenticate, requireRole('monitor')] }, async (request: any, reply: any) => {
     const { id } = request.params;
 
     if (request.user.perfil === 'cidadao') {
@@ -479,7 +480,7 @@ export async function agendamentoRoutes(app: FastifyInstance) {
   });
 
   // Aprovar (coordenador+)
-  app.put('/:id/approve', { preHandler: [app.authenticate] }, async (request: any, reply: any) => {
+  app.put('/:id/approve', { preHandler: [app.authenticate, requireRole('monitor')] }, async (request: any, reply: any) => {
     if (!['coordenador', 'administrador'].includes(request.user.perfil)) {
       return reply.status(403).send({ error: 'Apenas coordenador pode aprovar' });
     }
@@ -501,7 +502,7 @@ export async function agendamentoRoutes(app: FastifyInstance) {
 });
 
 // Dashboard stats
-  app.get('/dashboard', { preHandler: [app.authenticate] }, async (request: any) => {
+  app.get('/dashboard', { preHandler: [app.authenticate, requireRole('monitor')] }, async (request: any) => {
     const { espaco_id } = request.query as any;
     
     const where: any = {};
@@ -633,7 +634,7 @@ const toRascunhoSnake = (raw: any): any => {
   });
 
   // Verificar conflitos
-  app.get('/conflitos', { preHandler: [app.authenticate] }, async (request: any) => {
+  app.get('/conflitos', { preHandler: [app.authenticate, requireRole('monitor')] }, async (request: any) => {
     const { espaco_id, data, inicio, fim, exclude_id } = request.query as any;
     
     const where: any = {
@@ -662,7 +663,7 @@ const toRascunhoSnake = (raw: any): any => {
   });
 
   // Horários disponíveis
-  app.get('/disponiveis', { preHandler: [app.authenticate] }, async (request: any) => {
+  app.get('/disponiveis', { preHandler: [app.authenticate, requireRole('monitor')] }, async (request: any) => {
     const { espaco_id, inicio, fim } = request.query as any;
     
     const agendamentos = await prisma.agendamento.findMany({

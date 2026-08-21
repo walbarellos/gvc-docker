@@ -1,4 +1,5 @@
 import type { FastifyInstance } from 'fastify';
+import { requireRole } from '../middleware/authorization.js';
 import { createVisitorSchema, updateVisitorSchema } from '../schemas/index.js';
 import { VisitorRepository } from '../repositories/VisitorRepository.js';
 import { VisitorService } from '../services/visitorService.js';
@@ -10,23 +11,23 @@ export async function visitorRoutes(app: FastifyInstance) {
   const controller = new VisitorController(service);
 
   // Listar todos
-  app.get('/', { preHandler: [app.authenticate] }, (req, res) => controller.list(req, res));
+  app.get('/', { preHandler: [app.authenticate, requireRole('monitor')] }, (req, res) => controller.list(req, res));
 
   // Buscar por ID
-  app.get('/:id', { preHandler: [app.authenticate] }, (req, res) => controller.getById(req, res));
+  app.get('/:id', { preHandler: [app.authenticate, requireRole('monitor')] }, (req, res) => controller.getById(req, res));
 
   // Criar
-  app.post('/', { preHandler: [app.authenticate] }, (req, res) => controller.create(req, res));
+  app.post('/', { preHandler: [app.authenticate, requireRole('monitor')] }, (req, res) => controller.create(req, res));
 
   // Atualizar
-  app.put('/:id', { preHandler: [app.authenticate] }, (req, res) => controller.update(req, res));
+  app.put('/:id', { preHandler: [app.authenticate, requireRole('monitor')] }, (req, res) => controller.update(req, res));
 
   // Patch - atualizar parcialmente
-  app.patch('/:id', { preHandler: [app.authenticate] }, (req, res) => controller.update(req, res));
+  app.patch('/:id', { preHandler: [app.authenticate, requireRole('monitor')] }, (req, res) => controller.update(req, res));
 
   // Deletar (admin only)
-  app.delete('/:id', { preHandler: [app.authenticate] }, (req, res) => controller.delete(req, res));
+  app.delete('/:id', { preHandler: [app.authenticate, requireRole('monitor')] }, (req, res) => controller.delete(req, res));
 
   // Buscar por CPF
-  app.get('/search/cpf/:cpf', { preHandler: [app.authenticate] }, (req, res) => controller.getByCpf(req, res));
+  app.get('/search/cpf/:cpf', { preHandler: [app.authenticate, requireRole('monitor')] }, (req, res) => controller.getByCpf(req, res));
 }

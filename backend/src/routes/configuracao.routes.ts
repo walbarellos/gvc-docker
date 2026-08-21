@@ -4,12 +4,12 @@ import { requireRole } from '../middleware/authorization.js';
 import { configuracaoBodySchema, validateBody } from '../schemas/index.js';
 
 export async function configuracaoRoutes(app: FastifyInstance) {
-  app.get('/sistema', { preHandler: [app.authenticate] }, async () => {
+  app.get('/sistema', { preHandler: [app.authenticate, requireRole('monitor')] }, async () => {
     const config = await prisma.configuracao.findFirst({ where: { id: 'sistema' } });
     return config || { id: 'sistema', data: {} };
   });
 
-  app.get('/', { preHandler: [app.authenticate] }, async (request: any, reply: any) => {
+  app.get('/', { preHandler: [app.authenticate, requireRole('monitor')] }, async (request: any, reply: any) => {
     const { id } = request.query as any;
     
     if (id) {
@@ -21,7 +21,7 @@ export async function configuracaoRoutes(app: FastifyInstance) {
     return configs;
   });
 
-  app.get('/:id', { preHandler: [app.authenticate] }, async (request: any, reply: any) => {
+  app.get('/:id', { preHandler: [app.authenticate, requireRole('monitor')] }, async (request: any, reply: any) => {
     const { id } = request.params;
     const config = await prisma.configuracao.findUnique({ where: { id } });
     if (!config) {

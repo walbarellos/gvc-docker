@@ -3,7 +3,7 @@ import { useAuth } from '../contexts/AuthContext';
 import { DashboardSkeleton } from './ui/Skeleton';
 
 const ROLE_HIERARCHY: Record<string, string[]> = {
-  'monitor': ['monitor'],
+  'monitor': ['monitor', 'funcionario', 'coordenador', 'administrador'],
   'funcionario': ['funcionario', 'coordenador', 'administrador'],
   'coordenador': ['coordenador', 'administrador'],
   'administrador': ['administrador']

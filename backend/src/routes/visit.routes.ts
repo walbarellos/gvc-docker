@@ -1,4 +1,5 @@
 import type { FastifyInstance } from 'fastify';
+import { requireRole } from '../middleware/authorization.js';
 import { VisitStatus } from '@prisma/client';
 import { prisma } from '../lib/prisma.js';
 import { Visitor, Gender } from '../domain/entities/Visitor.js';
@@ -62,7 +63,7 @@ function mapVisitFields(data: any): any {
 
 export async function visitRoutes(app: FastifyInstance) {
   // Listar todas as visitas (com filtros)
-  app.get('/', { preHandler: [app.authenticate] }, async (request: any) => {
+  app.get('/', { preHandler: [app.authenticate, requireRole('monitor')] }, async (request: any) => {
     const { espaco_id, status, limit, order, checkin, checkin_gte, checkin_lte, checkin_lt, checkin_gt } = request.query as any;
     
     const where: any = {};
@@ -137,7 +138,7 @@ export async function visitRoutes(app: FastifyInstance) {
   });
 
   // Buscar por ID
-  app.get('/:id', { preHandler: [app.authenticate] }, async (request: any, reply: any) => {
+  app.get('/:id', { preHandler: [app.authenticate, requireRole('monitor')] }, async (request: any, reply: any) => {
     const { id } = request.params;
     const visit = await prisma.visit.findUnique({ 
       where: { id }, 
@@ -149,7 +150,7 @@ export async function visitRoutes(app: FastifyInstance) {
   });
 
   // Atualizar visita (para Telecentro)
-  app.put('/:id', { preHandler: [app.authenticate] }, async (request: any, reply: any) => {
+  app.put('/:id', { preHandler: [app.authenticate, requireRole('monitor')] }, async (request: any, reply: any) => {
     if (!request.body || Object.keys(request.body).length === 0) {
       request.body = {};
     }
@@ -174,7 +175,7 @@ export async function visitRoutes(app: FastifyInstance) {
   });
 
   // Contar visitas
-  app.get('/count', { preHandler: [app.authenticate] }, async (request: any) => {
+  app.get('/count', { preHandler: [app.authenticate, requireRole('monitor')] }, async (request: any) => {
     const { espaco_id, date } = request.query as any;
     
     const where: any = {};
@@ -194,7 +195,7 @@ export async function visitRoutes(app: FastifyInstance) {
   });
 
   // Check-in
-  app.post('/checkin', { preHandler: [app.authenticate] }, async (request: any, reply: any) => {
+  app.post('/checkin', { preHandler: [app.authenticate, requireRole('monitor')] }, async (request: any, reply: any) => {
     const parsed = validateBody(checkinBodySchema, request.body);
     if (!parsed.success) {
       return reply.status(400).send({ error: 'Dados inválidos', details: parsed.error?.details });
@@ -360,7 +361,7 @@ export async function visitRoutes(app: FastifyInstance) {
   });
 
   // Check-out
-  app.post('/checkout/:id', { preHandler: [app.authenticate] }, async (request: any, reply: any) => {
+  app.post('/checkout/:id', { preHandler: [app.authenticate, requireRole('monitor')] }, async (request: any, reply: any) => {
     if (!request.body || Object.keys(request.body).length === 0) {
       request.body = {};
     }
@@ -390,7 +391,7 @@ export async function visitRoutes(app: FastifyInstance) {
   });
 
   // Visitas ativas do espaço
-  app.get('/active', { preHandler: [app.authenticate] }, async (request: any) => {
+  app.get('/active', { preHandler: [app.authenticate, requireRole('monitor')] }, async (request: any) => {
     const where: any = { status: 'ativo' };
     const scopeSpace = scopedSpaceId(request.user);
     if (scopeSpace) where.espacoId = scopeSpace;
@@ -399,7 +400,7 @@ export async function visitRoutes(app: FastifyInstance) {
   });
 
   // Visitas de hoje
-  app.get('/today', { preHandler: [app.authenticate] }, async (request: any) => {
+  app.get('/today', { preHandler: [app.authenticate, requireRole('monitor')] }, async (request: any) => {
     const today = new Date();
     today.setHours(0, 0, 0, 0);
     
@@ -415,7 +416,7 @@ export async function visitRoutes(app: FastifyInstance) {
   });
 
   // Verificar CPF - buscar check-ins ativos por CPF
-  app.get('/cpf/:cpf/active', { preHandler: [app.authenticate] }, async (request: any, reply: any) => {
+  app.get('/cpf/:cpf/active', { preHandler: [app.authenticate, requireRole('monitor')] }, async (request: any, reply: any) => {
     const { cpf } = request.params;
     
     const visitors = await prisma.visitor.findMany({
@@ -457,7 +458,7 @@ export async function visitRoutes(app: FastifyInstance) {
   });
 
   // Excluir visita (Undo Check-in)
-  app.delete('/:id', { preHandler: [app.authenticate] }, async (request: any, reply: any) => {
+  app.delete('/:id', { preHandler: [app.authenticate, requireRole('monitor')] }, async (request: any, reply: any) => {
     const { id } = request.params;
     
     const existingVisit = await prisma.visit.findUnique({ where: { id } });

@@ -10,6 +10,7 @@ import { loginSchema } from '../schemas/user.schema.js';
  */
 
 import type { FastifyInstance } from 'fastify';
+import { requireRole } from '../middleware/authorization.js';
 import bcrypt from 'bcryptjs';
 import { createUser } from '../controllers/userController.js';
 import { prisma } from '../lib/prisma.js';
@@ -17,7 +18,7 @@ import { config } from '../config/unifiedConfig.js';
 import { loginSchema } from '../schemas/user.schema.js';
 
 export async function authRoutes(app: FastifyInstance) {
-  app.post('/reset-password', { preHandler: [app.authenticate] }, async (request: any, reply: any) => {
+  app.post('/reset-password', { preHandler: [app.authenticate, requireRole('monitor')] }, async (request: any, reply: any) => {
     const { userId, senha } = request.body;
     if (!userId || !senha) return reply.status(400).send({ error: 'Faltam dados' });
     
@@ -97,7 +98,7 @@ export async function authRoutes(app: FastifyInstance) {
   });
 
   // Sessão atual
-  app.get('/sessao', { preHandler: [app.authenticate] }, async (request: any, reply) => {
+  app.get('/sessao', { preHandler: [app.authenticate, requireRole('monitor')] }, async (request: any, reply) => {
     const usuario = await prisma.usuario.findUnique({
       where: { id: request.user.id },
       select: {

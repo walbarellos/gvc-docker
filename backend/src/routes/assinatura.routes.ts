@@ -1,10 +1,11 @@
 import type { FastifyInstance } from 'fastify';
+import { requireRole } from '../middleware/authorization.js';
 import { prisma } from '../lib/prisma.js';
 import { createAssinaturaBodySchema, validateBody } from '../schemas/index.js';
 
 export async function assinaturaRoutes(app: FastifyInstance) {
   // Listar todos
-  app.get('/', { preHandler: [app.authenticate] }, async (request: any) => {
+  app.get('/', { preHandler: [app.authenticate, requireRole('monitor')] }, async (request: any) => {
     const { limit } = request.query as any;
     return prisma.assinaturaDigital.findMany({
       orderBy: { createdAt: 'desc' },
@@ -13,7 +14,7 @@ export async function assinaturaRoutes(app: FastifyInstance) {
   });
 
   // Criar
-  app.post('/', { preHandler: [app.authenticate] }, async (request: any, reply: any) => {
+  app.post('/', { preHandler: [app.authenticate, requireRole('monitor')] }, async (request: any, reply: any) => {
     const parsed = validateBody(createAssinaturaBodySchema, request.body);
     if (!parsed.success) {
       return reply.status(400).send({ error: 'Dados inválidos', details: parsed.error?.details });
@@ -33,13 +34,13 @@ export async function assinaturaRoutes(app: FastifyInstance) {
   });
 
   // Buscar por ID
-  app.get('/:id', { preHandler: [app.authenticate] }, async (request: any) => {
+  app.get('/:id', { preHandler: [app.authenticate, requireRole('monitor')] }, async (request: any) => {
     const { id } = request.params;
     return prisma.assinaturaDigital.findUnique({ where: { id } });
   });
 
   // Buscar por CPF
-  app.get('/cpf/:cpf', { preHandler: [app.authenticate] }, async (request: any) => {
+  app.get('/cpf/:cpf', { preHandler: [app.authenticate, requireRole('monitor')] }, async (request: any) => {
     const { cpf } = request.params;
     return prisma.assinaturaDigital.findMany({
       where: { cpfAssinante: cpf },

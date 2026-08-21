@@ -1,10 +1,11 @@
 import type { FastifyInstance } from 'fastify';
+import { requireRole } from '../middleware/authorization.js';
 import bcrypt from 'bcryptjs';
 import { prisma } from '../lib/prisma.js';
 import { createUserSchema, updateUserBodySchema } from '../schemas/index.js';
 
 export async function userRoutes(app: FastifyInstance) {
-  app.patch('/:id', { preHandler: [app.authenticate] }, async (request: any, reply: any) => {
+  app.patch('/:id', { preHandler: [app.authenticate, requireRole('monitor')] }, async (request: any, reply: any) => {
     if (request.user.perfil !== 'administrador') return reply.status(403).send({ error: 'Permissão negada' });
     const { id } = request.params;
     const { ativo } = request.body;
@@ -16,7 +17,7 @@ export async function userRoutes(app: FastifyInstance) {
   });
 
   // Listar todos (com filtro opcional por espacoId)
-  app.get('/', { preHandler: [app.authenticate] }, async (request: any) => {
+  app.get('/', { preHandler: [app.authenticate, requireRole('monitor')] }, async (request: any) => {
     const { espacoId } = request.query;
     const where: any = {};
     if (espacoId) where.espacoId = espacoId;
@@ -39,7 +40,7 @@ export async function userRoutes(app: FastifyInstance) {
   });
 
   // Buscar por email (para validação de unicidade)
-  app.get('/email/:email', { preHandler: [app.authenticate] }, async (request: any, reply: any) => {
+  app.get('/email/:email', { preHandler: [app.authenticate, requireRole('monitor')] }, async (request: any, reply: any) => {
     const { email } = request.params;
     const usuario = await prisma.usuario.findUnique({
       where: { email },
@@ -49,7 +50,7 @@ export async function userRoutes(app: FastifyInstance) {
   });
 
   // Buscar por ID
-  app.get('/:id', { preHandler: [app.authenticate] }, async (request: any) => {
+  app.get('/:id', { preHandler: [app.authenticate, requireRole('monitor')] }, async (request: any) => {
     const { id } = request.params;
     return prisma.usuario.findUnique({
       where: { id },
@@ -68,7 +69,7 @@ export async function userRoutes(app: FastifyInstance) {
   });
 
   // Criar
-  app.post('/', { preHandler: [app.authenticate] }, async (request: any, reply: any) => {
+  app.post('/', { preHandler: [app.authenticate, requireRole('monitor')] }, async (request: any, reply: any) => {
     if (request.user.perfil !== 'administrador') {
       return reply.status(403).send({ error: 'Apenas administrador pode criar usuários' });
     }
@@ -104,7 +105,7 @@ export async function userRoutes(app: FastifyInstance) {
   });
 
   // Atualizar
-  app.put('/:id', { preHandler: [app.authenticate] }, async (request: any, reply: any) => {
+  app.put('/:id', { preHandler: [app.authenticate, requireRole('monitor')] }, async (request: any, reply: any) => {
     if (request.user.perfil !== 'administrador') {
       return reply.status(403).send({ error: 'Apenas administrador pode atualizar usuários' });
     }
@@ -159,7 +160,7 @@ export async function userRoutes(app: FastifyInstance) {
   });
 
   // Deletar
-  app.delete('/:id', { preHandler: [app.authenticate] }, async (request: any, reply: any) => {
+  app.delete('/:id', { preHandler: [app.authenticate, requireRole('monitor')] }, async (request: any, reply: any) => {
     if (request.user.perfil !== 'administrador') {
       return reply.status(403).send({ error: 'Apenas administrador pode excluir usuários' });
     }

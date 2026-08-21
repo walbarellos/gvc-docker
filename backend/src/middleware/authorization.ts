@@ -2,10 +2,27 @@ import { FastifyReply } from 'fastify';
 
 export type UserRole = 'administrador' | 'coordenador' | 'funcionario' | 'operador' | 'monitor' | 'cidadao';
 
+const ROLE_HIERARCHY: Record<UserRole, UserRole[]> = {
+  'cidadao': ['cidadao'],
+  'monitor': ['monitor', 'operador', 'funcionario', 'coordenador', 'administrador'],
+  'operador': ['operador', 'funcionario', 'coordenador', 'administrador'],
+  'funcionario': ['funcionario', 'coordenador', 'administrador'],
+  'coordenador': ['coordenador', 'administrador'],
+  'administrador': ['administrador']
+};
+
 export const requireRole = (...roles: UserRole[]) => {
   return async (request: any, reply: FastifyReply) => {
-    const perfil: string | undefined = request.user?.perfil;
-    if (!roles.includes(perfil as UserRole)) {
+    const perfil: UserRole | undefined = request.user?.perfil;
+    if (!perfil) {
+      return reply.status(403).send({ error: 'Usuário sem perfil' });
+    }
+    
+    // Check if the user's profile is in the allowed roles directly,
+    // OR if any of the allowed roles implicitly grants access to the user's profile via hierarchy.
+    const hasPermission = roles.some(role => ROLE_HIERARCHY[role]?.includes(perfil));
+    
+    if (!hasPermission) {
       return reply.status(403).send({ error: 'Sem permissão para esta ação' });
     }
   };

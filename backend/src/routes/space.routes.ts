@@ -1,4 +1,5 @@
 import type { FastifyInstance } from 'fastify';
+import { requireRole } from '../middleware/authorization.js';
 import { prisma } from '../lib/prisma.js';
 import { createEspacoBodySchema, updateEspacoBodySchema, validateBody } from '../schemas/index.js';
 
@@ -65,7 +66,7 @@ function mapSpaceFields(data: any): any {
 
 export async function spaceRoutes(app: FastifyInstance) {
   // Listar todos (com filtros)
-  app.get('/', { preHandler: [app.authenticate] }, async (request: any) => {
+  app.get('/', { preHandler: [app.authenticate, requireRole('monitor')] }, async (request: any) => {
     const { ativo, order } = request.query as any;
     const where: any = {};
     if (ativo !== undefined) where.ativo = ativo === 'true';
@@ -77,13 +78,13 @@ export async function spaceRoutes(app: FastifyInstance) {
   });
 
   // Buscar por ID
-  app.get('/:id', { preHandler: [app.authenticate] }, async (request: any) => {
+  app.get('/:id', { preHandler: [app.authenticate, requireRole('monitor')] }, async (request: any) => {
     const { id } = request.params;
     return prisma.espaco.findUnique({ where: { id } });
   });
 
   // Criar (admin only)
-  app.post('/', { preHandler: [app.authenticate] }, async (request: any, reply: any) => {
+  app.post('/', { preHandler: [app.authenticate, requireRole('monitor')] }, async (request: any, reply: any) => {
     if (request.user.perfil !== 'administrador') {
       return reply.status(403).send({ error: 'Apenas administrador pode criar espaço' });
     }
@@ -97,7 +98,7 @@ export async function spaceRoutes(app: FastifyInstance) {
   });
 
   // Atualizar
-  app.put('/:id', { preHandler: [app.authenticate] }, async (request: any, reply: any) => {
+  app.put('/:id', { preHandler: [app.authenticate, requireRole('monitor')] }, async (request: any, reply: any) => {
     if (request.user.perfil !== 'administrador') {
       return reply.status(403).send({ error: 'Apenas administrador pode atualizar' });
     }
@@ -111,7 +112,7 @@ export async function spaceRoutes(app: FastifyInstance) {
   });
 
   // Patch - atualizar parcialmente
-  app.patch('/:id', { preHandler: [app.authenticate] }, async (request: any, reply: any) => {
+  app.patch('/:id', { preHandler: [app.authenticate, requireRole('monitor')] }, async (request: any, reply: any) => {
     if (request.user.perfil !== 'administrador') {
       return reply.status(403).send({ error: 'Apenas administrador pode atualizar' });
     }
@@ -125,7 +126,7 @@ export async function spaceRoutes(app: FastifyInstance) {
   });
 
   // Soft delete
-  app.delete('/:id', { preHandler: [app.authenticate] }, async (request: any, reply: any) => {
+  app.delete('/:id', { preHandler: [app.authenticate, requireRole('monitor')] }, async (request: any, reply: any) => {
     if (request.user.perfil !== 'administrador') {
       return reply.status(403).send({ error: 'Apenas administrador pode excluir' });
     }

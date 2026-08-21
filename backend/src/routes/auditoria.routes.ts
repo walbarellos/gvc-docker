@@ -1,4 +1,5 @@
 import type { FastifyInstance } from 'fastify';
+import { requireRole } from '../middleware/authorization.js';
 import { prisma } from '../lib/prisma.js';
 import { auditoriaBodySchema, validateBody } from '../schemas/index.js';
 
@@ -23,7 +24,7 @@ function mapAuditoriaFields(data: any): any {
 
 export async function auditoriaRoutes(app: FastifyInstance) {
   // Listar todos
-  app.get('/', { preHandler: [app.authenticate] }, async (request: any) => {
+  app.get('/', { preHandler: [app.authenticate, requireRole('monitor')] }, async (request: any) => {
     const { limit } = request.query as any;
     const logs = await prisma.auditoria.findMany({
       orderBy: { createdAt: 'desc' },
@@ -43,7 +44,7 @@ export async function auditoriaRoutes(app: FastifyInstance) {
   });
 
   // Criar (sem auth para logs automáticos)
-  app.post('/', { preHandler: [app.authenticate] }, async (request: any, reply: any) => {
+  app.post('/', { preHandler: [app.authenticate, requireRole('monitor')] }, async (request: any, reply: any) => {
     const parsed = validateBody(auditoriaBodySchema, request.body);
     if (!parsed.success) {
       return reply.status(400).send({ error: 'Dados inválidos', details: parsed.error?.details });

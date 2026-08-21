@@ -18,7 +18,7 @@ const lockerStatusMap: Record<string, LockerStatus> = {
 
 export async function lockerRoutes(app: FastifyInstance) {
   // Listar todos
-  app.get('/', { preHandler: [app.authenticate] }, async (request: any) => {
+  app.get('/', { preHandler: [app.authenticate, requireRole('monitor')] }, async (request: any) => {
     const { espaco_id, espacoId, status, visitor_id, visitorId } = request.query as any;
     const where: any = {};
     const finalEspacoId = espaco_id || espacoId;
@@ -32,7 +32,7 @@ export async function lockerRoutes(app: FastifyInstance) {
   });
 
   // Buscar por ID
-  app.get('/:id', { preHandler: [app.authenticate] }, async (request: any) => {
+  app.get('/:id', { preHandler: [app.authenticate, requireRole('monitor')] }, async (request: any) => {
     const { id } = request.params;
     return prisma.locker.findUnique({ where: { id } });
   });
@@ -149,7 +149,7 @@ export async function lockerRoutes(app: FastifyInstance) {
   });
 
   // Alocar armário
-  app.post('/alocar', { preHandler: [app.authenticate] }, async (request: any, reply: any) => {
+  app.post('/alocar', { preHandler: [app.authenticate, requireRole('monitor')] }, async (request: any, reply: any) => {
     const parsed = validateBody(alocarLockerBodySchema, request.body);
     if (!parsed.success) {
       return reply.status(400).send({ error: 'Dados inválidos', details: parsed.error?.details });
@@ -204,7 +204,7 @@ export async function lockerRoutes(app: FastifyInstance) {
   });
 
   // Desalocar armário
-  app.post('/:id/desalocar', { preHandler: [app.authenticate] }, async (request: any) => {
+  app.post('/:id/desalocar', { preHandler: [app.authenticate, requireRole('monitor')] }, async (request: any) => {
     const { id } = request.params;
     const locker = await prisma.locker.update({
       where: { id },
@@ -214,7 +214,7 @@ export async function lockerRoutes(app: FastifyInstance) {
   });
 
   // Verificar armários ocupados por visitante
-  app.get('/visitor/:visitorId', { preHandler: [app.authenticate] }, async (request: any, reply: any) => {
+  app.get('/visitor/:visitorId', { preHandler: [app.authenticate, requireRole('monitor')] }, async (request: any, reply: any) => {
     const { visitorId } = request.params;
 
     const lockers = await prisma.locker.findMany({

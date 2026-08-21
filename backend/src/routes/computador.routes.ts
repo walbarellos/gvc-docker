@@ -5,7 +5,7 @@ import { createComputadorBodySchema, updateComputadorBodySchema, validateBody } 
 
 export async function computadorRoutes(app: FastifyInstance) {
   // Listar todos
-  app.get('/', { preHandler: [app.authenticate] }, async (request: any) => {
+  app.get('/', { preHandler: [app.authenticate, requireRole('monitor')] }, async (request: any) => {
     const { espaco_id, espacoId, status, visitor_id, visitorId } = request.query as any;
     const where: any = {};
     const finalEspacoId = espaco_id || espacoId;
@@ -24,13 +24,13 @@ export async function computadorRoutes(app: FastifyInstance) {
   });
 
   // Buscar por ID
-  app.get('/:id', { preHandler: [app.authenticate] }, async (request: any) => {
+  app.get('/:id', { preHandler: [app.authenticate, requireRole('monitor')] }, async (request: any) => {
     const { id } = request.params;
     return prisma.computador.findUnique({ where: { id } });
   });
 
   // Criar (iniciar sessão no computador)
-  app.post('/', { preHandler: [app.authenticate] }, async (request: any, reply: any) => {
+  app.post('/', { preHandler: [app.authenticate, requireRole('monitor')] }, async (request: any, reply: any) => {
     const parsed = validateBody(createComputadorBodySchema, request.body);
     if (!parsed.success) {
       return reply.status(400).send({ error: 'Dados inválidos', details: parsed.error?.details });
@@ -38,14 +38,14 @@ export async function computadorRoutes(app: FastifyInstance) {
     const data = parsed.data!;
 
     const numero = data.numero ?? data.number;
-    const usuarioId = data.usuarioId || data.usuario_id || null;
+    const visitorId = data.visitorId || data.visitor_id || null;
     const espacoId = data.espacoId || data.espaco_id || null;
 
     // BUG 1 & 6: Validar check-in ativo antes de permitir uso do computador
-    if (usuarioId && usuarioId !== 'temp') {
+    if (visitorId && visitorId !== 'temp') {
       const activeVisit = await prisma.visit.findFirst({
         where: {
-          visitorId: usuarioId,
+          visitorId: visitorId,
           espacoId: espacoId ?? undefined,
           status: 'ativo',
           checkout: null,
@@ -60,7 +60,7 @@ export async function computadorRoutes(app: FastifyInstance) {
 
       const activeComputer = await prisma.computador.findFirst({
         where: {
-          usuarioId: usuarioId,
+          visitorId: visitorId,
           espacoId: espacoId ?? undefined,
           status: { in: ['Em Uso', 'EmUso'] },
         },
@@ -77,8 +77,8 @@ export async function computadorRoutes(app: FastifyInstance) {
       data: {
         numero,
         status: (data.status === 'EmUso' ? 'Em Uso' : data.status) || 'Livre',
-        usuarioId,
-        usuarioNome: data.usuarioNome || data.usuario_nome || null,
+        visitorId,
+        visitorName: data.visitorName || data.visitor_name || null,
         espacoId,
         espacoNome: data.espacoNome || null,
         horarioInicio: data.horarioInicio ? new Date(data.horarioInicio) : null,
@@ -89,14 +89,14 @@ export async function computadorRoutes(app: FastifyInstance) {
 
 
   // Desalocar computador
-  app.post('/:id/desalocar', { preHandler: [app.authenticate] }, async (request: any, reply: any) => {
+  app.post('/:id/desalocar', { preHandler: [app.authenticate, requireRole('monitor')] }, async (request: any, reply: any) => {
     const { id } = request.params;
     return prisma.computador.update({
       where: { id },
       data: {
         status: 'Livre',
-        usuarioId: null,
-        usuarioNome: null,
+        visitorId: null,
+        visitorName: null,
         horarioInicio: null,
         horarioLimite: null
       }
@@ -115,8 +115,8 @@ export async function computadorRoutes(app: FastifyInstance) {
     const updateData: any = {};
     if (data.numero !== undefined || data.number !== undefined) updateData.numero = data.numero ?? data.number;
     if (data.status !== undefined) updateData.status = data.status;
-    if (data.usuarioId !== undefined || data.usuario_id !== undefined) updateData.usuarioId = data.usuarioId || data.usuario_id;
-    if (data.usuarioNome !== undefined || data.usuario_nome !== undefined) updateData.usuarioNome = data.usuarioNome || data.usuario_nome;
+    if (data.visitorId !== undefined || data.visitor_id !== undefined) updateData.visitorId = data.visitorId || data.visitor_id;
+    if (data.visitorName !== undefined || data.visitor_name !== undefined) updateData.visitorName = data.visitorName || data.visitor_name;
     if (data.espacoId !== undefined || data.espaco_id !== undefined) updateData.espacoId = data.espacoId || data.espaco_id;
     if (data.espacoNome !== undefined) updateData.espacoNome = data.espacoNome;
     if (data.horarioInicio !== undefined) updateData.horarioInicio = data.horarioInicio ? new Date(data.horarioInicio) : null;
