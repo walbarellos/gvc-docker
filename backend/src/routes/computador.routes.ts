@@ -1,5 +1,6 @@
 import type { FastifyInstance } from 'fastify';
 import { prisma } from '../lib/prisma.js';
+import { requireRole } from '../middleware/authorization.js';
 import { createComputadorBodySchema, updateComputadorBodySchema, validateBody } from '../schemas/index.js';
 
 export async function computadorRoutes(app: FastifyInstance) {
@@ -77,7 +78,7 @@ export async function computadorRoutes(app: FastifyInstance) {
   });
 
   // Atualizar
-  app.put('/:id', { preHandler: [app.authenticate] }, async (request: any, reply: any) => {
+  app.put('/:id', { preHandler: [app.authenticate, requireRole('administrador', 'coordenador')] }, async (request: any, reply: any) => {
     const { id } = request.params;
     const parsed = validateBody(updateComputadorBodySchema, request.body);
     if (!parsed.success) {
@@ -99,7 +100,7 @@ export async function computadorRoutes(app: FastifyInstance) {
   });
 
   // Deletar
-  app.delete('/:id', { preHandler: [app.authenticate] }, async (request: any) => {
+  app.delete('/:id', { preHandler: [app.authenticate, requireRole('administrador', 'coordenador')] }, async (request: any) => {
     const { id } = request.params;
     await prisma.computador.delete({ where: { id } });
     return { success: true };

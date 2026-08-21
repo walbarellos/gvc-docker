@@ -1,5 +1,6 @@
 import type { FastifyInstance } from 'fastify';
 import { prisma } from '../lib/prisma.js';
+import { requireRole } from '../middleware/authorization.js';
 import { configuracaoBodySchema, validateBody } from '../schemas/index.js';
 
 export async function configuracaoRoutes(app: FastifyInstance) {
@@ -29,7 +30,7 @@ export async function configuracaoRoutes(app: FastifyInstance) {
     return config;
   });
 
-  app.post('/', { preHandler: [app.authenticate] }, async (request: any, reply: any) => {
+  app.post('/', { preHandler: [app.authenticate, requireRole('administrador', 'coordenador')] }, async (request: any, reply: any) => {
     const parsed = validateBody(configuracaoBodySchema, request.body);
     if (!parsed.success) {
       return reply.status(400).send({ error: 'Dados inválidos', details: parsed.error?.details });
@@ -43,7 +44,7 @@ export async function configuracaoRoutes(app: FastifyInstance) {
     return config;
   });
 
-  app.put('/:id', { preHandler: [app.authenticate] }, async (request: any, reply: any) => {
+  app.put('/:id', { preHandler: [app.authenticate, requireRole('administrador', 'coordenador')] }, async (request: any, reply: any) => {
     const { id } = request.params;
     const parsed = validateBody(configuracaoBodySchema, request.body);
     if (!parsed.success) {
@@ -57,7 +58,7 @@ export async function configuracaoRoutes(app: FastifyInstance) {
     return config;
   });
 
-  app.delete('/:id', { preHandler: [app.authenticate] }, async (request: any) => {
+  app.delete('/:id', { preHandler: [app.authenticate, requireRole('administrador', 'coordenador')] }, async (request: any) => {
     const { id } = request.params;
     await prisma.configuracao.delete({ where: { id } });
     return { success: true };

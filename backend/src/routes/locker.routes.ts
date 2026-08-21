@@ -1,5 +1,6 @@
 import type { FastifyInstance } from 'fastify';
 import { prisma } from '../lib/prisma.js';
+import { requireRole } from '../middleware/authorization.js';
 import { createLockerBodySchema, updateLockerBodySchema, alocarLockerBodySchema, validateBody } from '../schemas/index.js';
 
 type LockerStatus = 'Livre' | 'Ocupado' | 'Manutencao';
@@ -32,7 +33,7 @@ export async function lockerRoutes(app: FastifyInstance) {
   });
 
   // Criar
-  app.post('/', { preHandler: [app.authenticate] }, async (request: any, reply: any) => {
+  app.post('/', { preHandler: [app.authenticate, requireRole('administrador', 'coordenador')] }, async (request: any, reply: any) => {
     const parsed = validateBody(createLockerBodySchema, request.body);
     if (!parsed.success) {
       return reply.status(400).send({ error: 'Dados inválidos', details: parsed.error?.details });
@@ -87,7 +88,7 @@ export async function lockerRoutes(app: FastifyInstance) {
   });
 
   // Atualizar
-  app.put('/:id', { preHandler: [app.authenticate] }, async (request: any, reply: any) => {
+  app.put('/:id', { preHandler: [app.authenticate, requireRole('administrador', 'coordenador')] }, async (request: any, reply: any) => {
     const { id } = request.params;
     const parsed = validateBody(updateLockerBodySchema, request.body);
     if (!parsed.success) {
@@ -136,7 +137,7 @@ export async function lockerRoutes(app: FastifyInstance) {
   });
 
   // Deletar
-  app.delete('/:id', { preHandler: [app.authenticate] }, async (request: any) => {
+  app.delete('/:id', { preHandler: [app.authenticate, requireRole('administrador', 'coordenador')] }, async (request: any) => {
     const { id } = request.params;
     await prisma.locker.delete({ where: { id } });
     return { success: true };
