@@ -66,6 +66,7 @@ model Usuario {
   updatedAt  DateTime      @default(now()) @updatedAt @map("updated_at")
 
   espaco Espaco? @relation(fields: [espacoId], references: [id])
+  agendamentosCoordenados Agendamento[]
 
   @@index([espacoId])
   @@index([perfil])
@@ -146,6 +147,7 @@ model Visitor {
 
   visits             Visit[]
   lockers            Locker[]
+  computadores       Computador[]
   authorizationLogs  AuthorizationLog[]
   assinaturasDigitais AssinaturaDigital[]
 
@@ -186,14 +188,15 @@ model Computador {
   id            String           @id @default(uuid())
   numero        Int
   status        String @default("Livre")
-  usuarioId     String?          @map("usuario_id")
-  usuarioNome   String?          @map("usuario_nome")
+  visitorId     String?          @map("visitor_id")
+  visitorName   String?          @map("visitor_name")
   horarioInicio DateTime?        @map("horario_inicio")
   horarioLimite DateTime?        @map("horario_limite")
   espacoId      String?          @map("espaco_id")
   espacoNome    String?          @map("espaco_nome")
 
   espaco Espaco? @relation(fields: [espacoId], references: [id], onDelete: SetNull)
+  visitor Visitor? @relation(fields: [visitorId], references: [id], onDelete: SetNull)
 
   @@unique([espacoId, numero])
   @@index([espacoId])
@@ -268,12 +271,14 @@ model Agendamento {
   termoCompromissoIp      String?           @map("termo_compromisso_ip")
 
   espaco     Espaco                 @relation(fields: [espacoId], references: [id])
+  coordenador Usuario?              @relation(fields: [coordenadorId], references: [id])
   documentos DocumentoAgendamento[]
 
   @@index([espacoId])
   @@index([status])
   @@index([dataPretendida])
   @@index([solicitanteEmail])
+  @@index([coordenadorId])
   @@map("agendamentos")
 }
 

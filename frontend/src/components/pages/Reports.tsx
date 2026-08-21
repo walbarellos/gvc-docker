@@ -43,6 +43,7 @@ import ConfirmModal from '../modals/ConfirmModal';
 interface Visit {
   id: string;
   nome: string;
+  responsibleAccompanied?: boolean;
   perfil: string;
   local: string;
   espacoId?: string;
@@ -143,7 +144,7 @@ export default function Reports() {
         filteredVisits = filteredVisits.filter(v => v.status === filterStatus);
       }
       
-      const fetchedVisits = filteredVisits.map(doc => normalizarVisita(doc)) as Visit[];
+      const fetchedVisits = filteredVisits.map(doc => ({...normalizarVisita(doc), responsibleAccompanied: doc.responsibleAccompanied || doc.responsible_accompanied})) as Visit[];
       setVisits(fetchedVisits);
       setCurrentPage(0);
     } catch (error: any) {
@@ -362,6 +363,7 @@ export default function Reports() {
         'Nome do Visitante': v.nome,
         'Perfil': traduzirPerfil(v.perfil),
         'Local de Acesso': v.local,
+        'Acompanhado': v.responsibleAccompanied ? 'Sim' : 'Não',
         'Horário Entrada': v.checkin ? format(new Date(v.checkin), 'dd/MM/yyyy HH:mm') : 'N/A',
         'Horário Saída': v.checkout ? format(new Date(v.checkout), 'dd/MM/yyyy HH:mm') : 'Pendente',
         'Situação': status === 'Ativo' || status === 'active' ? 'ENTRADA' : (status === 'Concluído' || status === 'completed' || status === 'Excedido' ? 'SAÍDA' : status)
@@ -370,7 +372,7 @@ export default function Reports() {
 
     const wsVisits = XLSX.utils.json_to_sheet(visitData);
     wsVisits['!cols'] = [
-      {wch: 12}, {wch: 35}, {wch: 15}, {wch: 25}, {wch: 20}, {wch: 20}, {wch: 15}
+      {wch: 12}, {wch: 35}, {wch: 15}, {wch: 25}, {wch: 20}, {wch: 20}, {wch: 15}, {wch: 15}
     ];
 
     // Dados do Telecentro
@@ -677,6 +679,7 @@ export default function Reports() {
                 <th className="px-4 py-4 text-[10px] font-bold text-gray-400 uppercase tracking-widest text-left">Visitante</th>
                 <th className="px-4 py-4 text-[10px] font-bold text-gray-400 uppercase tracking-widest text-left">Perfil</th>
                 <th className="px-4 py-4 text-[10px] font-bold text-gray-400 uppercase tracking-widest text-left">Local</th>
+                <th className="px-4 py-4 text-[10px] font-bold text-gray-400 uppercase tracking-widest text-left">Acomp.</th>
                 <th className="px-4 py-4 text-[10px] font-bold text-gray-400 uppercase tracking-widest text-left">Entrada / Saída</th>
                 <th className="px-4 py-4 text-[10px] font-bold text-gray-400 uppercase tracking-widest text-left">Status</th>
                 <th className="px-4 py-4 text-[10px] font-bold text-gray-400 uppercase tracking-widest text-right no-print">Ações</th>

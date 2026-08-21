@@ -120,8 +120,8 @@ CREATE TABLE "computadores" (
     "id" TEXT NOT NULL,
     "numero" INTEGER NOT NULL,
     "status" "ComputadorStatus" DEFAULT 'Livre',
-    "usuario_id" TEXT,
-    "usuario_nome" TEXT,
+    "visitor_id" TEXT,
+    "visitor_name" TEXT,
     "horario_inicio" TIMESTAMP(3),
     "horario_limite" TIMESTAMP(3),
     "espaco_id" TEXT,
@@ -408,7 +408,7 @@ ALTER TABLE "lockers" ADD CONSTRAINT "lockers_visitor_id_fkey" FOREIGN KEY ("vis
 ALTER TABLE "agendamentos" ADD CONSTRAINT "agendamentos_espaco_id_fkey" FOREIGN KEY ("espaco_id") REFERENCES "espacos"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
 
 -- AddForeignKey
-ALTER TABLE "authorization_logs" ADD CONSTRAINT "authorization_logs_visitor_id_fkey" FOREIGN KEY ("visitor_id") REFERENCES "visitors"("id") ON DELETE NO ACTION ON UPDATE NO ACTION;
+ALTER TABLE "authorization_logs" ADD CONSTRAINT "authorization_logs_visitor_id_fkey" FOREIGN KEY ("visitor_id") REFERENCES "visitors"("id") ON DELETE CASCADE ON UPDATE CASCADE;
 
 
 -- CreateIndex
@@ -419,3 +419,15 @@ CREATE INDEX "lockers_espaco_id_idx" ON "lockers"("espaco_id");
 
 -- CreateIndex
 CREATE INDEX "lockers_visitor_id_idx" ON "lockers"("visitor_id");
+
+-- AddForeignKey
+ALTER TABLE "computadores" ADD CONSTRAINT "computadores_visitor_id_fkey" FOREIGN KEY ("visitor_id") REFERENCES "visitors"("id") ON DELETE SET NULL ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "agendamentos" ADD CONSTRAINT "agendamentos_coordenador_id_fkey" FOREIGN KEY ("coordenador_id") REFERENCES "Usuario"("id") ON DELETE SET NULL ON UPDATE CASCADE;
+
+-- CreateIndex
+CREATE INDEX "agendamentos_coordenador_id_idx" ON "agendamentos"("coordenador_id");
+
+-- AddForeignKey
+ALTER TABLE "assinaturas_digitais" ADD CONSTRAINT "assinaturas_digitais_visitor_id_fkey" FOREIGN KEY ("visitor_id") REFERENCES "visitors"("id") ON DELETE SET NULL ON UPDATE CASCADE;

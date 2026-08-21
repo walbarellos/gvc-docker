@@ -32,8 +32,16 @@ export class VisitorService {
       id: crypto.randomUUID(),
       fullName: data.fullName || data.full_name,
       cpf: data.cpf,
-      isForeigner: data.is_foreigner || data.isForeigner || false,
+      isForeigner: data.is_foreigner !== undefined ? data.is_foreigner : (data.isForeigner || false),
       birthDate: data.birth_date ? new Date(data.birth_date) : (data.birthDate ? new Date(data.birthDate) : null),
+      passport: data.passport || null,
+      gender: data.gender || null,
+      email: data.email || null,
+      phone: data.phone || data.telefone || null,
+      address: data.address || data.endereco || null,
+      category: data.category || data.categoria || data.perfil || null,
+      status: data.status || 'ativo',
+      notes: data.notes || data.observacoes || null,
       parentalAuthorization: data.parentalAuthorization || false,
       responsibleName: data.responsibleName || null,
       responsibleId: data.responsibleId || null,
@@ -58,11 +66,22 @@ export class VisitorService {
     if (!existing) throw new Error('Visitor not found');
 
     // Lógica de atualização da entidade
-    const updated = new Visitor({
-      ...existing.toJSON(),
-      ...data,
-      updatedAt: new Date()
-    });
+    const mappedData = { ...existing.toJSON(), updatedAt: new Date() };
+    if (data.full_name !== undefined || data.fullName !== undefined) mappedData.fullName = data.full_name ?? data.fullName;
+    if (data.cpf !== undefined) mappedData.cpf = data.cpf;
+    if (data.is_foreigner !== undefined || data.isForeigner !== undefined) mappedData.isForeigner = data.is_foreigner ?? data.isForeigner;
+    if (data.birth_date !== undefined) mappedData.birthDate = data.birth_date ? new Date(data.birth_date) : null;
+    if (data.birthDate !== undefined) mappedData.birthDate = data.birthDate ? new Date(data.birthDate) : null;
+    if (data.passport !== undefined) mappedData.passport = data.passport;
+    if (data.gender !== undefined) mappedData.gender = data.gender;
+    if (data.email !== undefined) mappedData.email = data.email;
+    if (data.phone !== undefined) mappedData.phone = data.phone;
+    if (data.address !== undefined) mappedData.address = data.address;
+    if (data.category !== undefined) mappedData.category = data.category;
+    if (data.status !== undefined) mappedData.status = data.status;
+    if (data.notes !== undefined) mappedData.notes = data.notes;
+    
+    const updated = new Visitor(mappedData);
 
     return this.visitorRepository.save(updated);
   }

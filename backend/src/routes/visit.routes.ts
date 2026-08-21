@@ -344,6 +344,7 @@ export async function visitRoutes(app: FastifyInstance) {
             espacoId, 
             nome: visitor.fullName, 
             perfil: body.perfil || 'general', 
+            local: body.local || 'Entrada Principal',
             status: 'ativo',
             responsibleAccompanied: responsibleAccompanied || false
           },

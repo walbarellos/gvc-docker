@@ -11,6 +11,7 @@ export interface VisitWithVisitor {
     checkout: string | null;
     status: string;
     armario: string | null;
+    responsibleAccompanied?: boolean;
     visitor?: {
         fullName: string;
         cpf: string | null;
