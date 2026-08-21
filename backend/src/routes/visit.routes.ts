@@ -169,7 +169,7 @@ export async function visitRoutes(app: FastifyInstance) {
       return visit;
     } catch (error: any) {
       console.error('Erro ao atualizar visita:', error);
-      return reply.status(400).send({ error: error.message || 'Erro ao atualizar visita' });
+      return reply.status(400).send({ error: 'Erro ao atualizar visita' });
     }
   });
 
@@ -372,7 +372,7 @@ export async function visitRoutes(app: FastifyInstance) {
     } catch (error: any) {
       console.error('Erro no checkout:', error);
       console.error('Existing visit status:', existingVisit?.status);
-      return reply.status(400).send({ error: error.message || 'Erro ao realizar checkout', details: error.message });
+      return reply.status(400).send({ error: 'Erro ao realizar checkout' });
     }
   });
 

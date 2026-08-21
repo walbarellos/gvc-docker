@@ -126,7 +126,7 @@ export async function lockerRoutes(app: FastifyInstance) {
       return locker;
     } catch (error: any) {
       console.error('Erro ao atualizar armário:', error);
-      return reply.status(400).send({ error: error.message || 'Erro ao atualizar armário' });
+      return reply.status(400).send({ error: 'Erro ao atualizar armário' });
     }
   });
 
@@ -183,7 +183,7 @@ export async function lockerRoutes(app: FastifyInstance) {
       return locker;
     } catch (error: any) {
       console.error('Erro ao alocar armário:', error);
-      return reply.status(400).send({ error: error.message || 'Erro ao alocar armário' });
+      return reply.status(400).send({ error: 'Erro ao alocar armário' });
     }
   });
 

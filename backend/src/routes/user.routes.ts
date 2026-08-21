@@ -143,7 +143,7 @@ export async function userRoutes(app: FastifyInstance) {
       });
     } catch (error: any) {
       console.error('Erro no update:', error);
-      return reply.status(500).send({ error: error.message });
+      throw error;
     }
   });
 

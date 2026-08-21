@@ -77,9 +77,18 @@ app.setErrorHandler((error, request, reply) => {
     });
   }
 
-  reply.status(error.statusCode || 500).send({
-    error: error.name || 'Internal Server Error',
-    message: error.message || 'Ocorreu um erro inesperado no servidor.'
+  const statusCode = error.statusCode || 500;
+  if (statusCode >= 500) {
+    return reply.status(statusCode).send({
+      error: 'Erro Interno do Servidor',
+      message: 'Ocorreu um erro inesperado no servidor.',
+      correlationId: request.id
+    });
+  }
+
+  reply.status(statusCode).send({
+    error: error.name || 'Error',
+    message: error.message
   });
 });
 

@@ -12,12 +12,13 @@ export abstract class BaseController {
     requestLog(reply.request, `Error in ${context}: ${error.message}`);
 
     const statusCode = error.statusCode || 500;
-    const message = error.message || 'Internal Server Error';
+    const isServerError = statusCode >= 500;
 
     reply.status(statusCode).send({
-      error: error.name || 'Error',
-      message,
-      context
+      error: isServerError ? 'Internal Server Error' : (error.name || 'Error'),
+      message: isServerError ? 'Ocorreu um erro inesperado no servidor.' : error.message,
+      correlationId: reply.request.id,
+      ...(isServerError ? {} : { context })
     });
   }
 }
