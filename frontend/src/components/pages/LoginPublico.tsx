@@ -377,7 +377,7 @@ export default function LoginPublico() {
             <p className="text-sm text-slate-500">
               Não tem conta?{' '}
               <button
-                onClick={() => navigate('/cadastro-publico')}
+                onClick={() => navigate('/agendamento/cadastro')}
                 className="text-[#835425] hover:text-[#6d4520] font-medium underline underline-offset-3"
               >
                 Criar cadastro

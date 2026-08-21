@@ -122,7 +122,7 @@ export default function CadastroPublico() {
             Clique no link do email para ativar sua conta.
           </p>
           <button
-            onClick={() => navigate('/agendamento-publico')}
+            onClick={() => navigate('/agendamento/formulario')}
             className="w-full bg-indigo-600 text-white py-4 rounded-xl font-bold hover:bg-indigo-700 transition-all"
           >
             Ir para Agendamento
@@ -376,7 +376,7 @@ export default function CadastroPublico() {
         </div>
 
         <button
-          onClick={() => navigate('/agendamento-publico')}
+          onClick={() => navigate('/agendamento/formulario')}
           className="mt-4 mx-auto flex items-center gap-2 text-indigo-200 hover:text-white transition-colors"
         >
           <ArrowLeft size={16} />
