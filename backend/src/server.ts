@@ -85,7 +85,6 @@ app.setErrorHandler((error, request, reply) => {
     });
   }
 
-  const statusCode = error.statusCode || 500;
   if (statusCode >= 500) {
     return reply.status(statusCode).send({
       error: 'Erro Interno do Servidor',

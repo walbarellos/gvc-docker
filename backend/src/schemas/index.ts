@@ -172,7 +172,7 @@ export const createAgendamentoSchema = z.object({
   necessita_equipamentos: z.string().optional().nullable(),
   observacoes: z.string().optional().nullable(),
   termo_aceito: z.boolean().refine(val => val === true, 'Termo deve ser aceito'),
-  responsabhilidade_evento: z.boolean().refine(val => val === true, 'Responsabilidade deve ser aceita'),
+  responsabilidade_evento: z.boolean().refine(val => val === true, 'Responsabilidade deve ser aceita'),
   danos_patrimonio: z.boolean().refine(val => val === true, 'Danos ao patrimônio deve ser aceito'),
   respeito_lotacao: z.boolean().refine(val => val === true, 'Respeito à lotação deve ser aceito'),
   autorizo_divulgacao: z.boolean().default(false),

@@ -153,8 +153,7 @@ export function mapAgendamentoFields(data: any): any {
     if (parsed) mapped.termo_aceito_em = parsed;
   }
   
-  if (data.responsabhilidade_evento !== undefined) mapped.responsabhilidade_evento = data.responsabhilidade_evento;
-  if (data.responsabhilidadeEvento !== undefined) mapped.responsabhilidade_evento = data.responsabhilidadeEvento;
+  if (data.responsabilidade_evento !== undefined) mapped.responsabilidade_evento = data.responsabilidade_evento;
   
   if (data.danos_patrimonio !== undefined) mapped.danos_patrimonio = data.danos_patrimonio;
   if (data.danosPatrimonio !== undefined) mapped.danos_patrimonio = data.danosPatrimonio;

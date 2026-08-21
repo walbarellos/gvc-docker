@@ -58,7 +58,6 @@ const publicAgendamentoSchema = z
     observacoes: z.string().max(2000).optional().nullable().transform(emptyToNull),
     termo_aceito: z.boolean().default(false),
     termo_aceito_em: z.string().optional().nullable(),
-    responsabhilidade_evento: z.boolean().default(false),
     responsabilidade_evento: z.boolean().default(false),
     danos_patrimonio: z.boolean().default(false),
     respeito_lotacao: z.boolean().default(false),
@@ -164,9 +163,8 @@ function mapAgendamentoFields(data: any): any {
     if (parsed) mapped.termoAceitoEm = parsed;
   }
   
-  if (data.responsabhilidade_evento !== undefined) mapped.responsabilidadeEvento = data.responsabhilidade_evento;
   if (data.responsabilidade_evento !== undefined) mapped.responsabilidadeEvento = data.responsabilidade_evento;
-  if (data.responsabhilidadeEvento !== undefined) mapped.responsabilidadeEvento = data.responsabhilidadeEvento;
+  if (data.responsabilidadeEvento !== undefined) mapped.responsabilidadeEvento = data.responsabilidadeEvento;
   
   if (data.danos_patrimonio !== undefined) mapped.danosPatrimonio = data.danos_patrimonio;
   if (data.danosPatrimonio !== undefined) mapped.danosPatrimonio = data.danosPatrimonio;
@@ -347,7 +345,7 @@ export async function agendamentoRoutes(app: FastifyInstance) {
         observacoes: data.observacoes ?? null,
         termoAceito: data.termo_aceito,
         termoAceitoEm: data.termo_aceito ? new Date() : null,
-        responsabilidadeEvento: data.responsabilidade_evento ?? data.responsabhilidade_evento ?? false,
+        responsabilidadeEvento: data.responsabilidade_evento ?? false,
         danosPatrimonio: data.danos_patrimonio,
         respeitoLotacao: data.respeito_lotacao,
         autorizoDivulgacao: data.autorizo_divulgacao,
