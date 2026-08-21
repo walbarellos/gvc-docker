@@ -53,6 +53,12 @@ const publicAgendamentoSchema = z.object({
   nomeInstituicao: z.string().max(200).optional().nullable(),
   secretariaGoverno: z.string().max(200).optional().nullable(),
   unidadeGoverno: z.string().max(200).optional().nullable(),
+  assinaturaId: z.string().optional().nullable(),
+  ipConfirmacao: z.string().optional().nullable(),
+  userAgent: z.string().optional().nullable(),
+  termoCompromissoAssinado: z.boolean().optional().nullable(),
+  termoCompromissoData: z.string().optional().nullable(),
+  termoCompromissoIp: z.string().optional().nullable(),
 });
 
 const publicCadastroSchema = z.object({
@@ -169,6 +175,12 @@ export async function publicRoutes(app: FastifyInstance) {
             nomeInstituicao: data.nomeInstituicao ?? null,
             secretariaGoverno: data.secretariaGoverno ?? null,
             unidadeGoverno: data.unidadeGoverno ?? null,
+            assinaturaId: data.assinaturaId ?? null,
+            ipConfirmacao: data.ipConfirmacao ?? null,
+            userAgent: data.userAgent ?? null,
+            termoCompromissoAssinado: data.termoCompromissoAssinado ?? false,
+            termoCompromissoData: data.termoCompromissoData ? new Date(data.termoCompromissoData) : null,
+            termoCompromissoIp: data.termoCompromissoIp ?? null,
             status: 'pendente', // FORÇADO no servidor
           },
           select: {

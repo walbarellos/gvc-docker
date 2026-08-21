@@ -62,6 +62,13 @@ const publicAgendamentoSchema = z
     danos_patrimonio: z.boolean().default(false),
     respeito_lotacao: z.boolean().default(false),
     autorizo_divulgacao: z.boolean().default(false),
+  assinatura_id: z.string().optional().nullable(),
+  ip_confirmacao: z.string().optional().nullable(),
+  user_agent: z.string().optional().nullable(),
+  termo_compromisso_assinado: z.boolean().optional().nullable(),
+  termo_compromisso_data: z.string().optional().nullable(),
+  termo_compromisso_ip: z.string().optional().nullable(),
+
   })
   .strict();
 
@@ -174,6 +181,27 @@ function mapAgendamentoFields(data: any): any {
   
   if (data.autorizo_divulgacao !== undefined) mapped.autorizoDivulgacao = data.autorizo_divulgacao;
   if (data.autorizoDivulgacao !== undefined) mapped.autorizoDivulgacao = data.autorizoDivulgacao;
+
+  if (data.razao_social !== undefined) mapped.razaoSocial = data.razao_social;
+  if (data.razaoSocial !== undefined) mapped.razaoSocial = data.razaoSocial;
+  if (data.nome_instituicao !== undefined) mapped.nomeInstituicao = data.nome_instituicao;
+  if (data.nomeInstituicao !== undefined) mapped.nomeInstituicao = data.nomeInstituicao;
+  if (data.secretaria_governo !== undefined) mapped.secretariaGoverno = data.secretaria_governo;
+  if (data.secretariaGoverno !== undefined) mapped.secretariaGoverno = data.secretariaGoverno;
+  if (data.unidade_governo !== undefined) mapped.unidadeGoverno = data.unidade_governo;
+  if (data.unidadeGoverno !== undefined) mapped.unidadeGoverno = data.unidadeGoverno;
+  if (data.assinatura_id !== undefined) mapped.assinaturaId = data.assinatura_id;
+  if (data.assinaturaId !== undefined) mapped.assinaturaId = data.assinaturaId;
+  if (data.ip_confirmacao !== undefined) mapped.ipConfirmacao = data.ip_confirmacao;
+  if (data.ipConfirmacao !== undefined) mapped.ipConfirmacao = data.ipConfirmacao;
+  if (data.user_agent !== undefined) mapped.userAgent = data.user_agent;
+  if (data.userAgent !== undefined) mapped.userAgent = data.userAgent;
+  if (data.termo_compromisso_assinado !== undefined) mapped.termoCompromissoAssinado = data.termo_compromisso_assinado;
+  if (data.termoCompromissoAssinado !== undefined) mapped.termoCompromissoAssinado = data.termoCompromissoAssinado;
+  if (data.termo_compromisso_data !== undefined) mapped.termoCompromissoData = data.termo_compromisso_data ? new Date(data.termo_compromisso_data) : null;
+  if (data.termoCompromissoData !== undefined) mapped.termoCompromissoData = data.termoCompromissoData ? new Date(data.termoCompromissoData) : null;
+  if (data.termo_compromisso_ip !== undefined) mapped.termoCompromissoIp = data.termo_compromisso_ip;
+  if (data.termoCompromissoIp !== undefined) mapped.termoCompromissoIp = data.termoCompromissoIp;
   
   if (data.documento_anexo_url !== undefined) mapped.documentoAnexoUrl = data.documento_anexo_url || null;
   if (data.documentoAnexoUrl !== undefined) mapped.documentoAnexoUrl = data.documentoAnexoUrl || null;
@@ -349,6 +377,12 @@ export async function agendamentoRoutes(app: FastifyInstance) {
         danosPatrimonio: data.danos_patrimonio,
         respeitoLotacao: data.respeito_lotacao,
         autorizoDivulgacao: data.autorizo_divulgacao,
+        assinaturaId: data.assinatura_id ?? null,
+        ipConfirmacao: data.ip_confirmacao ?? null,
+        userAgent: data.user_agent ?? null,
+        termoCompromissoAssinado: data.termo_compromisso_assinado ?? false,
+        termoCompromissoData: data.termo_compromisso_data ? new Date(data.termo_compromisso_data) : null,
+        termoCompromissoIp: data.termo_compromisso_ip ?? null,
         status: 'pendente', // FORÇADO no servidor
       },
       select: {
