@@ -35,9 +35,11 @@ export default function Dashboard() {
     const { count: countToday } = await visitService.countToday(userData.espacoId || '');
 
     // Visitas ativas
-    const { data: activeData } = await visitService.list(espacoId, { status: 'Ativo' });
+    const { data: activeData } = await visitService.list(espacoId, { status: 'ativo' });
     const activeVisitsCount = activeData?.length || 0;
-    const occupiedLockersCount = activeData?.filter((d: any) => d.armario).length || 0;
+    // Get from Lockers directly instead of visit.armario which is decorative
+    const { data: lockersData } = await api.get<any[]>(`/armarios?status=Ocupado${espacoId ? `&espacoId=${espacoId}` : ''}`);
+    const occupiedLockersCount = lockersData?.length || 0;
     
     // Calcular visitas excedidas com base no tempo (mais de 1 hora)
     const exceededVisitsCount = activeData?.filter((d: any) => {
@@ -54,7 +56,7 @@ export default function Dashboard() {
     let totalArmarios = spaceConfig?.totalArmarios || 20;
     if (isGlobalAdmin) {
       const { data: spaces } = await spaceService.list();
-      totalArmarios = spaces?.reduce((sum, s: any) => sum + (s.perfilArmariosQuantidade || 0), 0) || 20;
+      totalArmarios = spaces?.reduce((sum, s: any) => sum + (s.totalArmarios || 0), 0) || 20;
     }
 
     // Gráfico 7 dias

@@ -10,13 +10,13 @@ export function normalizarVisita(doc: any) {
   const id = doc.id || data.id;
 
   // Normalização de Nome
-  const nome = data.nome || data.visitorName || data.fullName || "Desconhecido";
+  const nome = data.nome || data.visitorName || data.fullName || data.visitor?.fullName || data.visitor?.full_name || "Visitante";
   
   // Normalização de Perfil/Categoria
   const perfil = data.perfil || data.category || data.profile || "general";
   
   // Normalização de Local
-  const local = data.local || data.location || data.espacoNome || "Entrada Principal";
+  const local = data.local || data.location || data.espacoNome || data.espaco?.nome || "Espaço";
   
   // Normalização de Status
   let status = data.status || "Ativo";
