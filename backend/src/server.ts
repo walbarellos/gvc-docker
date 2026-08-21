@@ -1,4 +1,5 @@
 import './instrument.js';
+import * as Sentry from '@sentry/node';
 import Fastify from 'fastify';
 import cors from '@fastify/cors';
 import jwt from '@fastify/jwt';
@@ -54,6 +55,13 @@ app.decorate('authenticate', async function (request: any, reply: any) {
 // Handler global de erros
 app.setErrorHandler((error, request, reply) => {
   request.log.error(error);
+
+  const statusCode = error.statusCode || 500;
+  if (statusCode >= 500) {
+    Sentry.captureException(error, {
+      tags: { correlationId: request.id },
+    });
+  }
 
   if (error.validation) {
     return reply.status(400).send({
