@@ -39,28 +39,6 @@ export async function lockerRoutes(app: FastifyInstance) {
     }
     const data = parsed.data!;
 
-    // Verificar limite de armários por visitante (1 por vez por espaço)
-    const visitorId = data.visitor_id || data.visitorId;
-    if (visitorId) {
-      const existingLocker = await prisma.locker.findFirst({
-        where: {
-          visitorId: visitorId,
-          espacoId: data.espacoId || data.espaco_id,
-          status: 'Ocupado',
-        },
-      });
-
-      if (existingLocker) {
-        return reply.status(400).send({
-          error: 'Visitante já possui armário ocupado neste espaço',
-          detalhes: {
-            armarioExistente: existingLocker.number,
-            visitorId: visitorId,
-          }
-        });
-      }
-    }
-
     const mappedData = {
       number: Number(data.number),
       status: lockerStatusMap[data.status ?? ''] || data.status || 'Livre',
@@ -70,10 +48,37 @@ export async function lockerRoutes(app: FastifyInstance) {
     };
 
     try {
-      const locker = await prisma.locker.create({ data: mappedData });
-      return locker;
+      return await prisma.$transaction(async (tx) => {
+        // Verificar limite de armários por visitante (1 por vez por espaço)
+        const visitorId = mappedData.visitorId;
+        if (visitorId) {
+          const existingLocker = await tx.locker.findFirst({
+            where: {
+              visitorId: visitorId,
+              espacoId: mappedData.espacoId,
+              status: 'Ocupado',
+            },
+          });
+
+          if (existingLocker) {
+            throw new Error(JSON.stringify({
+              error: 'Visitante já possui armário ocupado neste espaço',
+              detalhes: {
+                armarioExistente: existingLocker.number,
+                visitorId: visitorId,
+              }
+            }));
+          }
+        }
+
+        return await tx.locker.create({ data: mappedData });
+      });
     } catch (error: any) {
       console.error('Erro ao criar armário:', error);
+      if (error.message && error.message.includes('armarioExistente')) {
+        const parsed = JSON.parse(error.message);
+        return reply.status(400).send(parsed);
+      }
       if (error.code === 'P2002') {
         return reply.status(400).send({ error: 'Armário já existe neste espaço' });
       }
@@ -150,39 +155,44 @@ export async function lockerRoutes(app: FastifyInstance) {
       espacoId: body.espacoId ?? body.espaco_id,
     };
 
-    // Verificar limite de armários por visitante (1 por vez por espaço)
-    if (visitorId && espacoId) {
-      const existingLocker = await prisma.locker.findFirst({
-        where: {
-          visitorId: visitorId,
-          espacoId: espacoId,
-          status: 'Ocupado',
-        },
-      });
+    try {
+      return await prisma.$transaction(async (tx) => {
+        // Verificar limite de armários por visitante (1 por vez por espaço)
+        if (visitorId && espacoId) {
+          const existingLocker = await tx.locker.findFirst({
+            where: {
+              visitorId: visitorId,
+              espacoId: espacoId,
+              status: 'Ocupado',
+            },
+          });
 
-      if (existingLocker) {
-        return reply.status(400).send({
-          error: 'Visitante já possui armário ocupado neste espaço',
-          detalhes: {
-            armarioExistente: existingLocker.number,
-            visitorId: visitorId,
+          if (existingLocker) {
+            throw new Error(JSON.stringify({
+              error: 'Visitante já possui armário ocupado neste espaço',
+              detalhes: {
+                armarioExistente: existingLocker.number,
+                visitorId: visitorId,
+              }
+            }));
+          }
+        }
+
+        return await tx.locker.create({
+          data: {
+            number: Number(numero),
+            status: 'Ocupado',
+            espacoId,
+            visitorId,
           }
         });
-      }
-    }
-
-    try {
-      const locker = await prisma.locker.create({
-        data: {
-          number: Number(numero),
-          status: 'Ocupado',
-          espacoId,
-          visitorId,
-        }
       });
-      return locker;
     } catch (error: any) {
       console.error('Erro ao alocar armário:', error);
+      if (error.message && error.message.includes('armarioExistente')) {
+        const parsed = JSON.parse(error.message);
+        return reply.status(400).send(parsed);
+      }
       return reply.status(400).send({ error: 'Erro ao alocar armário' });
     }
   });

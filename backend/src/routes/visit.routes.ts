@@ -236,114 +236,126 @@ export async function visitRoutes(app: FastifyInstance) {
       return reply.status(403).send({ error: checkinValidation.reason });
     }
 
-    // Verificar se o visitante já tem visita ATIVA no mesmo espaço OU em outro espaço (últimos 60 minutos)
-    const oneHourAgo = new Date(Date.now() - 60 * 60 * 1000);
-    
-    // Primeiro: verificar se já tem visita ativa NO MESMO espaço
-    const existingInSameSpace = await prisma.visit.findFirst({
-      where: {
-        visitorId,
-        espacoId,
-        status: 'ativo',
-      },
-      include: {
-        espaco: true
+    try {
+      return await prisma.$transaction(async (tx) => {
+        // Verificar se o visitante já tem visita ATIVA no mesmo espaço OU em outro espaço (últimos 60 minutos)
+        const oneHourAgo = new Date(Date.now() - 60 * 60 * 1000);
+        
+        // Primeiro: verificar se já tem visita ativa NO MESMO espaço
+        const existingInSameSpace = await tx.visit.findFirst({
+          where: {
+            visitorId,
+            espacoId,
+            status: 'ativo',
+          },
+          include: {
+            espaco: true
+          }
+        });
+        
+        if (existingInSameSpace) {
+          const espacoNome = existingInSameSpace.espaco?.nome || 'desconhecido';
+          const tempoTotal = 60; // Tempo total padrão de 60 minutos
+          const tempoDecorrido = Math.floor((Date.now() - existingInSameSpace.checkin.getTime()) / 60000);
+          const tempoRestante = Math.max(0, tempoTotal - tempoDecorrido);
+          
+          throw new Error(JSON.stringify({
+            status: 400,
+            error: `Visitante já está no espaço ${espacoNome} há ${tempoDecorrido} minutos. Tempo restante: ${tempoRestante} minutos.`,
+            detalhes: {
+              espacos: [{
+                nome: espacoNome,
+                checkin: existingInSameSpace.checkin,
+                tempoDecorrido,
+                tempoRestante,
+                minutosParaEncerrar: tempoRestante
+              }]
+            }
+          }));
+        }
+        
+        // Depois: verificar se já tem visita ativa EM OUTRO espaço (últimos 60 minutos)
+        const existingInOtherSpace = await tx.visit.findFirst({
+          where: {
+            visitorId,
+            status: 'ativo',
+            checkin: { gte: oneHourAgo },
+          },
+          include: {
+            espaco: true
+          }
+        });
+
+        if (existingInOtherSpace) {
+          const espacoNome = existingInOtherSpace.espaco?.nome || 'desconhecido';
+          const tempoLimite = existingInOtherSpace.espaco?.tempoLimiteExcedido || 60; // minutos
+          const tempoDecorrido = Math.floor((Date.now() - existingInOtherSpace.checkin.getTime()) / 60000);
+          const tempoRestante = Math.max(0, tempoLimite - tempoDecorrido);
+          
+          throw new Error(JSON.stringify({
+            status: 400,
+            error: `Visitante já está no espaço ${espacoNome} há ${tempoDecorrido} minutos. Tempo restante: ${tempoRestante} minutos.`,
+            detalhes: {
+              espacos: [{
+                nome: espacoNome,
+                checkin: existingInOtherSpace.checkin,
+                tempoDecorrido,
+                tempoRestante,
+                minutosParaEncerrar: tempoRestante
+              }]
+            }
+          }));
+        }
+
+        // Verificar limite de check-ins por CPF no dia (baseado no perfil)
+        const today = new Date();
+        today.setHours(0, 0, 0, 0);
+        
+        const checkinsHoje = await tx.visit.count({
+          where: {
+            visitorId,
+            checkin: { gte: today },
+          },
+        });
+
+        // Limite baseado no perfil do USUÁRIO AUTENTICADO (token JWT), nunca no body
+        let limiteDiario = 2; // padrão
+        if (userPerfil === 'funcionario' || userPerfil === 'monitor') {
+          limiteDiario = 5;
+        } else if (userPerfil === 'coordenador' || userPerfil === 'administrador') {
+          limiteDiario = 10;
+        }
+
+        if (checkinsHoje >= limiteDiario) {
+          throw new Error(JSON.stringify({
+            status: 400,
+            error: `Limite de check-ins diários atingido para este perfil (${userPerfil || 'visitante'}). Máximo: ${limiteDiario} por dia.`,
+            detalhes: {
+              checkinsHoje,
+              limiteDiario,
+              perfil: userPerfil || 'visitante'
+            }
+          }));
+        }
+
+        return await tx.visit.create({
+          data: { 
+            visitorId, 
+            espacoId, 
+            nome: visitor.fullName, 
+            perfil: body.perfil || 'general', 
+            status: 'ativo',
+            responsibleAccompanied: responsibleAccompanied || false
+          },
+        });
+      });
+    } catch (error: any) {
+      if (error.message && error.message.includes('minutosParaEncerrar') || error.message.includes('Limite de check-ins')) {
+        const parsed = JSON.parse(error.message);
+        return reply.status(parsed.status).send({ error: parsed.error, detalhes: parsed.detalhes });
       }
-    });
-    
-    if (existingInSameSpace) {
-      const espacoNome = existingInSameSpace.espaco?.nome || 'desconhecido';
-      const tempoTotal = 60; // Tempo total padrão de 60 minutos
-      const tempoDecorrido = Math.floor((Date.now() - existingInSameSpace.checkin.getTime()) / 60000);
-      const tempoRestante = Math.max(0, tempoTotal - tempoDecorrido);
-      
-      return reply.status(400).send({ 
-        error: `Visitante já está no espaço ${espacoNome} há ${tempoDecorrido} minutos. Tempo restante: ${tempoRestante} minutos.`,
-        detalhes: {
-          espacos: [{
-            nome: espacoNome,
-            checkin: existingInSameSpace.checkin,
-            tempoDecorrido,
-            tempoRestante,
-            minutosParaEncerrar: tempoRestante
-          }]
-        }
-      });
+      throw error;
     }
-    
-    // Depois: verificar se já tem visita ativa EM OUTRO espaço (últimos 60 minutos)
-    const existingInOtherSpace = await prisma.visit.findFirst({
-      where: {
-        visitorId,
-        status: 'ativo',
-        checkin: { gte: oneHourAgo },
-      },
-      include: {
-        espaco: true
-      }
-    });
-
-    if (existingInOtherSpace) {
-      const espacoNome = existingInOtherSpace.espaco?.nome || 'desconhecido';
-      const tempoLimite = existingInOtherSpace.espaco?.tempoLimiteExcedido || 60; // minutos
-      const tempoDecorrido = Math.floor((Date.now() - existingInOtherSpace.checkin.getTime()) / 60000);
-      const tempoRestante = Math.max(0, tempoLimite - tempoDecorrido);
-      
-      return reply.status(400).send({ 
-        error: `Visitante já está no espaço ${espacoNome} há ${tempoDecorrido} minutos. Tempo restante: ${tempoRestante} minutos.`,
-        detalhes: {
-          espacos: [{
-            nome: espacoNome,
-            checkin: existingInOtherSpace.checkin,
-            tempoDecorrido,
-            tempoRestante,
-            minutosParaEncerrar: tempoRestante
-          }]
-        }
-      });
-    }
-
-    // Verificar limite de check-ins por CPF no dia (baseado no perfil)
-    const today = new Date();
-    today.setHours(0, 0, 0, 0);
-    
-    const checkinsHoje = await prisma.visit.count({
-      where: {
-        visitorId,
-        checkin: { gte: today },
-      },
-    });
-
-    // Limite baseado no perfil do USUÁRIO AUTENTICADO (token JWT), nunca no body
-    let limiteDiario = 2; // padrão
-    if (userPerfil === 'funcionario' || userPerfil === 'monitor') {
-      limiteDiario = 5;
-    } else if (userPerfil === 'coordenador' || userPerfil === 'administrador') {
-      limiteDiario = 10;
-    }
-
-    if (checkinsHoje >= limiteDiario) {
-      return reply.status(400).send({ 
-        error: `Limite de check-ins diários atingido para este perfil (${userPerfil || 'visitante'}). Máximo: ${limiteDiario} por dia.`,
-        detalhes: {
-          checkinsHoje,
-          limiteDiario,
-          perfil: userPerfil || 'visitante'
-        }
-      });
-    }
-
-    const visit = await prisma.visit.create({
-      data: { 
-        visitorId, 
-        espacoId, 
-        nome: visitor.fullName, 
-        perfil: body.perfil || 'general', 
-        status: 'ativo',
-        responsibleAccompanied: responsibleAccompanied || false
-      },
-    });
-    return visit;
   });
 
   // Check-out

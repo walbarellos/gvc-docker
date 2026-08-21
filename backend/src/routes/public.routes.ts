@@ -102,88 +102,97 @@ export async function publicRoutes(app: FastifyInstance) {
       return reply.status(400).send({ error: 'Horário de fim deve ser posterior ao de início' });
     }
 
-    // Verificar conflito (status pendente/aprovado)
-    const conflicts = await prisma.agendamento.findMany({
-      where: {
-        espacoId: data.espacoId,
-        dataPretendida: new Date(dataBase),
-        status: { in: ['pendente', 'aprovado'] },
-        OR: [
-          {
-            AND: [
-              { horarioInicio: { lte: horarioInicio } },
-              { horarioFim: { gt: horarioInicio } },
+    try {
+      const result = await prisma.$transaction(async (tx) => {
+        // Verificar conflito (status pendente/aprovado)
+        const conflicts = await tx.agendamento.findMany({
+          where: {
+            espacoId: data.espacoId,
+            dataPretendida: new Date(dataBase),
+            status: { in: ['pendente', 'aprovado'] },
+            OR: [
+              {
+                AND: [
+                  { horarioInicio: { lte: horarioInicio } },
+                  { horarioFim: { gt: horarioInicio } },
+                ],
+              },
+              {
+                AND: [
+                  { horarioInicio: { lt: horarioFim } },
+                  { horarioFim: { gte: horarioFim } },
+                ],
+              },
+              {
+                AND: [
+                  { horarioInicio: { gte: horarioInicio } },
+                  { horarioFim: { lte: horarioFim } },
+                ],
+              },
             ],
           },
-          {
-            AND: [
-              { horarioInicio: { lt: horarioFim } },
-              { horarioFim: { gte: horarioFim } },
-            ],
-          },
-          {
-            AND: [
-              { horarioInicio: { gte: horarioInicio } },
-              { horarioFim: { lte: horarioFim } },
-            ],
-          },
-        ],
-      },
-      select: { id: true },
-    });
+          select: { id: true },
+        });
 
-    if (conflicts.length > 0) {
-      return reply.status(409).send({
-        error: 'Conflito de horário. Espaço indisponível neste horário.',
+        if (conflicts.length > 0) {
+          throw new Error('CONFLICT');
+        }
+
+        // Whitelist explícita — status SEMPRE pendente; nunca aceitar campos privilegiados
+        return tx.agendamento.create({
+          data: {
+            espacoId: data.espacoId,
+            solicitanteNome: data.solicitanteNome,
+            solicitanteEmail: data.solicitanteEmail,
+            solicitanteTelefone: data.solicitanteTelefone,
+            solicitanteDocumento: data.solicitanteDocumento ?? null,
+            tipoSolicitante: data.tipoSolicitante,
+            tipoEspaco: data.tipoEspaco,
+            espacoSolicitado: data.espacoSolicitado,
+            dataPretendida: new Date(dataBase),
+            horarioInicio,
+            horarioFim,
+            numeroParticipantes: data.numeroParticipantes,
+            descricaoEvento: data.descricaoEvento,
+            naturezaEvento: data.naturezaEvento,
+            gratuito: data.gratuito,
+            valorIngresso: data.valorIngresso ?? null,
+            necessitaEquipamentos: data.necessitaEquipamentos ?? null,
+            observacoes: data.observacoes ?? null,
+            termoAceito: true,
+            termoAceitoEm: new Date(),
+            responsabilidadeEvento: true,
+            danosPatrimonio: true,
+            respeitoLotacao: true,
+            autorizoDivulgacao: data.autorizoDivulgacao,
+            razaoSocial: data.razaoSocial ?? null,
+            nomeInstituicao: data.nomeInstituicao ?? null,
+            secretariaGoverno: data.secretariaGoverno ?? null,
+            unidadeGoverno: data.unidadeGoverno ?? null,
+            status: 'pendente', // FORÇADO no servidor
+          },
+          select: {
+            id: true,
+            status: true,
+            dataPretendida: true,
+            horarioInicio: true,
+            horarioFim: true,
+            espacoSolicitado: true,
+            solicitanteNome: true,
+            createdAt: true,
+          },
+        });
       });
+
+      return reply.status(201).send(result);
+    } catch (error: any) {
+      if (error.message === 'CONFLICT') {
+        return reply.status(409).send({
+          error: 'Conflito de horário. Espaço indisponível neste horário.',
+        });
+      }
+      throw error;
     }
-
-    // Whitelist explícita — status SEMPRE pendente; nunca aceitar campos privilegiados
-    const agendamento = await prisma.agendamento.create({
-      data: {
-        espacoId: data.espacoId,
-        solicitanteNome: data.solicitanteNome,
-        solicitanteEmail: data.solicitanteEmail,
-        solicitanteTelefone: data.solicitanteTelefone,
-        solicitanteDocumento: data.solicitanteDocumento ?? null,
-        tipoSolicitante: data.tipoSolicitante,
-        tipoEspaco: data.tipoEspaco,
-        espacoSolicitado: data.espacoSolicitado,
-        dataPretendida: new Date(dataBase),
-        horarioInicio,
-        horarioFim,
-        numeroParticipantes: data.numeroParticipantes,
-        descricaoEvento: data.descricaoEvento,
-        naturezaEvento: data.naturezaEvento,
-        gratuito: data.gratuito,
-        valorIngresso: data.valorIngresso ?? null,
-        necessitaEquipamentos: data.necessitaEquipamentos ?? null,
-        observacoes: data.observacoes ?? null,
-        termoAceito: true,
-        termoAceitoEm: new Date(),
-        responsabilidadeEvento: true,
-        danosPatrimonio: true,
-        respeitoLotacao: true,
-        autorizoDivulgacao: data.autorizoDivulgacao,
-        razaoSocial: data.razaoSocial ?? null,
-        nomeInstituicao: data.nomeInstituicao ?? null,
-        secretariaGoverno: data.secretariaGoverno ?? null,
-        unidadeGoverno: data.unidadeGoverno ?? null,
-        status: 'pendente', // FORÇADO no servidor
-      },
-      select: {
-        id: true,
-        status: true,
-        dataPretendida: true,
-        horarioInicio: true,
-        horarioFim: true,
-        espacoSolicitado: true,
-        solicitanteNome: true,
-        createdAt: true,
-      },
-    });
-
-    return reply.status(201).send(agendamento);
   });
 
   // Cadastro público de visitante
