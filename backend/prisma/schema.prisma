@@ -169,6 +169,7 @@ model Visit {
   armario                String?
   responsibleAccompanied Boolean     @default(false) @map("responsible_accompanied")
   createdAt              DateTime    @default(now()) @map("created_at")
+  updatedAt              DateTime    @default(now()) @updatedAt @map("updated_at")
 
   visitor Visitor? @relation(fields: [visitorId], references: [id], onDelete: SetNull)
   espaco  Espaco?  @relation(fields: [espacoId], references: [id], onDelete: SetNull)
@@ -194,6 +195,8 @@ model Computador {
   horarioLimite DateTime?        @map("horario_limite")
   espacoId      String?          @map("espaco_id")
   espacoNome    String?          @map("espaco_nome")
+  createdAt     DateTime         @default(now()) @map("created_at")
+  updatedAt     DateTime         @default(now()) @updatedAt @map("updated_at")
 
   espaco Espaco? @relation(fields: [espacoId], references: [id], onDelete: SetNull)
   visitor Visitor? @relation(fields: [visitorId], references: [id], onDelete: SetNull)
@@ -211,6 +214,7 @@ model Locker {
   visitorId   String?  @map("visitor_id")
   visitorName String?  @map("visitor_name")
   espacoId    String?  @map("espaco_id")
+  createdAt   DateTime @default(now()) @map("created_at")
   updatedAt   DateTime @default(now()) @updatedAt @map("updated_at")
 
   visitor Visitor? @relation(fields: [visitorId], references: [id], onDelete: SetNull)
