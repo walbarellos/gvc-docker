@@ -29,33 +29,6 @@ export function useAgendamentos(filters?: AgendamentoFilter) {
   return { agendamentos, loading, error, refetch: fetchAgendamentos };
 }
 
-export function useAgendamento(id: string) {
-  const [agendamento, setAgendamento] = useState<Agendamento | null>(null);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
-
-  useEffect(() => {
-    if (!id) return;
-
-    const fetchAgendamento = async () => {
-      setLoading(true);
-      const { data, error: fetchError } = await agendamentoService.getById(id);
-      
-      if (fetchError) {
-        setError(fetchError.message);
-        setAgendamento(null);
-      } else {
-        setAgendamento(data);
-      }
-      
-      setLoading(false);
-    };
-
-    fetchAgendamento();
-  }, [id]);
-
-  return { agendamento, loading, error };
-}
 
 export function useDashboardAgendamentos(espacoId?: string) {
   const [stats, setStats] = useState<DashboardAgendamentos | null>(null);
@@ -83,31 +56,6 @@ export function useDashboardAgendamentos(espacoId?: string) {
   return { stats, loading, error };
 }
 
-export function useConflitos(espacoId: string, data: string, inicio: string, fim: string, excludeId?: string) {
-  const [conflitos, setConflitos] = useState<Agendamento[]>([]);
-  const [loading, setLoading] = useState(false);
-
-  const checkConflitos = useCallback(async () => {
-    if (!espacoId || !data || !inicio || !fim) return;
-
-    setLoading(true);
-    const { data: conflitosData, error } = await agendamentoService.getConflitos(espacoId, data, inicio, fim, excludeId);
-    
-    if (!error && conflitosData) {
-      setConflitos(conflitosData);
-    } else {
-      setConflitos([]);
-    }
-    
-    setLoading(false);
-  }, [espacoId, data, inicio, fim, excludeId]);
-
-  useEffect(() => {
-    checkConflitos();
-  }, [checkConflitos]);
-
-  return { conflitos, loading, checkConflitos };
-}
 
 export function useCreateAgendamento() {
   const [loading, setLoading] = useState(false);

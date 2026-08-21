@@ -31,10 +31,6 @@ export const authService = {
         return { error: null };
     },
 
-    async getProfile(userId: string) {
-        const { data, error } = await api.get<UserProfile>(`/auth/usuarios/${userId}`);
-        return { data, error };
-    },
 
     async getSession() {
         const token = getTokenStored();

@@ -61,18 +61,5 @@ export const computadorService = {
     return { error };
   },
 
-  async toggleStatus(id: string, status: string) {
-    const { data, error } = await api.patch<Computador>(`/computadores/${id}`, { status });
-    return { data, error };
-  },
 
-  async usar(id: string, visitorId: string) {
-    const { data, error } = await api.post<Computador>(`/computadores/${id}/usar`, { visitorId });
-    return { data, error };
-  },
-
-  async liberar(id: string) {
-    const { data, error } = await api.post<Computador>(`/computadores/${id}/liberar`);
-    return { data, error };
-  }
 };

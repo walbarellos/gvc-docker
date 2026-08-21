@@ -13,7 +13,6 @@ interface PublicAuthContextType {
   user: PublicUser | null;
   loading: boolean;
   login: (email: string, password: string) => Promise<{ error: Error | null }>;
-  loginWithGoogle: () => Promise<{ error: Error | null }>;
   logout: () => Promise<void>;
   publicLoading: boolean;
 }
@@ -56,9 +55,6 @@ export function PublicAuthProvider({ children }: { children: React.ReactNode }) 
     return { error: error as Error | null };
   };
 
-  const loginWithGoogle = async () => {
-    return { error: new Error('Google OAuth não disponível') };
-  };
 
   const logout = async () => {
     removeToken();

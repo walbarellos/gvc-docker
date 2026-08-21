@@ -105,18 +105,5 @@ export const agendamentoService = {
     return { data: conflitos || [], error };
   },
 
-  async getAvailableDates(espacoId: string, year: number, month: number) {
-    const startDate = `${year}-${String(month).padStart(2, '0')}-01`;
-    const endDate = `${year}-${String(month).padStart(2, '0')}-31`;
 
-    const { data, error } = await api.get<{ data_pretendida: string; horario_inicio: string; horario_fim: string }[]>(
-      `/agendamentos/disponiveis?espaco_id=${espacoId}&inicio=${startDate}&fim=${endDate}`
-    );
-    return { data, error };
-  },
-
-  async getDocumentos(agendamentoId: string) {
-    const { data, error } = await api.get<any[]>(`/agendamentos/${agendamentoId}/documentos`);
-    return { data: data || [], error };
-  },
 };
