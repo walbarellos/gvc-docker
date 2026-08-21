@@ -133,4 +133,25 @@ const start = async () => {
   }
 };
 
+
+// Graceful Shutdown
+const shutdown = async (signal: string) => {
+  console.log(`
+${signal} recebido. Iniciando graceful shutdown...`);
+  try {
+    await app.close();
+    console.log('Fastify fechado.');
+    const { prisma } = await import('./lib/prisma.js');
+    await prisma.$disconnect();
+    console.log('Prisma desconectado.');
+    process.exit(0);
+  } catch (err) {
+    console.error('Erro durante o shutdown:', err);
+    process.exit(1);
+  }
+};
+
+process.on('SIGINT', () => shutdown('SIGINT'));
+process.on('SIGTERM', () => shutdown('SIGTERM'));
+
 start();
