@@ -66,6 +66,8 @@ const publicCadastroSchema = z.object({
   cpf: z.string().regex(/^\d{11}$|^\d{3}\.\d{3}\.\d{3}-\d{2}$/).optional(),
   email: z.string().email().max(200),
   telefone: z.string().min(10).max(20).optional(),
+  senha: z.string().min(6),
+  tipo: z.string().optional(),
 });
 
 export async function publicRoutes(app: FastifyInstance) {
@@ -242,22 +244,37 @@ export async function publicRoutes(app: FastifyInstance) {
     }
 
     try {
-      const visitor = await prisma.visitor.create({
-        data: {
-          fullName: data.nome,
-          cpf,
-          email: data.email,
-          phone: data.telefone ?? null,
-          category: 'general',
-        },
-        select: {
-          id: true,
-          fullName: true,
-          email: true,
-          createdAt: true,
-        },
-      });
-      return reply.status(201).send(visitor);
+      const { hash } = await import('bcryptjs');
+      const senhaHash = await hash(data.senha, 10);
+      
+      const [visitor, usuario] = await prisma.$transaction([
+        prisma.visitor.create({
+          data: {
+            fullName: data.nome,
+            cpf,
+            email: data.email,
+            phone: data.telefone ?? null,
+            category: data.tipo ?? 'general',
+          },
+          select: { id: true }
+        }),
+        prisma.usuario.create({
+          data: {
+            nome: data.nome,
+            email: data.email,
+            senha: senhaHash,
+            perfil: 'cidadao',
+            ativo: true
+          },
+          select: {
+            id: true,
+            nome: true,
+            email: true,
+            createdAt: true,
+          }
+        })
+      ]);
+      return reply.status(201).send(usuario);
     } catch (err: any) {
       if (err?.code === 'P2002') {
         return reply.status(409).send({ error: 'CPF ou e-mail já cadastrado' });

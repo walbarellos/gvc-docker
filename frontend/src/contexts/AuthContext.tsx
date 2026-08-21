@@ -35,6 +35,11 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
           const { data, error } = await api.get<{ id: string; nome: string; email: string; perfil: string; espacoId: string; espacoNome: string }>('/auth/sessao');
           
           if (data && !error) {
+            if (data.perfil === 'cidadao') {
+              // Ignore citizen tokens in the admin AuthContext
+              setLoading(false);
+              return;
+            }
             setUser(data);
             setUserData({
               id: data.id,

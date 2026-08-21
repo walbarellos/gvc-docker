@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { motion, AnimatePresence } from 'motion/react';
-import { authService } from '../../services/authService';
+import { usePublicAuth } from '../../contexts/PublicAuthContext';
 
 const FOTOS = {
   espaco1: 'https://images.unsplash.com/photo-1514306191717-452ec28c7814?w=800',
@@ -16,6 +16,7 @@ export default function LoginPublico() {
   const [searchParams] = useSearchParams();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const { login } = usePublicAuth();
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const [showPassword, setShowPassword] = useState(false);
@@ -33,7 +34,7 @@ export default function LoginPublico() {
     setLoading(true);
     setError('');
 
-    const { session, error } = await authService.signIn(email, password);
+    const { error } = await login(email, password);
 
     if (error) {
       if (error.message?.includes('Invalid') || error.message?.includes('incorrectos')) {

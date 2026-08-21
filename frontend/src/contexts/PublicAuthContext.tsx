@@ -1,5 +1,5 @@
 import React, { createContext, useContext, useEffect, useState } from 'react';
-import { api, setToken, getTokenStored, removeToken } from '../lib/api';
+import { api, setPublicToken as setToken, getPublicTokenStored as getTokenStored, removePublicToken as removeToken } from '../lib/api';
 
 export interface PublicUser {
   id: string;
@@ -47,7 +47,10 @@ export function PublicAuthProvider({ children }: { children: React.ReactNode }) 
     const { data, error } = await api.post<{ token: string; user: PublicUser }>('/auth/login', { email, senha: password }, false);
     if (data) {
       setToken(data.token);
-      setUser(data.user);
+      setUser({
+        ...data.user,
+        tipo: data.user.tipo || (data.user as any).perfil || 'cidadao'
+      });
       return { error: null };
     }
     return { error: error as Error | null };

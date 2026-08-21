@@ -3,7 +3,8 @@ import { snakeToCamel, camelToSnake } from '../utils/caseConverter';
 const API_URL = import.meta.env.VITE_API_URL || (typeof window !== 'undefined' ? `${window.location.origin}/api` : 'http://localhost:3001/api');
 
 function getToken(): string | null {
-    return localStorage.getItem('gvc_token');
+    // Prioritize admin token, fallback to public token
+    return localStorage.getItem('gvc_token') || localStorage.getItem('gvc_public_token');
 }
 
 function headers(includeAuth = true): Record<string, string> {
@@ -85,10 +86,22 @@ export function setToken(token: string) {
     localStorage.setItem('gvc_token', token);
 }
 
+export function setPublicToken(token: string) {
+    localStorage.setItem('gvc_public_token', token);
+}
+
 export function removeToken() {
     localStorage.removeItem('gvc_token');
 }
 
+export function removePublicToken() {
+    localStorage.removeItem('gvc_public_token');
+}
+
 export function getTokenStored(): string | null {
     return localStorage.getItem('gvc_token');
+}
+
+export function getPublicTokenStored(): string | null {
+    return localStorage.getItem('gvc_public_token');
 }
