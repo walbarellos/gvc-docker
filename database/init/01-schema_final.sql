@@ -410,3 +410,12 @@ ALTER TABLE "agendamentos" ADD CONSTRAINT "agendamentos_espaco_id_fkey" FOREIGN 
 -- AddForeignKey
 ALTER TABLE "authorization_logs" ADD CONSTRAINT "authorization_logs_visitor_id_fkey" FOREIGN KEY ("visitor_id") REFERENCES "visitors"("id") ON DELETE NO ACTION ON UPDATE NO ACTION;
 
+
+-- CreateIndex
+CREATE UNIQUE INDEX "lockers_espaco_id_number_key" ON "lockers"("espaco_id", "number");
+
+-- CreateIndex
+CREATE INDEX "lockers_espaco_id_idx" ON "lockers"("espaco_id");
+
+-- CreateIndex
+CREATE INDEX "lockers_visitor_id_idx" ON "lockers"("visitor_id");

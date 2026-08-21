@@ -179,7 +179,7 @@ export default function Lockers() {
   const releaseLocker = async (locker: Locker) => {
     if (locker.id.startsWith('temp-')) return;
     try {
-      await api.delete(`/armarios/${locker.id}`);
+      await api.post(`/armarios/${locker.id}/desalocar`);
       setToast({ message: `Armário ${locker.number} liberado com sucesso!`, type: 'success' });
       setRefreshTrigger(prev => prev + 1);
       setTimeout(() => setToast(null), 3000);

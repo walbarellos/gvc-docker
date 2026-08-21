@@ -19,9 +19,14 @@ const lockerStatusMap: Record<string, LockerStatus> = {
 export async function lockerRoutes(app: FastifyInstance) {
   // Listar todos
   app.get('/', { preHandler: [app.authenticate] }, async (request: any) => {
-    const { espaco_id, status } = request.query as any;
+    const { espaco_id, espacoId, status, visitor_id, visitorId } = request.query as any;
     const where: any = {};
-    if (espaco_id) where.espacoId = espaco_id;
+    const finalEspacoId = espaco_id || espacoId;
+    if (finalEspacoId) where.espacoId = finalEspacoId;
+    
+    const finalVisitorId = visitor_id || visitorId;
+    if (finalVisitorId) where.visitorId = finalVisitorId;
+    
     if (status) where.status = lockerStatusMap[status] || status;
     return prisma.locker.findMany({ where, orderBy: { number: 'asc' } });
   });

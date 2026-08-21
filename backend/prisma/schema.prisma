@@ -215,6 +215,7 @@ model Locker {
 
   @@index([espacoId])
   @@index([status])
+  @@unique([espacoId, number])
   @@map("lockers")
 }
 

@@ -6,10 +6,20 @@ import { createComputadorBodySchema, updateComputadorBodySchema, validateBody } 
 export async function computadorRoutes(app: FastifyInstance) {
   // Listar todos
   app.get('/', { preHandler: [app.authenticate] }, async (request: any) => {
-    const { espaco_id, status } = request.query as any;
+    const { espaco_id, espacoId, status, visitor_id, visitorId } = request.query as any;
     const where: any = {};
-    if (espaco_id) where.espacoId = espaco_id;
-    if (status) where.status = status;
+    const finalEspacoId = espaco_id || espacoId;
+    if (finalEspacoId) where.espacoId = finalEspacoId;
+    
+    const finalVisitorId = visitor_id || visitorId;
+    if (finalVisitorId) where.visitorId = finalVisitorId;
+    
+    if (status) {
+       // Padronizar status
+       let s = status;
+       if (s === 'EmUso') s = 'Em Uso';
+       where.status = s;
+    }
     return prisma.computador.findMany({ where, orderBy: { numero: 'asc' } });
   });
 
@@ -52,7 +62,7 @@ export async function computadorRoutes(app: FastifyInstance) {
         where: {
           usuarioId: usuarioId,
           espacoId: espacoId ?? undefined,
-          status: 'EmUso',
+          status: { in: ['Em Uso', 'EmUso'] },
         },
       });
 
@@ -66,7 +76,7 @@ export async function computadorRoutes(app: FastifyInstance) {
     return prisma.computador.create({
       data: {
         numero,
-        status: data.status || 'Livre',
+        status: (data.status === 'EmUso' ? 'Em Uso' : data.status) || 'Livre',
         usuarioId,
         usuarioNome: data.usuarioNome || data.usuario_nome || null,
         espacoId,
@@ -74,6 +84,22 @@ export async function computadorRoutes(app: FastifyInstance) {
         horarioInicio: data.horarioInicio ? new Date(data.horarioInicio) : null,
         horarioLimite: data.horarioLimite ? new Date(data.horarioLimite) : null,
       },
+    });
+  });
+
+
+  // Desalocar computador
+  app.post('/:id/desalocar', { preHandler: [app.authenticate] }, async (request: any, reply: any) => {
+    const { id } = request.params;
+    return prisma.computador.update({
+      where: { id },
+      data: {
+        status: 'Livre',
+        usuarioId: null,
+        usuarioNome: null,
+        horarioInicio: null,
+        horarioLimite: null
+      }
     });
   });
 

@@ -179,7 +179,7 @@ export default function Telecentro() {
   const liberarComputador = async (pc: Computador) => {
     if (pc.id.startsWith('temp-')) return;
     try {
-      await api.delete(`/computadores/${pc.id}`);
+      await api.post(`/computadores/${pc.id}/desalocar`);
       setToast({ message: `PC ${pc.numero} liberado!`, type: 'success' });
       setRefreshTrigger(prev => prev + 1);
       setTimeout(() => setToast(null), 3000);
