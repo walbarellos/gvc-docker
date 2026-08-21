@@ -54,17 +54,17 @@ export const draftService = {
     try {
       const sessionId = getSessionId();
       const { error } = await api.post('/agendamentos/rascunho', {
-        ...data,
-        session_id: sessionId
+        session_id: sessionId,
+        data: data
       });
 
       if (error) {
-        // console.error('Erro ao salvar rascunho no banco:', error);
+        console.error('Erro ao salvar rascunho no banco:', error);
         return false;
       }
       return true;
     } catch (e) {
-      // console.error('Erro ao salvar rascunho:', e);
+      console.error('Erro ao salvar rascunho:', e);
       return false;
     }
   },
@@ -118,7 +118,7 @@ export const draftService = {
         current_step: d.current_step || 1
       };
     } catch (e) {
-      // console.error('Erro ao carregar rascunho:', e);
+      console.error('Erro ao carregar rascunho:', e);
       return null;
     }
   },
@@ -126,17 +126,17 @@ export const draftService = {
   async clearDraft(): Promise<boolean> {
     try {
       const sessionId = getSessionId();
-      const { error } = await api.delete(`/agendamentos/rascunho?session_id=${sessionId}`);
+      const { error } = await api.delete(`/agendamentos/rascunho/${sessionId}`);
 
       if (error) {
-        // console.error('Erro ao limpar rascunho:', error);
+        console.error('Erro ao limpar rascunho:', error);
         return false;
       }
 
       sessionStorage.removeItem(SESSION_KEY);
       return true;
     } catch (e) {
-      // console.error('Erro ao limpar rascunho:', e);
+      console.error('Erro ao limpar rascunho:', e);
       return false;
     }
   },

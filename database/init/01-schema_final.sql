@@ -280,7 +280,7 @@ CREATE TABLE "agendamentos_rascunhos" (
     "respeito_lotacao" BOOLEAN,
     "autorizo_divulgacao" BOOLEAN,
     "termo_compromisso_assinado" BOOLEAN,
-    "termo_compromisso_data" TEXT,
+    "termo_compromisso_data" TIMESTAMP(3),
     "termo_compromisso_ip" TEXT,
     "current_step" INTEGER,
     "created_at" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,

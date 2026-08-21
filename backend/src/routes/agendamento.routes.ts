@@ -565,7 +565,17 @@ const toRascunhoCamel = (raw: any): any => {
   for (const [k, v] of Object.entries(raw)) {
     const key = rascunhoSnakeToCamel[k] || k;
     if (key === 'id' || key === 'sessionId' || key === 'createdAt' || key === 'updatedAt') continue;
-    if (v === undefined) continue;
+    if (v === undefined || v === '') continue; // Skip empty strings so Prisma doesn't crash on Dates/Ints
+    
+    // Explicit date parsing
+    if (key === 'termoCompromissoData' && typeof v === 'string') {
+      const parsed = new Date(v);
+      if (!isNaN(parsed.getTime())) {
+        out[key] = parsed;
+      }
+      continue;
+    }
+    
     out[key] = v;
   }
   return out;

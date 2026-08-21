@@ -140,8 +140,8 @@ export const aprovacaoBodySchema = z
 // ---- Rascunho de agendamento ----
 export const rascunhoBodySchema = z
   .object({
-    sessionId: z.string().uuid().optional(),
-    session_id: z.string().uuid().optional(),
+    sessionId: z.string().optional(),
+    session_id: z.string().optional(),
     data: z.record(z.string(), z.unknown()),
   })
   .strict()
