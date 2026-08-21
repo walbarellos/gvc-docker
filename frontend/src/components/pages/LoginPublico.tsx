@@ -68,6 +68,8 @@ export default function LoginPublico() {
                 src={FOTOS.espaco1}
                 alt="Auditório cultural"
                 className="w-full h-full object-cover"
+                fetchPriority="high"
+                decoding="async"
                 whileHover={{ scale: 1.04 }}
                 transition={{ duration: 0.5 }}
               />
@@ -83,6 +85,8 @@ export default function LoginPublico() {
                 src={FOTOS.espaco2}
                 alt="Sala de Reunião"
                 className="w-full h-full object-cover"
+                loading="lazy"
+                decoding="async"
                 whileHover={{ scale: 1.05 }}
                 transition={{ duration: 0.25 }}
               />
@@ -98,6 +102,8 @@ export default function LoginPublico() {
                 src={FOTOS.espaco3}
                 alt="Visita Guiada"
                 className="w-full h-full object-cover"
+                loading="lazy"
+                decoding="async"
                 whileHover={{ scale: 1.05 }}
                 transition={{ duration: 0.25 }}
               />
@@ -113,6 +119,8 @@ export default function LoginPublico() {
                 src={FOTOS.espaco4}
                 alt="Galeria"
                 className="w-full h-full object-cover"
+                loading="lazy"
+                decoding="async"
                 whileHover={{ scale: 1.05 }}
                 transition={{ duration: 0.25 }}
               />
@@ -128,6 +136,8 @@ export default function LoginPublico() {
                 src={FOTOS.espaco5}
                 alt="Teatro"
                 className="w-full h-full object-cover"
+                loading="lazy"
+                decoding="async"
                 whileHover={{ scale: 1.05 }}
                 transition={{ duration: 0.25 }}
               />
