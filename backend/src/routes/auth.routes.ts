@@ -17,6 +17,25 @@ import { config } from '../config/unifiedConfig.js';
 import { loginSchema } from '../schemas/user.schema.js';
 
 export async function authRoutes(app: FastifyInstance) {
+  app.post('/reset-password', { preHandler: [app.authenticate] }, async (request: any, reply: any) => {
+    const { userId, senha } = request.body;
+    if (!userId || !senha) return reply.status(400).send({ error: 'Faltam dados' });
+    
+    if (request.user.id !== userId && request.user.perfil !== 'administrador') {
+      return reply.status(403).send({ error: 'Permissão negada' });
+    }
+
+    const { hash } = await import('bcryptjs');
+    const hashed = await hash(senha, 10);
+    
+    await prisma.usuario.update({
+      where: { id: userId },
+      data: { senha: hashed }
+    });
+    
+    return { success: true };
+  });
+
   // Login
   app.post('/login', { config: { rateLimit: { max: 5, timeWindow: '1 minute' } } }, async (request, reply) => {
     const parsed = loginSchema.safeParse(request.body);

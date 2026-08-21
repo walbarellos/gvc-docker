@@ -176,6 +176,17 @@ export const createAgendamentoSchema = z.object({
   danos_patrimonio: z.boolean().refine(val => val === true, 'Danos ao patrimônio deve ser aceito'),
   respeito_lotacao: z.boolean().refine(val => val === true, 'Respeito à lotação deve ser aceito'),
   autorizo_divulgacao: z.boolean().default(false),
+  razao_social: z.string().optional().nullable(),
+  nome_instituicao: z.string().optional().nullable(),
+  secretaria_governo: z.string().optional().nullable(),
+  unidade_governo: z.string().optional().nullable(),
+  assinatura_id: z.string().optional().nullable(),
+  ip_confirmacao: z.string().optional().nullable(),
+  user_agent: z.string().optional().nullable(),
+  termo_compromisso_assinado: z.boolean().optional().nullable(),
+  termo_compromisso_data: z.string().optional().nullable(),
+  termo_compromisso_ip: z.string().optional().nullable(),
+
 });
 
 export const updateAgendamentoSchema = createAgendamentoSchema.partial();

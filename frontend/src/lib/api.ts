@@ -1,4 +1,4 @@
-import { snakeToCamel } from '../utils/caseConverter';
+import { snakeToCamel, camelToSnake } from '../utils/caseConverter';
 
 const API_URL = import.meta.env.VITE_API_URL || (typeof window !== 'undefined' ? `${window.location.origin}/api` : 'http://localhost:3001/api');
 
@@ -44,7 +44,7 @@ export const api = {
         const res = await fetch(`${API_URL}${endpoint}`, {
             method: 'POST',
             headers: headers(includeAuth),
-            body: data ? JSON.stringify(data) : '{}',
+            body: data ? JSON.stringify(camelToSnake(data)) : '{}',
         });
         return handleResponse<T>(res);
     },
@@ -53,7 +53,7 @@ export const api = {
         const res = await fetch(`${API_URL}${endpoint}`, {
             method: 'PUT',
             headers: headers(includeAuth),
-            body: data ? JSON.stringify(data) : undefined,
+            body: data ? JSON.stringify(camelToSnake(data)) : undefined,
         });
         return handleResponse<T>(res);
     },
@@ -62,7 +62,7 @@ export const api = {
         const res = await fetch(`${API_URL}${endpoint}`, {
             method: 'PATCH',
             headers: headers(includeAuth),
-            body: data ? JSON.stringify(data) : undefined,
+            body: data ? JSON.stringify(camelToSnake(data)) : undefined,
         });
         return handleResponse<T>(res);
     },

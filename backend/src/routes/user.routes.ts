@@ -4,6 +4,17 @@ import { prisma } from '../lib/prisma.js';
 import { createUserSchema, updateUserBodySchema } from '../schemas/index.js';
 
 export async function userRoutes(app: FastifyInstance) {
+  app.patch('/:id', { preHandler: [app.authenticate] }, async (request: any, reply: any) => {
+    if (request.user.perfil !== 'administrador') return reply.status(403).send({ error: 'Permissão negada' });
+    const { id } = request.params;
+    const { ativo } = request.body;
+    const user = await prisma.usuario.update({
+      where: { id },
+      data: { ativo }
+    });
+    return user;
+  });
+
   // Listar todos (com filtro opcional por espacoId)
   app.get('/', { preHandler: [app.authenticate] }, async (request: any) => {
     const { espacoId } = request.query;

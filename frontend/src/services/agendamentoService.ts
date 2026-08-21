@@ -84,7 +84,7 @@ export const agendamentoService = {
     status: 'aprovado' | 'rejeitado' | 'cancelado',
     resposta?: string
   ) {
-    const { data, error } = await api.patch<Agendamento>(`/agendamentos/${id}`, {
+    const { data, error } = await api.put<Agendamento>(`/agendamentos/${id}/resposta`, {
       status,
       resposta_coordenador: resposta,
       respondido_em: new Date().toISOString(),

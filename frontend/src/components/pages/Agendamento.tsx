@@ -162,23 +162,26 @@ export default function Agendamento() {
 
   const handleStatusChange = async (id: string, status: 'aprovado' | 'rejeitado', resposta?: string) => {
     const { error } = await updateStatus(id, status, resposta);
+    if (error) {
+      alert('Erro ao atualizar status: ' + error.message);
+      return;
+    }
     if (!error) {
       refetch();
-      try {
-        await api.post('/agendamentos/notificar', {
-          tipo: status === 'aprovado' ? 'aprovacao' : 'rejeicao',
-          email_destino: selectedAgendamento?.solicitante_email,
-          nome_destino: selectedAgendamento?.solicitante_nome,
-          agendamento_id: id,
-          dados: {
-            espaco: selectedAgendamento?.espaco_solicitado,
-            data: formatDate(selectedAgendamento?.data_pretendida || ''),
-            horario: `${formatTime(selectedAgendamento?.horario_inicio || '')} - ${formatTime(selectedAgendamento?.horario_fim || '')}`,
-            motivo: resposta,
-          },
-        });
-      } catch (emailError) {
-        console.error('Erro ao enviar notificação:', emailError);
+      const { error: notifyError } = await api.post('/agendamentos/notificar', {
+        tipo: status === 'aprovado' ? 'aprovacao' : 'rejeicao',
+        email_destino: selectedAgendamento?.solicitanteEmail,
+        nome_destino: selectedAgendamento?.solicitanteNome,
+        agendamento_id: id,
+        dados: {
+          espaco: selectedAgendamento?.espacoSolicitado,
+          data: formatDate(selectedAgendamento?.dataPretendida || ''),
+          horario: `${formatTime(selectedAgendamento?.horarioInicio || '')} - ${formatTime(selectedAgendamento?.horarioFim || '')}`,
+          motivo: resposta,
+        },
+      });
+      if (notifyError) {
+        console.error('Erro ao enviar notificação:', notifyError.message);
       }
     }
     setSelectedAgendamento(null);
@@ -387,32 +390,32 @@ export default function Agendamento() {
                     <tr key={agendamento.id} className="hover:bg-slate-50 transition-colors">
                       <td className="px-6 py-4">
                         <div>
-                          <p className="font-medium text-slate-900">{agendamento.solicitante_nome}</p>
-                          <p className="text-sm text-slate-500">{agendamento.solicitante_email}</p>
+                          <p className="font-medium text-slate-900">{agendamento.solicitanteNome}</p>
+                          <p className="text-sm text-slate-500">{agendamento.solicitanteEmail}</p>
                         </div>
                       </td>
                       <td className="px-6 py-4">
                         <div>
-                          <p className="font-medium text-slate-900">{agendamento.espaco_solicitado}</p>
-                          <p className="text-sm text-slate-500">{tipoEspacoLabels[agendamento.tipo_espaco] || agendamento.tipo_espaco}</p>
+                          <p className="font-medium text-slate-900">{agendamento.espacoSolicitado}</p>
+                          <p className="text-sm text-slate-500">{tipoEspacoLabels[agendamento.tipoEspaco] || agendamento.tipoEspaco}</p>
                         </div>
                       </td>
                       <td className="px-6 py-4">
                         <div className="flex items-center gap-2 text-sm text-slate-600">
                           <CalendarDays size={14} />
-                          <span>{formatDate(agendamento.data_pretendida)}</span>
+                          <span>{formatDate(agendamento.dataPretendida)}</span>
                         </div>
                         <div className="flex items-center gap-2 text-sm text-slate-500 mt-1">
                           <Clock size={14} />
                           <span>
-                            {formatTime(agendamento.horario_inicio)} - {formatTime(agendamento.horario_fim)}
+                            {formatTime(agendamento.horarioInicio)} - {formatTime(agendamento.horarioFim)}
                           </span>
                         </div>
                       </td>
                       <td className="px-6 py-4">
                         <div className="flex items-center gap-2 text-sm text-slate-600">
                           <Users size={14} />
-                          <span>{agendamento.numero_participantes}</span>
+                          <span>{agendamento.numeroParticipantes}</span>
                         </div>
                       </td>
                       <td className="px-6 py-4">
