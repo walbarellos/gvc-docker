@@ -17,6 +17,8 @@ export interface VisitorProps {
   phone?: string | null;
   address?: string | null;
   category?: string | null;
+  status?: string | null;
+  notes?: string | null;
   photoUrl?: string | null;
   parentalAuthorization: boolean;
   authorizationDate?: Date | null;
@@ -42,6 +44,8 @@ export class Visitor {
   get phone() { return this.props.phone; }
   get address() { return this.props.address; }
   get category() { return this.props.category; }
+  get status() { return this.props.status; }
+  get notes() { return this.props.notes; }
   get photoUrl() { return this.props.photoUrl; }
   get parentalAuthorization() { return this.props.parentalAuthorization; }
   get authorizationDate() { return this.props.authorizationDate; }

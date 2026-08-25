@@ -24,8 +24,8 @@ interface Computador {
   id: string;
   numero: number;
   status: 'Livre' | 'Em Uso' | 'Excedido';
-  usuarioId?: string;
-  usuarioNome?: string;
+  visitorId?: string;
+  visitorName?: string;
   horarioInicio?: string;
   horarioLimite?: string;
 }
@@ -90,7 +90,7 @@ export default function Telecentro() {
       for (let i = 1; i <= totalComputadoresCount; i++) {
         const existing = (data || []).find(c => c.numero === i || c.numero === i.toString());
         let status: 'Livre' | 'Em Uso' | 'Excedido' = 'Livre';
-        if (existing?.usuarioId) {
+        if (existing?.visitorId) {
           const agora = new Date();
           const limite = existing.horarioLimite ? new Date(existing.horarioLimite) : null;
           status = (limite && agora > limite) ? 'Excedido' : 'Em Uso';
@@ -99,8 +99,8 @@ export default function Telecentro() {
           id: existing.id, 
           numero: existing.numero, 
           status, 
-          usuarioId: existing.usuarioId, 
-          usuarioNome: existing.usuarioNome || existing.usuario_nome, 
+          visitorId: existing.visitorId, 
+          visitorName: existing.visitorName || existing.visitor_name, 
           horarioInicio: existing.horarioInicio || existing.horario_inicio,
           horarioLimite: existing.horarioLimite || existing.horario_limite 
         } : { id: `temp-${i}`, numero: i, status: 'Livre' });
@@ -151,8 +151,8 @@ export default function Telecentro() {
       const { error } = await api.post('/computadores', {
         numero: selectedComputador.numero,
         status: 'EmUso',
-        usuarioId: visitor.id,
-        usuarioNome: visitor.fullName,
+        visitorId: visitor.id,
+        visitorName: visitor.fullName,
         espacoId: targetEspacoId,
         espacoNome: currentSpace?.nome || spaceConfig?.nome,
         horarioInicio: agora.toISOString(),
@@ -397,9 +397,9 @@ export default function Telecentro() {
                     </div>
 
                     {/* Informações do usuário e cronômetro */}
-                    {isOcupado && pc.usuarioNome && (
+                    {isOcupado && pc.visitorName && (
                       <div className="space-y-3">
-                        <p className="text-sm font-bold text-slate-800 text-center truncate">{pc.usuarioNome}</p>
+                        <p className="text-sm font-bold text-slate-800 text-center truncate">{pc.visitorName}</p>
                         
                         {/* Cronômetro de tempo decorrido */}
                         {tempoDecorrido && (

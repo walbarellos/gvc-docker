@@ -1,5 +1,6 @@
 {
   "dependencies": {
-    "@ruyfranca/myskills": "^1.0.36"
+    "@ruyfranca/myskills": "^1.0.36",
+    "glob": "^13.0.6"
   }
 }
