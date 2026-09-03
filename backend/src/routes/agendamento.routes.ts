@@ -54,7 +54,7 @@ const publicAgendamentoSchema = z
     descricao_evento: z.string().min(10).max(5000),
     natureza_evento: z.string().min(3).max(200),
     gratuito: z.boolean().default(true),
-    valor_ingresso: z.coerce.number().positive().optional().nullable(),
+    valor_ingresso: z.union([z.string(), z.number()]).transform(v => (v === '' ? null : Number(v))).pipe(z.number().min(0).optional().nullable()),
     necessita_equipamentos: z.string().max(1000).optional().nullable().transform(emptyToNull),
     observacoes: z.string().max(2000).optional().nullable().transform(emptyToNull),
     termo_aceito: z.boolean().default(false),
@@ -69,9 +69,8 @@ const publicAgendamentoSchema = z
   termo_compromisso_assinado: z.boolean().optional().nullable(),
   termo_compromisso_data: z.string().optional().nullable(),
   termo_compromisso_ip: z.string().optional().nullable(),
-
+  termo_compromisso_arquivo: z.string().optional().nullable(),
   })
-  .strict();
 
 function parseDate(value: any): Date | null {
   if (!value) return null;
