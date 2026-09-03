@@ -54,7 +54,11 @@ const publicAgendamentoSchema = z
     descricao_evento: z.string().min(10).max(5000),
     natureza_evento: z.string().min(3).max(200),
     gratuito: z.boolean().default(true),
-    valor_ingresso: z.union([z.string(), z.number()]).transform(v => (v === '' ? null : Number(v))).pipe(z.number().min(0).optional().nullable()),
+    valor_ingresso: z.any().optional().nullable().transform((v) => {
+      if (v === '' || v === null || v === undefined) return null;
+      const n = Number(v);
+      return isNaN(n) ? null : n;
+    }),
     necessita_equipamentos: z.string().max(1000).optional().nullable().transform(emptyToNull),
     observacoes: z.string().max(2000).optional().nullable().transform(emptyToNull),
     termo_aceito: z.boolean().default(false),
@@ -63,13 +67,13 @@ const publicAgendamentoSchema = z
     danos_patrimonio: z.boolean().default(false),
     respeito_lotacao: z.boolean().default(false),
     autorizo_divulgacao: z.boolean().default(false),
-  assinatura_id: z.string().optional().nullable(),
-  ip_confirmacao: z.string().optional().nullable(),
-  user_agent: z.string().optional().nullable(),
-  termo_compromisso_assinado: z.boolean().optional().nullable(),
-  termo_compromisso_data: z.string().optional().nullable(),
-  termo_compromisso_ip: z.string().optional().nullable(),
-  termo_compromisso_arquivo: z.string().optional().nullable(),
+    assinatura_id: z.string().optional().nullable(),
+    ip_confirmacao: z.string().optional().nullable(),
+    user_agent: z.string().optional().nullable(),
+    termo_compromisso_assinado: z.boolean().optional().nullable(),
+    termo_compromisso_data: z.string().optional().nullable(),
+    termo_compromisso_ip: z.string().optional().nullable(),
+    termo_compromisso_arquivo: z.string().optional().nullable(),
   })
 
 function parseDate(value: any): Date | null {
