@@ -202,22 +202,33 @@ export async function publicRoutes(app: FastifyInstance) {
             termoCompromissoAssinado: data.termoCompromissoAssinado ?? false,
             termoCompromissoData: data.termoCompromissoData ? new Date(data.termoCompromissoData) : null,
             termoCompromissoIp: data.termoCompromissoIp ?? null,
-            status: 'pendente', // FORÇADO no servidor
+            status: 'aguardando_confirmacao', // FORÇADO no servidor para fluxo anti-spam
+            tokenConfirmacao: require('crypto').randomBytes(32).toString('hex'), // Gerar token único
           },
           select: {
             id: true,
             status: true,
+            tokenConfirmacao: true,
             dataPretendida: true,
             horarioInicio: true,
             horarioFim: true,
             espacoSolicitado: true,
             solicitanteNome: true,
+            solicitanteEmail: true,
             createdAt: true,
           },
         });
       });
 
-      return reply.status(201).send(result);
+      // MOCK: Enviar e-mail de confirmação
+      console.log(`[E-MAIL SIMULADO] Enviar para: ${result.solicitanteEmail}`);
+      console.log(`Assunto: Confirme seu Agendamento - ${result.espacoSolicitado}`);
+      console.log(`Link: http://localhost:4321/agendamento/confirmar/${result.tokenConfirmacao}`);
+
+      // Remover o token da resposta por segurança (só vai no e-mail)
+      const { tokenConfirmacao, ...responseSafe } = result;
+
+      return reply.status(201).send(responseSafe);
     } catch (error: any) {
       if (error.message === 'CONFLICT') {
         return reply.status(409).send({
@@ -226,6 +237,30 @@ export async function publicRoutes(app: FastifyInstance) {
       }
       throw error;
     }
+  });
+
+  // Confirmar e-mail do agendamento
+  app.get('/agendamentos/confirmar/:token', async (request: any, reply: any) => {
+    const { token } = request.params;
+    if (!token) return reply.status(400).send({ error: 'Token inválido' });
+
+    const agendamento = await prisma.agendamento.findFirst({
+      where: { tokenConfirmacao: token, status: 'aguardando_confirmacao' },
+    });
+
+    if (!agendamento) {
+      return reply.status(400).send({ error: 'Token inválido ou agendamento já processado' });
+    }
+
+    await prisma.agendamento.update({
+      where: { id: agendamento.id },
+      data: {
+        status: 'pendente',
+        tokenConfirmacao: null, // Limpar token após uso
+      },
+    });
+
+    return { success: true, message: 'Agendamento confirmado com sucesso' };
   });
 
   // Cadastro público de visitante
@@ -306,12 +341,7 @@ export async function publicRoutes(app: FastifyInstance) {
   app.get('/espacos', async () => {
     return prisma.espaco.findMany({
       where: { ativo: true, perfilAgendamento: true },
-      select: {
-        id: true,
-        nome: true,
-        municipio: true,
-        capacidadeAgendamento: true,
-      },
+      orderBy: { nome: 'asc' },
     });
   });
 }

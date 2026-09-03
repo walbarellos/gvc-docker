@@ -6,6 +6,7 @@ export interface Space {
   email?: string;
   endereco?: string;
   municipio?: string;
+  imagemUrl?: string;
   horarioFuncionamento?: string;
   capacidadeVisitantes?: number;
   mensagemBoasVindas?: string;
@@ -40,6 +41,7 @@ function mapSpace(data: any): Space {
     email: data.email,
     endereco: data.endereco,
     municipio: data.municipio,
+    imagemUrl: data.imagem_url || data.imagemUrl,
     horarioFuncionamento: data.horario_funcionamento || data.horarioFuncionamento,
     capacidadeVisitantes: data.capacidade_visitantes || data.capacidadeVisitantes,
     mensagemBoasVindas: data.mensagem_boas_vindas || data.mensagemBoasVindas,
@@ -69,6 +71,11 @@ function mapSpace(data: any): Space {
 }
 
 export const spaceService = {
+  async listPublic() {
+    const { data, error } = await api.get<Space[]>('/public/espacos', false);
+    return { data: (data || []).map(mapSpace), error };
+  },
+
   async list() {
     const { data, error } = await api.get<Space[]>('/espacos?ativo=true&order=nome');
     return { data: (data || []).map(mapSpace), error };

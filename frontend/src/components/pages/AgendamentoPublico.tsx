@@ -13,6 +13,9 @@ import {
   AlertCircle,
   Upload,
   Mail,
+  Search,
+  LayoutGrid,
+  List,
   Phone,
   LogOut,
   Trash2,
@@ -25,7 +28,6 @@ import { spaceService, Space } from '../../services/spaceService';
 import { agendamentoService } from '../../services/agendamentoService';
 import { assinaturaService } from '../../services/assinaturaService';
 import { useCreateAgendamento } from '../../hooks/useAgendamentos';
-import { usePublicAuth } from '../../contexts/PublicAuthContext';
 import { validateCPF, validateCNPJ, formatCPF, formatCNPJ, formatPhone } from '../../lib/validators';
 import { draftService } from '../../services/draftService';
 import { getPublicIP } from '../../utils/network';
@@ -112,12 +114,12 @@ const steps = [
 ];
 
 const tipoEspacosBase = [
-  { value: 'auditorio', label: 'Auditório', key: 'has_auditorio', capacidadeKey: 'qtd_auditorio', minParticipantes: 20 },
-  { value: 'sala_estudos', label: 'Sala de Estudos', key: 'has_sala_estudos', capacidadeKey: 'qtd_sala_estudos', minParticipantes: 5 },
-  { value: 'teatro', label: 'Teatro', key: 'has_teatro', capacidadeKey: 'qtd_teatro', minParticipantes: 20 },
-  { value: 'filmoteca', label: 'Filmoteca/Cinema', key: 'has_filmoteca', capacidadeKey: 'qtd_filmoteca', minParticipantes: 15 },
-  { value: 'espaco_aberto', label: 'Espaço Aberto', key: 'has_espaco_aberto', capacidadeKey: 'qtd_espaco_aberto', minParticipantes: 10 },
-  { value: 'visita_guiada', label: 'Visita Guiada', key: 'has_visita_guiada', capacidadeKey: '', minParticipantes: 15 },
+  { value: 'auditorio', label: 'Auditório', key: 'hasAuditorio', capacidadeKey: 'qtdAuditorio', minParticipantes: 20 },
+  { value: 'sala_estudos', label: 'Sala de Estudos', key: 'hasSalaEstudos', capacidadeKey: 'qtdSalaEstudos', minParticipantes: 5 },
+  { value: 'teatro', label: 'Teatro', key: 'hasTeatro', capacidadeKey: 'qtdTeatro', minParticipantes: 20 },
+  { value: 'filmoteca', label: 'Filmoteca/Cinema', key: 'hasFilmoteca', capacidadeKey: 'qtdFilmoteca', minParticipantes: 15 },
+  { value: 'espaco_aberto', label: 'Espaço Aberto', key: 'hasEspacoAberto', capacidadeKey: 'qtdEspacoAberto', minParticipantes: 10 },
+  { value: 'visita_guiada', label: 'Visita Guiada', key: 'hasVisitaGuiada', capacidadeKey: '', minParticipantes: 15 },
 ];
 
 const getAvailableSpaceTypes = (spaceId: string, allSpaces: Space[]) => {
@@ -154,13 +156,6 @@ const tipoSolicitanteOptions = [
 
 export default function AgendamentoPublico() {
   const navigate = useNavigate();
-  const { user: publicUser, logout, publicLoading } = usePublicAuth();
-
-  useEffect(() => {
-    if (!publicLoading && !publicUser) {
-      navigate('/agendamento');
-    }
-  }, [publicUser, publicLoading, navigate]);
 
   const [currentStep, setCurrentStep] = useState(1);
   const [formData, setFormData] = useState<FormData>(initialFormData);
@@ -169,6 +164,8 @@ export default function AgendamentoPublico() {
   const [loading, setLoading] = useState(false);
   const [success, setSuccess] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [searchTerm, setSearchTerm] = useState('');
+  const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid');
   const [conflitos, setConflitos] = useState<any[]>([]);
   const [assinaturaInfo, setAssinaturaInfo] = useState<{
     ip: string;
@@ -410,25 +407,15 @@ if (parsed && (parsed.solicitante_nome || parsed.espaco_id)) {
 
   useEffect(() => {
     const loadSpaces = async () => {
-      const { data } = await spaceService.list();
+      const { data } = await spaceService.listPublic();
       if (data) {
-        setSpaces(data.filter((s) => s.perfilAgendamento));
+        setSpaces(data);
       }
       setLoadingSpaces(false);
     };
     loadSpaces();
   }, []);
 
-  useEffect(() => {
-    if (publicUser) {
-      setFormData((prev) => ({
-        ...prev,
-        solicitante_nome: publicUser.nome || prev.solicitante_nome,
-        solicitante_email: publicUser.email || prev.solicitante_email,
-        solicitante_telefone: publicUser.telefone || prev.solicitante_telefone,
-      }));
-    }
-  }, [publicUser]);
 
   useEffect(() => {
     if (formData.espaco_id && formData.data_pretendida && formData.horario_inicio && formData.horario_fim) {
@@ -667,7 +654,7 @@ try {
         </head>
         <body>
           <div class="header">
-            <div class="logo">🏛️ GEC - Gestão de Espaços Culturais</div>
+            <div class="logo">GEC - Gestão de Espaços Culturais</div>
             <p>Fundação Cultural do Estado de Alagoas</p>
           </div>
           <div class="protocolo">
@@ -675,7 +662,7 @@ try {
             <span style="color: #6b7280; font-size: 14px;">Data de envio: ${new Date().toLocaleDateString('pt-BR')} às ${new Date().toLocaleTimeString('pt-BR')}</span>
           </div>
           <div class="section">
-            <h3>📋 Dados do Solicitante</h3>
+            <h3>Dados do Solicitante</h3>
             <div class="info">
               <div class="info-item"><strong>Nome</strong>${formData.solicitante_nome}</div>
               <div class="info-item"><strong>Email</strong>${formData.solicitante_email}</div>
@@ -685,7 +672,7 @@ try {
             </div>
           </div>
           <div class="section">
-            <h3>🏛️ Espaço Solicitado</h3>
+            <h3>Espaço Solicitado</h3>
             <div class="info">
               <div class="info-item"><strong>Espaço</strong>${spaces.find(s => s.id === formData.espaco_id)?.nome || formData.espaco_solicitado}</div>
               <div class="info-item"><strong>Data</strong>${formatDate(formData.data_pretendida)}</div>
@@ -694,7 +681,7 @@ try {
             </div>
           </div>
           <div class="section">
-            <h3>📝 Dados do Evento</h3>
+            <h3>Dados do Evento</h3>
             <div class="info">
               <div class="info-item"><strong>Natureza</strong>${formData.natureza_evento}</div>
               <div class="info-item"><strong>Gratuito</strong>${formData.gratuito ? 'Sim' : 'Não'}</div>
@@ -754,7 +741,7 @@ try {
   if (success) {
     const protocolo = generateProtocolo();
     return (
-      <div className="min-h-screen bg-gradient-to-br from-indigo-50 to-purple-50 flex items-center justify-center p-4">
+      <div className="min-h-screen bg-slate-50 flex items-center justify-center p-4">
         <div className="bg-white rounded-3xl shadow-xl p-8 max-w-lg w-full text-center">
           <div className="relative">
             <div className="w-24 h-24 bg-emerald-100 rounded-full flex items-center justify-center mx-auto mb-4">
@@ -766,24 +753,24 @@ try {
           </div>
           
           <h1 className="text-3xl font-display font-bold text-slate-900 mt-6 mb-2">
-            Agendamento Enviado!
+            Confirme seu E-mail!
           </h1>
           <p className="text-slate-600 mb-6">
-            Sua solicitação foi recebida com sucesso. Você receberá uma resposta em até <strong>3 dias úteis</strong> no email cadastrado.
+            Sua solicitação foi recebida. <strong>Enviamos um link de confirmação para o seu e-mail.</strong> Você precisa clicar neste link para que seu agendamento seja validado e enviado para análise.
           </p>
           
-          <div className="bg-gradient-to-r from-indigo-50 to-purple-50 rounded-2xl p-4 mb-6 border border-indigo-100">
+          <div className="bg-slate-100 rounded-2xl p-4 mb-6 border border-blue-100">
             <div className="flex items-center justify-center gap-2 mb-2">
-              <span className="text-xs text-indigo-600 font-medium">PROTOCOLO</span>
+              <span className="text-xs text-blue-700 font-medium">PROTOCOLO</span>
             </div>
-            <p className="text-2xl font-bold text-indigo-600">{protocolo}</p>
+            <p className="text-2xl font-bold text-blue-700">{protocolo}</p>
             <p className="text-xs text-slate-500 mt-1">
               {new Date().toLocaleDateString('pt-BR')} às {new Date().toLocaleTimeString('pt-BR')}
             </p>
           </div>
           
           <div className="bg-slate-50 rounded-2xl p-4 text-left mb-6">
-            <h3 className="font-semibold text-slate-900 mb-3">📋 Resumo do Agendamento</h3>
+            <h3 className="font-semibold text-slate-900 mb-3">Resumo do Agendamento</h3>
             <div className="space-y-2 text-sm">
               <p className="text-slate-600"><strong>Espaço:</strong> {spaces.find((s) => s.id === formData.espaco_id)?.nome}</p>
               <p className="text-slate-600"><strong>Data:</strong> {formatDate(formData.data_pretendida)}</p>
@@ -808,7 +795,7 @@ try {
           <div className="flex flex-col gap-3">
             <button
               onClick={handleExportPDF}
-              className="flex items-center justify-center gap-2 px-6 py-3 bg-indigo-600 text-white rounded-xl font-medium hover:bg-indigo-700 transition-colors"
+              className="flex items-center justify-center gap-2 px-6 py-3 bg-blue-700 text-white rounded-xl font-medium hover:bg-indigo-700 transition-colors"
             >
               <FileText size={18} />
               📄 Imprimir Comprovante
@@ -834,14 +821,14 @@ try {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-indigo-50 to-purple-50 py-8 px-4">
+    <div className="min-h-screen bg-slate-50 py-8 px-4">
       <div className="max-w-4xl mx-auto">
         <div className="text-center mb-6">
           <div className="inline-flex items-center gap-3 mb-3">
-            <div className="p-3 bg-gradient-to-br from-indigo-600 to-purple-600 text-white rounded-2xl shadow-lg">
+            <div className="p-3 bg-blue-700 text-white rounded-2xl shadow-lg">
               <CalendarDays size={28} />
             </div>
-            <h1 className="text-3xl font-display font-bold bg-gradient-to-r from-indigo-600 to-purple-600 bg-clip-text text-transparent">
+            <h1 className="text-3xl font-display font-bold text-blue-800">
               Agendamento de Espaços Culturais
             </h1>
           </div>
@@ -851,7 +838,7 @@ try {
         </div>
 
 <div className="bg-white rounded-3xl shadow-xl overflow-hidden">
-          <div className="bg-gradient-to-r from-indigo-600 via-purple-600 to-indigo-600 p-6 relative overflow-hidden">
+          <div className="bg-blue-800 p-6 relative overflow-hidden">
             <div className="absolute inset-0 bg-[url('data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iNjAiIGhlaWdodD0iNjAiIHhtbG5zPSJodHRwOi8vd3d3LnczLm9yZy8yMDAwL3N2ZyI+PGNpcmNsZSBjeD0iMzAiIGN5PSIzMCIgcj0iMiIgZmlsbD0id2hpdGUiIGZpbGwtb3BhY2l0eT0iMC4xIi8+PC9zdmc+')] opacity-30" />
             <div className="relative">
               <div className="flex items-center justify-between mb-4">
@@ -873,13 +860,13 @@ try {
                 </div>
               </div>
               <div className="mt-4 flex items-center justify-between text-white text-sm">
-                <span className="font-medium">
-                  {currentStep === 1 && "📋 Preencha seus dados pessoais"}
-                  {currentStep === 2 && "🏛️ Escolha o espaço cultural"}
-                  {currentStep === 3 && "📅 Defina data e horário"}
-                  {currentStep === 4 && "📝 Descreva seu evento"}
-                  {currentStep === 5 && "📄 Leia e aceite os Termos"}
-                {currentStep === 6 && "✅ Revise e confirme"}
+                <span className="font-medium flex items-center gap-2">
+                  {currentStep === 1 && <><User size={18} /> Preencha seus dados pessoais</>}
+                  {currentStep === 2 && <><MapPin size={18} /> Escolha o espaço cultural</>}
+                  {currentStep === 3 && <><Clock size={18} /> Defina data e horário</>}
+                  {currentStep === 4 && <><FileText size={18} /> Descreva seu evento</>}
+                  {currentStep === 5 && <><Shield size={18} /> Leia e aceite os Termos</>}
+                  {currentStep === 6 && <><CheckCircle size={18} /> Revise e confirme</>}
                 </span>
                 {currentStep === 1 && (
                   <div className="flex items-center gap-2">
@@ -919,7 +906,7 @@ try {
                   <React.Fragment key={step.id}>
                     <div 
                       className={`flex flex-col items-center cursor-pointer transition-all hover:scale-105 ${
-                        isActive ? 'scale-110' : isClickable ? 'opacity-100 hover:text-indigo-600' : 'opacity-50'
+                        isActive ? 'scale-110' : isClickable ? 'opacity-100 hover:text-blue-700' : 'opacity-50'
                       }`}
                       onClick={() => {
                         if (isClickable) {
@@ -930,15 +917,15 @@ try {
                       <div
                         className={`w-12 h-12 rounded-2xl flex items-center justify-center transition-all shadow-lg ${
                           isCompleted
-                            ? 'bg-gradient-to-br from-emerald-500 to-emerald-600 text-white'
+                            ? 'bg-green-700 text-white'
                             : isActive
-                            ? 'bg-gradient-to-br from-indigo-600 to-purple-600 text-white shadow-indigo-500/30'
+                            ? 'bg-blue-700 text-white shadow-indigo-500/30'
                             : 'bg-white text-slate-400'
                         }`}
                       >
                         {isCompleted ? <CheckCircle size={20} /> : <Icon size={20} />}
                       </div>
-                      <span className={`text-xs mt-1.5 font-medium text-center hidden lg:block ${isActive ? 'text-indigo-600' : 'text-slate-500'}`}>
+                      <span className={`text-xs mt-1.5 font-medium text-center hidden lg:block ${isActive ? 'text-blue-700' : 'text-slate-500'}`}>
                         {step.title}
                       </span>
                     </div>
@@ -975,7 +962,7 @@ try {
                         type="text"
                         value={formData.solicitante_nome}
                         onChange={(e) => updateFormData('solicitante_nome', e.target.value)}
-                        className="w-full pl-10 pr-4 py-3 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                        className="w-full pl-10 pr-4 py-3 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-600"
                         placeholder="Seu nome completo"
                       />
                     </div>
@@ -990,7 +977,7 @@ try {
                         type="email"
                         value={formData.solicitante_email}
                         onChange={(e) => updateFormData('solicitante_email', e.target.value)}
-                        className="w-full pl-10 pr-4 py-3 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                        className="w-full pl-10 pr-4 py-3 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-600"
                         placeholder="seu@email.com"
                       />
                     </div>
@@ -1005,7 +992,7 @@ try {
                         type="tel"
                         value={formData.solicitante_telefone}
                         onChange={(e) => handlePhoneChange(e.target.value)}
-                        className={`w-full pl-10 pr-4 py-3 border rounded-xl focus:outline-none focus:ring-2 ${phoneError ? 'border-red-500 focus:ring-red-500' : 'border-slate-200 focus:ring-indigo-500'}`}
+                        className={`w-full pl-10 pr-4 py-3 border rounded-xl focus:outline-none focus:ring-2 ${phoneError ? 'border-red-500 focus:ring-red-500' : 'border-slate-200 focus:ring-blue-600'}`}
                         placeholder="(00) 90000-0000"
                         maxLength={15}
                       />
@@ -1020,7 +1007,7 @@ try {
                       type="text"
                       value={formData.solicitante_documento}
                       onChange={(e) => handleDocumentChange(e.target.value)}
-                      className={`w-full px-4 py-3 border rounded-xl focus:outline-none focus:ring-2 ${documentError ? 'border-red-500 focus:ring-red-500' : 'border-slate-200 focus:ring-indigo-500'}`}
+                      className={`w-full px-4 py-3 border rounded-xl focus:outline-none focus:ring-2 ${documentError ? 'border-red-500 focus:ring-red-500' : 'border-slate-200 focus:ring-blue-600'}`}
                       placeholder={isPessoaFisica ? '000.000.000-00' : '00.000.000/0001-00'}
                       maxLength={isPessoaFisica ? 14 : 18}
                     />
@@ -1037,7 +1024,7 @@ try {
                         updateFormData('solicitante_documento', '');
                         setDocumentError(null);
                       }}
-                      className="w-full px-4 py-3 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                      className="w-full px-4 py-3 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-600"
                     >
                       {tipoSolicitanteOptions.map((opt) => (
                         <option key={opt.value} value={opt.value}>
@@ -1056,7 +1043,7 @@ try {
                         type="text"
                         value={formData.razao_social}
                         onChange={(e) => updateFormData('razao_social', e.target.value)}
-                        className="w-full px-4 py-3 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                        className="w-full px-4 py-3 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-600"
                         placeholder="Nome completo da empresa"
                       />
                     </div>
@@ -1071,7 +1058,7 @@ try {
                         type="text"
                         value={formData.nome_instituicao}
                         onChange={(e) => updateFormData('nome_instituicao', e.target.value)}
-                        className="w-full px-4 py-3 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                        className="w-full px-4 py-3 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-600"
                         placeholder={isEscola ? 'Nome da escola' : 'Nome da universidade/faculdade'}
                       />
                     </div>
@@ -1087,7 +1074,7 @@ try {
                           type="text"
                           value={formData.secretaria_governo}
                           onChange={(e) => updateFormData('secretaria_governo', e.target.value)}
-                          className="w-full px-4 py-3 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                          className="w-full px-4 py-3 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-600"
                           placeholder="Ex: Secretaria de Cultura"
                         />
                       </div>
@@ -1099,7 +1086,7 @@ try {
                           type="text"
                           value={formData.unidade_governo}
                           onChange={(e) => updateFormData('unidade_governo', e.target.value)}
-                          className="w-full px-4 py-3 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                          className="w-full px-4 py-3 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-600"
                           placeholder="Ex: Diretoria de Eventos"
                         />
                       </div>
@@ -1114,70 +1101,184 @@ try {
                 <h2 className="text-2xl font-display font-bold text-slate-900 mb-6">Escolha do Espaço</h2>
                 {loadingSpaces ? (
                   <div className="text-center py-8">
-                    <div className="animate-spin w-8 h-8 border-4 border-indigo-500 border-t-transparent rounded-full mx-auto" />
+                    <div className="animate-spin w-8 h-8 border-4 border-blue-600 border-t-transparent rounded-full mx-auto" />
                   </div>
                 ) : spaces.length === 0 ? (
                   <div className="text-center py-8">
                     <p className="text-slate-500">Nenhum espaço disponível para agendamento no momento.</p>
                   </div>
                 ) : (
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                    <div>
-                      <label className="block text-sm font-medium text-slate-700 mb-2">
-                        Espaço Cultural *
+                  <div className="space-y-6">
+                    <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+                      <label className="block text-sm font-medium text-slate-700">
+                        Selecione o Espaço Cultural *
                       </label>
-                      <select
-                        value={formData.espaco_id}
-                        onChange={(e) => {
-                          updateFormData('espaco_id', e.target.value);
-                          updateFormData('tipo_espaco', '');
-                        }}
-                        className="w-full px-4 py-3 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-500"
-                      >
-                        <option value="">Selecione um espaço</option>
-                        {spaces.map((space) => (
-                          <option key={space.id} value={space.id}>
-                            {space.nome}
-                          </option>
-                        ))}
-                      </select>
-                      {formData.espaco_id && (
-                        <div className="mt-3 p-4 bg-slate-50 rounded-xl">
-                          <p className="text-sm text-slate-600">
-                            <strong>Endereço:</strong> {spaces.find((s) => s.id === formData.espaco_id)?.endereco || 'Não informado'}
-                          </p>
-                          {spaces.find((s) => s.id === formData.espaco_id)?.horarioFuncionamento && (
-                            <p className="text-sm text-slate-600 mt-1">
-                              <strong>Funcionamento:</strong> {spaces.find((s) => s.id === formData.espaco_id)?.horarioFuncionamento}
-                            </p>
-                          )}
+                      <div className="flex items-center gap-2">
+                        <div className="relative">
+                          <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
+                          <input
+                            type="text"
+                            placeholder="Buscar espaço..."
+                            value={searchTerm}
+                            onChange={(e) => setSearchTerm(e.target.value)}
+                            className="pl-9 pr-4 py-2 bg-white border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-blue-600 w-full sm:w-64 transition-all"
+                          />
                         </div>
-                      )}
+                        <div className="flex items-center bg-slate-100 rounded-lg p-1">
+                          <button
+                            type="button"
+                            onClick={() => setViewMode('grid')}
+                            className={`p-1.5 rounded-md transition-all ${viewMode === 'grid' ? 'bg-white shadow-sm text-blue-600' : 'text-slate-500 hover:text-slate-700'}`}
+                            title="Visualização em Grade"
+                          >
+                            <LayoutGrid size={18} />
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => setViewMode('list')}
+                            className={`p-1.5 rounded-md transition-all ${viewMode === 'list' ? 'bg-white shadow-sm text-blue-600' : 'text-slate-500 hover:text-slate-700'}`}
+                            title="Visualização em Lista"
+                          >
+                            <List size={18} />
+                          </button>
+                        </div>
+                      </div>
                     </div>
-                    <div>
-                      <label className="block text-sm font-medium text-slate-700 mb-2">
-                        Tipo de Espaço *
-                      </label>
-                      <select
-                        value={formData.tipo_espaco}
-                        onChange={(e) => updateFormData('tipo_espaco', e.target.value)}
-                        disabled={!formData.espaco_id}
-                        className="w-full px-4 py-3 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-500 disabled:opacity-50"
-                      >
-                        <option value="">Selecione o tipo</option>
-                        {getAvailableSpaceTypes(formData.espaco_id, spaces).map((opt) => (
+
+                    {spaces.filter(s => s.nome.toLowerCase().includes(searchTerm.toLowerCase())).length === 0 && (
+                      <div className="text-center py-10 bg-slate-50 rounded-2xl border border-dashed border-slate-200">
+                        <p className="text-slate-500">Nenhum espaço encontrado com esse nome.</p>
+                      </div>
+                    )}
+
+                    <div className={viewMode === 'grid' ? "grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-6" : "flex flex-col gap-3"}>
+                      {spaces.filter(s => s.nome.toLowerCase().includes(searchTerm.toLowerCase())).map((space) => {
+                        const nameUpper = space.nome.toUpperCase();
+                        let badgeText = "Centros Culturais";
+                        let badgeColor = "bg-slate-700";
+                        if (nameUpper.includes('MUSEU')) { badgeText = "Museus"; badgeColor = "bg-green-700"; }
+                        else if (nameUpper.includes('TEATRO') || nameUpper.includes('CINE') || nameUpper.includes('BARRACÃO')) { badgeText = "Teatros"; badgeColor = "bg-blue-600"; }
+                        else if (nameUpper.includes('BIBLIOTECA')) { badgeText = "Bibliotecas"; badgeColor = "bg-blue-700"; }
+                        else if (nameUpper.includes('MEMORIAL') || nameUpper.includes('CASA DOS POVOS')) { badgeText = "Espaços de Memória"; badgeColor = "bg-amber-600"; }
+                        
+                        if (viewMode === 'grid') {
+                          return (
+                            <div
+                              key={space.id}
+                              onClick={() => {
+                                updateFormData('espaco_id', space.id!);
+                                updateFormData('tipo_espaco', '');
+                              }}
+                              className={`cursor-pointer group relative overflow-hidden rounded-[20px] transition-all duration-300 h-[340px] flex flex-col justify-end ${
+                                formData.espaco_id === space.id
+                                  ? 'ring-4 ring-blue-500 scale-[1.02] shadow-xl'
+                                  : 'hover:scale-[1.02] hover:shadow-lg'
+                              }`}
+                            >
+                              <div className="absolute inset-0 z-0">
+                                {space.imagemUrl ? (
+                                  <img src={space.imagemUrl} alt={space.nome} className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-110" />
+                                ) : (
+                                  <div className="w-full h-full bg-slate-800 flex items-center justify-center">
+                                    <Building className="w-16 h-16 text-slate-600" />
+                                  </div>
+                                )}
+                              </div>
+                              <div className="absolute inset-0 z-10 bg-gradient-to-t from-black/90 via-black/40 to-transparent" />
+                              
+                              {formData.espaco_id === space.id && (
+                                <div className="absolute top-4 right-4 z-20 bg-blue-500 text-white p-1.5 rounded-full shadow-lg">
+                                  <CheckCircle size={20} />
+                                </div>
+                              )}
+
+                              <div className="relative z-20 p-5 flex flex-col gap-2">
+                                <span className={`self-start px-3 py-1 text-[11px] font-bold tracking-wider text-white rounded-full ${badgeColor}`}>
+                                  {badgeText}
+                                </span>
+                                <h3 className="text-white font-display font-bold text-xl leading-tight uppercase line-clamp-2">
+                                  {space.nome}
+                                </h3>
+                                <div className="flex items-start gap-1.5 mt-1">
+                                  <MapPin size={14} className="text-slate-300 mt-1 shrink-0" />
+                                  <p className="text-sm text-slate-300 line-clamp-2 leading-snug">
+                                    {space.endereco || space.municipio || 'Endereço não informado'}
+                                  </p>
+                                </div>
+                              </div>
+                            </div>
+                          );
+                        } else {
+                          // Minimalist List View
+                          return (
+                            <div
+                              key={space.id}
+                              onClick={() => {
+                                updateFormData('espaco_id', space.id!);
+                                updateFormData('tipo_espaco', '');
+                              }}
+                              className={`cursor-pointer group flex items-center gap-4 p-3 pr-5 rounded-2xl transition-all duration-200 border-2 ${
+                                formData.espaco_id === space.id
+                                  ? 'border-blue-600 bg-blue-50/50 shadow-sm'
+                                  : 'border-slate-200 hover:border-blue-300 bg-white hover:shadow-sm'
+                              }`}
+                            >
+                              <div className="w-16 h-16 rounded-xl overflow-hidden shrink-0 relative bg-slate-100 flex items-center justify-center">
+                                {space.imagemUrl ? (
+                                  <img src={space.imagemUrl} alt={space.nome} className="w-full h-full object-cover" />
+                                ) : (
+                                  <Building className="w-6 h-6 text-slate-400" />
+                                )}
+                              </div>
+                              <div className="flex-1 min-w-0">
+                                <div className="flex items-center gap-2 mb-1">
+                                  <h3 className={`font-bold text-base truncate ${formData.espaco_id === space.id ? 'text-blue-900' : 'text-slate-800'}`}>
+                                    {space.nome}
+                                  </h3>
+                                  <span className={`px-2 py-0.5 text-[10px] font-bold uppercase tracking-wider text-white rounded-full shrink-0 ${badgeColor}`}>
+                                    {badgeText}
+                                  </span>
+                                </div>
+                                <div className="flex items-center gap-1.5 text-xs text-slate-500 truncate">
+                                  <MapPin size={12} className="shrink-0" />
+                                  <span className="truncate">{space.endereco || space.municipio || 'Endereço não informado'}</span>
+                                </div>
+                              </div>
+                              {formData.espaco_id === space.id && (
+                                <div className="text-blue-600 shrink-0">
+                                  <CheckCircle size={24} />
+                                </div>
+                              )}
+                            </div>
+                          );
+                        }
+                      })}
+                    </div>
+                    
+                    {formData.espaco_id && getAvailableSpaceTypes(formData.espaco_id, spaces).length > 0 && (
+                      <div className="animate-in fade-in slide-in-from-bottom-2 duration-300">
+                        <label className="block text-sm font-medium text-slate-700 mb-2">
+                          Tipo de Espaço *
+                        </label>
+                        <select
+                          value={formData.tipo_espaco}
+                          onChange={(e) => updateFormData('tipo_espaco', e.target.value)}
+                          className="w-full md:w-1/2 px-4 py-3 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-600"
+                        >
+                          <option value="">Selecione o tipo</option>
+                          {getAvailableSpaceTypes(formData.espaco_id, spaces).map((opt) => (
                           <option key={opt.value} value={opt.value}>
                             {opt.label} {Number(opt.capacidade) > 0 ? `(até ${opt.capacidade} lugares)` : ''}
                           </option>
                         ))}
-                      </select>
-                      {!formData.espaco_id && (
-                        <p className="text-xs text-slate-500 mt-1">Selecione um espaço cultural primeiro</p>
-                      )}
-                      {formData.espaco_id && getAvailableSpaceTypes(formData.espaco_id, spaces).length === 0 && (
-                        <p className="text-xs text-red-500 mt-1">⚠️ Este espaço não possui tipos de espaços cadastrados para agendamento</p>
-                      )}
-                    </div>
+                        </select>
+                      </div>
+                    )}
+                    {formData.espaco_id && getAvailableSpaceTypes(formData.espaco_id, spaces).length === 0 && (
+                      <div className="p-4 bg-orange-50 border border-orange-200 rounded-xl">
+                        <p className="text-sm text-orange-700 font-medium">Este espaço não possui ambientes configurados para agendamento.</p>
+                      </div>
+                    )}
                   </div>
                 )}
               </div>
@@ -1196,7 +1297,7 @@ try {
                       value={formData.data_pretendida}
                       onChange={(e) => updateFormData('data_pretendida', e.target.value)}
                       min={new Date().toISOString().split('T')[0]}
-                      className="w-full px-4 py-3 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                      className="w-full px-4 py-3 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-600"
                     />
                   </div>
                   <div>
@@ -1210,7 +1311,7 @@ try {
                         value={formData.numero_participantes || ''}
                         onChange={(e) => updateFormData('numero_participantes', parseInt(e.target.value) || 0)}
                         min={1}
-                        className="w-full pl-10 pr-4 py-3 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                        className="w-full pl-10 pr-4 py-3 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-600"
                         placeholder="Quantidade de pessoas"
                       />
                     </div>
@@ -1223,7 +1324,7 @@ try {
                       type="time"
                       value={formData.horario_inicio}
                       onChange={(e) => updateFormData('horario_inicio', e.target.value)}
-                      className="w-full px-4 py-3 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                      className="w-full px-4 py-3 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-600"
                     />
                   </div>
                   <div>
@@ -1234,7 +1335,7 @@ try {
                       type="time"
                       value={formData.horario_fim}
                       onChange={(e) => updateFormData('horario_fim', e.target.value)}
-                      className="w-full px-4 py-3 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                      className="w-full px-4 py-3 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-600"
                     />
                   </div>
                 </div>
@@ -1264,7 +1365,7 @@ try {
                     <select
                       value={formData.natureza_evento}
                       onChange={(e) => updateFormData('natureza_evento', e.target.value)}
-                      className="w-full px-4 py-3 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                      className="w-full px-4 py-3 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-600"
                     >
                       {naturezaOptions.map((opt) => (
                         <option key={opt.value} value={opt.value}>
@@ -1280,7 +1381,7 @@ try {
                     <select
                       value={formData.gratuito ? 'true' : 'false'}
                       onChange={(e) => updateFormData('gratuito', e.target.value === 'true')}
-                      className="w-full px-4 py-3 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                      className="w-full px-4 py-3 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-600"
                     >
                       <option value="true">Sim, gratuito</option>
                       <option value="false">Não, tem ingresso</option>
@@ -1296,7 +1397,7 @@ try {
                         step="0.01"
                         value={formData.valor_ingresso}
                         onChange={(e) => updateFormData('valor_ingresso', e.target.value)}
-                        className="w-full px-4 py-3 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                        className="w-full px-4 py-3 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-600"
                         placeholder="0,00"
                       />
                     </div>
@@ -1309,7 +1410,7 @@ try {
                       value={formData.descricao_evento}
                       onChange={(e) => updateFormData('descricao_evento', e.target.value)}
                       rows={4}
-                      className="w-full px-4 py-3 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                      className="w-full px-4 py-3 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-600"
                       placeholder="Descreva o evento que será realizado..."
                     />
                   </div>
@@ -1321,7 +1422,7 @@ try {
                       value={formData.necessita_equipamentos}
                       onChange={(e) => updateFormData('necessita_equipamentos', e.target.value)}
                       rows={2}
-                      className="w-full px-4 py-3 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                      className="w-full px-4 py-3 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-600"
                       placeholder="Ex: projetor, som, cadeiras extras..."
                     />
                   </div>
@@ -1333,7 +1434,7 @@ try {
                       value={formData.observacoes}
                       onChange={(e) => updateFormData('observacoes', e.target.value)}
                       rows={2}
-                      className="w-full px-4 py-3 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                      className="w-full px-4 py-3 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-600"
                       placeholder="Outras informações relevantes..."
                     />
                   </div>
@@ -1544,7 +1645,7 @@ try {
                       type="checkbox"
                       checked={formData.autorizo_divulgacao}
                       onChange={(e) => updateFormData('autorizo_divulgacao', e.target.checked)}
-                      className="mt-1 w-5 h-5 text-indigo-600 rounded focus:ring-indigo-500"
+                      className="mt-1 w-5 h-5 text-blue-700 rounded focus:ring-blue-600"
                     />
                     <span className="text-sm text-slate-700">
                       Autorizo a FEM a utilizar imagens do evento para fins de divulgação institucional (opcional)
@@ -1560,12 +1661,12 @@ try {
               <div className="space-y-6">
                 <h2 className="text-2xl font-display font-bold text-slate-900 mb-6">Confirmação</h2>
                 
-                <div className="bg-indigo-50 border-2 border-indigo-200 rounded-xl p-6">
+                <div className="bg-blue-50 border-2 border-blue-200 rounded-xl p-6">
                   <div className="flex items-center justify-between flex-wrap gap-4">
                     <div>
-                      <p className="text-sm text-indigo-600 font-medium">Protocolo de Agendamento</p>
+                      <p className="text-sm text-blue-700 font-medium">Protocolo de Agendamento</p>
                       <p className="text-2xl font-bold text-indigo-900">{generateProtocolo()}</p>
-                      <p className="text-xs text-indigo-500 mt-1">
+                      <p className="text-xs text-blue-600 mt-1">
                         Gerado em: {new Date().toLocaleString('pt-BR')}
                       </p>
                     </div>
@@ -1628,7 +1729,7 @@ try {
               <button
                 onClick={() => setCurrentStep((s) => s + 1)}
                 disabled={!validateStep(currentStep)}
-                className="flex items-center gap-2 px-8 py-3 bg-gradient-to-r from-indigo-600 to-purple-600 text-white rounded-2xl font-semibold hover:from-indigo-700 hover:to-purple-700 transition-all hover:scale-105 hover:shadow-lg disabled:opacity-40 disabled:cursor-not-allowed disabled:hover:scale-100"
+                className="flex items-center gap-2 px-8 py-3 bg-blue-700 text-white rounded-2xl font-semibold hover:hover:bg-blue-800 transition-all hover:scale-105 hover:shadow-lg disabled:opacity-40 disabled:cursor-not-allowed disabled:hover:scale-100"
               >
                 Próximo
                 <ChevronRight size={18} />
@@ -1637,7 +1738,7 @@ try {
               <button
                 onClick={handleSubmit}
                 disabled={loading || creating}
-                className="flex items-center gap-2 px-8 py-3 bg-gradient-to-r from-emerald-500 to-teal-600 text-white rounded-2xl font-semibold hover:from-emerald-600 hover:to-teal-700 transition-all hover:scale-105 hover:shadow-lg disabled:opacity-40"
+                className="flex items-center gap-2 px-8 py-3 bg-green-700 text-white rounded-2xl font-semibold hover:from-emerald-600 hover:to-teal-700 transition-all hover:scale-105 hover:shadow-lg disabled:opacity-40"
               >
                 {loading || creating ? 'Enviando...' : 'Enviar Solicitação'}
                 <CheckCircle size={18} />

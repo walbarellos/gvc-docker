@@ -62,7 +62,7 @@ export function PublicAuthProvider({ children }: { children: React.ReactNode }) 
   };
 
   return (
-    <PublicAuthContext.Provider value={{ user, loading, login, loginWithGoogle, logout, publicLoading: loading }}>
+    <PublicAuthContext.Provider value={{ user, loading, login, logout, publicLoading: loading }}>
       {children}
     </PublicAuthContext.Provider>
   );

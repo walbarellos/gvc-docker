@@ -16,8 +16,6 @@ import Telecentro from './components/pages/Telecentro';
 import Agendamento from './components/pages/Agendamento';
 import AgendamentoPublico from './components/pages/AgendamentoPublico';
 import Login from './components/pages/Login';
-import LoginPublico from './components/pages/LoginPublico';
-import CadastroPublico from './components/pages/CadastroPublico';
 import TermoCompromisso from './components/pages/TermoCompromisso';
 
 import CheckInModal from './components/modals/CheckInModal';
@@ -27,15 +25,15 @@ import ProtectedRoute from './components/ProtectedRoute';
 const Reports = lazy(() => import('./components/pages/Reports'));
 const SettingsPage = lazy(() => import('./components/pages/Settings'));
 
+import ConfirmacaoEmail from './components/pages/ConfirmacaoEmail';
+
 function PublicRoutes() {
   return (
     <Routes>
       <Route path="/gerenciamento" element={<Login />} />
       <Route path="/login" element={<Navigate to="/gerenciamento" replace />} />
-      <Route path="/agendamento" element={<LoginPublico />} />
-      <Route path="/login-publico" element={<Navigate to="/agendamento" replace />} />
-      <Route path="/agendamento/cadastro" element={<CadastroPublico />} />
-      <Route path="/agendamento/formulario" element={<AgendamentoPublico />} />
+      <Route path="/agendamento" element={<AgendamentoPublico />} />
+      <Route path="/agendamento/confirmar/:token" element={<ConfirmacaoEmail />} />
       <Route path="/agendamento/termo" element={<TermoCompromisso />} />
       <Route path="/" element={<Navigate to="/gerenciamento" replace />} />
       <Route path="*" element={<Navigate to="/gerenciamento" replace />} />

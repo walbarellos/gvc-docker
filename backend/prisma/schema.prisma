@@ -33,6 +33,7 @@ enum LockerStatus {
 }
 
 enum AgendamentoStatus {
+  aguardando_confirmacao
   pendente
   aprovado
   rejeitado
@@ -80,6 +81,7 @@ model Espaco {
   email                 String?
   endereco              String?
   municipio             String?
+  imagemUrl             String?   @map("imagem_url")
   horarioFuncionamento String?   @map("horario_funcionamento")
   capacidadeVisitantes Int?      @map("capacidade_visitantes")
   mensagemBoasVindas   String?   @map("mensagem_boas_vindas")
@@ -251,6 +253,7 @@ model Agendamento {
   necessitaEquipamentos   String?           @map("necessita_equipamentos")
   observacoes             String?
   status                  AgendamentoStatus @default(pendente)
+  tokenConfirmacao        String?           @map("token_confirmacao")
   termoAceito             Boolean?          @default(false) @map("termo_aceito")
   termoAceitoEm           DateTime?         @map("termo_aceito_em")
   responsabilidadeEvento  Boolean?          @default(false) @map("responsabhilidade_evento")
