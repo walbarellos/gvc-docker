@@ -45,9 +45,9 @@ export const validateCPFReceita = async (cpf: string): Promise<CPFValidationResu
     
     const data = await response.json();
     return {
-      valid: data.situacao_cadastral === 'Regular',
-      status: data.situacao_cadastral,
-      message: data.situacao_cadastral === 'Regular' ? 'CPF válido e ativo' : `Situação: ${data.situacao_cadastral}`
+      valid: data.isValid === true,
+      status: data.isValid ? 'REGULAR' : 'INVALIDO',
+      message: data.isValid ? 'CPF válido' : 'CPF inválido'
     };
   } catch (error) {
     console.error('Erro na validação do CPF:', error);
