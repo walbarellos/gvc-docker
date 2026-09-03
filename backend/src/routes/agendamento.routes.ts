@@ -596,7 +596,7 @@ const toRascunhoSnake = (raw: any): any => {
   // Buscar rascunho
   app.get('/rascunho/:sessionId', async (request: any, reply: any) => {
     const { sessionId } = request.params;
-    if (!/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(sessionId)) {
+    if (!/^[a-zA-Z0-9_\-]{5,64}$/i.test(sessionId)) {
       return reply.status(400).send({ error: 'sessionId inválido' });
     }
     const rascunho = await prisma.agendamentoRascunho.findUnique({ 
@@ -627,7 +627,7 @@ const toRascunhoSnake = (raw: any): any => {
   // Deletar rascunho
   app.delete('/rascunho/:sessionId', async (request: any, reply: any) => {
     const { sessionId } = request.params;
-    if (!/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(sessionId)) {
+    if (!/^[a-zA-Z0-9_\-]{5,64}$/i.test(sessionId)) {
       return reply.status(400).send({ error: 'sessionId inválido' });
     }
     await prisma.agendamentoRascunho.delete({ 
