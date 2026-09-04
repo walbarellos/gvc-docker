@@ -4,6 +4,7 @@ import { useQuery } from '@tanstack/react-query';
 import { normalizarVisita, traduzirPerfil, formatTime } from '../../lib/utils';
 import { visitService } from '../../services/visitService';
 import { spaceService } from '../../services/spaceService';
+import { api } from '../../lib/api';
 import {
   Users, Lock, AlertCircle, Clock, MapPin,
   TrendingUp, ChevronRight
@@ -110,6 +111,7 @@ export default function Dashboard() {
   }, [chartData]);
 
   if (error) {
+    console.error("Dashboard error:", error);
     return (
       <div className="p-8 max-w-7xl mx-auto">
         <div className="bg-red-50 border border-red-200 rounded-2xl p-8 text-center">
