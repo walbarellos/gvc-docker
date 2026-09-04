@@ -106,3 +106,20 @@ export function useUpdateStatusAgendamento() {
 
   return { updateStatus, loading, error };
 }
+export function useUpdateAgendamento() {
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  const update = async (id: string, payload: any) => {
+    setLoading(true);
+    setError(null);
+    const { data, error: updateError } = await agendamentoService.update(id, payload);
+    setLoading(false);
+    if (updateError) {
+      setError(updateError.message);
+      throw new Error(updateError.message);
+    }
+    return data;
+  };
+  return { update, loading, error };
+}

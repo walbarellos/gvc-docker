@@ -20,7 +20,7 @@ import {
 } from 'lucide-react';
 import { useAuth } from '../../contexts/AuthContext';
 import { useAgendamentos, useDashboardAgendamentos } from '../../hooks/useAgendamentos';
-import { useUpdateStatusAgendamento } from '../../hooks/useAgendamentos';
+import { useUpdateStatusAgendamento, useUpdateAgendamento } from '../../hooks/useAgendamentos';
 import { spaceService, Space } from '../../services/spaceService';
 import { agendamentoService } from '../../services/agendamentoService';
 import type { Agendamento } from '../../services/agendamentoService';
@@ -127,6 +127,7 @@ export default function Agendamento() {
   });
 
   const { updateStatus, loading: updatingStatus } = useUpdateStatusAgendamento();
+  const { update: updateAgendamento } = useUpdateAgendamento();
 
   React.useEffect(() => {
     const loadSpaces = async () => {
@@ -173,8 +174,32 @@ export default function Agendamento() {
     return timeStr.slice(0, 5);
   };
 
-  const handleStatusChange = async (id: string, status: 'aprovado' | 'rejeitado', resposta?: string) => {
-    const { error } = await updateStatus(id, status, resposta);
+  const handleStatusChange = async (id: string, status: string, resposta?: string) => {
+    if (status === 'editar') {
+      try {
+        const payload = JSON.parse(resposta || '{}');
+        await updateAgendamento(id, payload);
+        showToast('Agendamento Atualizado', 'O agendamento foi corrigido com sucesso.', 'success');
+        refetch();
+        
+        await api.post('/agendamentos/notificar', {
+          tipo: 'edicao',
+          email_destino: selectedAgendamento?.solicitanteEmail,
+          nome_destino: selectedAgendamento?.solicitanteNome,
+          detalhes: {
+            espaco: selectedAgendamento?.espacoSolicitado,
+            data: formatDate(payload.dataPretendida || selectedAgendamento?.dataPretendida || ''),
+            horario: `${formatTime(payload.horarioInicio || selectedAgendamento?.horarioInicio || '')} - ${formatTime(payload.horarioFim || selectedAgendamento?.horarioFim || '')}`,
+            resposta_coordenador: 'Foram feitas correções administrativas nos dados da sua reserva.'
+          }
+        });
+      } catch (err) {
+        showToast('Erro ao atualizar', 'Falha ao editar agendamento', 'error');
+      }
+      return;
+    }
+
+    const { error } = await updateStatus(id, status as any, resposta);
     if (error) {
       showToast('Erro ao atualizar', error.message, 'error');
       return;

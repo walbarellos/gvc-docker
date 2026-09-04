@@ -86,6 +86,13 @@ export default function AgendamentoDetalhesModal({
   const [resposta, setResposta] = useState('');
   const [showConfirm, setShowConfirm] = useState<'aprovar' | 'rejeitar' | null>(null);
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
+  const [isEditing, setIsEditing] = useState(false);
+  const [editData, setEditData] = useState<any>({});
+  
+  const handleEditSave = () => {
+    onStatusChange(agendamento.id!, 'editar' as any, JSON.stringify(editData));
+    setIsEditing(false);
+  };
 
   const formatDate = (dateStr: string) => {
     if (!dateStr) return '-';
@@ -230,15 +237,33 @@ export default function AgendamentoDetalhesModal({
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4 text-sm">
               <div className="bg-white rounded-xl p-4">
                 <p className="text-slate-500 mb-1">Data</p>
-                <p className="font-semibold text-slate-900">{formatDate(agendamento.dataPretendida)}</p>
+                {isEditing ? (
+                  <input type="date" className="border rounded p-1 w-full" value={editData.dataPretendida?.split('T')[0] || ''} onChange={e => setEditData({...editData, dataPretendida: e.target.value + 'T00:00:00.000Z'})} />
+                ) : (
+                  <p className="font-semibold text-slate-900">{formatDate(agendamento.dataPretendida)}</p>
+                )}
               </div>
               <div className="bg-white rounded-xl p-4">
                 <p className="text-slate-500 mb-1">Início</p>
-                <p className="font-semibold text-slate-900">{formatTime(agendamento.horarioInicio)}</p>
+                {isEditing ? (
+                  <input type="time" className="border rounded p-1 w-full" value={editData.horarioInicio?.split('T')[1]?.substring(0,5) || ''} onChange={e => {
+                    const baseDate = editData.dataPretendida ? editData.dataPretendida.split('T')[0] : '2024-01-01';
+                    setEditData({...editData, horarioInicio: baseDate + 'T' + e.target.value + ':00.000Z'});
+                  }} />
+                ) : (
+                  <p className="font-semibold text-slate-900">{formatTime(agendamento.horarioInicio)}</p>
+                )}
               </div>
               <div className="bg-white rounded-xl p-4">
                 <p className="text-slate-500 mb-1">Fim</p>
-                <p className="font-semibold text-slate-900">{formatTime(agendamento.horarioFim)}</p>
+                {isEditing ? (
+                  <input type="time" className="border rounded p-1 w-full" value={editData.horarioFim?.split('T')[1]?.substring(0,5) || ''} onChange={e => {
+                    const baseDate = editData.dataPretendida ? editData.dataPretendida.split('T')[0] : '2024-01-01';
+                    setEditData({...editData, horarioFim: baseDate + 'T' + e.target.value + ':00.000Z'});
+                  }} />
+                ) : (
+                  <p className="font-semibold text-slate-900">{formatTime(agendamento.horarioFim)}</p>
+                )}
               </div>
             </div>
           </div>
@@ -329,7 +354,12 @@ export default function AgendamentoDetalhesModal({
 
         {agendamento.status === 'pendente' && (
           <div className="sticky bottom-0 bg-white border-t border-slate-100 px-8 py-6 flex items-center justify-end gap-4 rounded-b-3xl">
-            {showConfirm ? (
+            {isEditing ? (
+              <>
+                <button onClick={() => setIsEditing(false)} className="px-6 py-3 border border-slate-200 rounded-xl font-medium text-slate-600 hover:bg-slate-50 transition-colors">Cancelar</button>
+                <button onClick={handleEditSave} disabled={loading} className="px-6 py-3 bg-blue-600 hover:bg-blue-700 rounded-xl font-medium text-white transition-colors">Salvar Edição</button>
+              </>
+            ) : showConfirm ? (
               <>
                 <button
                   onClick={() => setShowConfirm(null)}
@@ -352,6 +382,14 @@ export default function AgendamentoDetalhesModal({
               </>
             ) : (
               <>
+                <button
+                  onClick={() => { setIsEditing(true); setEditData(agendamento); }}
+                  className="px-6 py-3 bg-blue-600 text-white rounded-xl font-medium hover:bg-blue-700 transition-colors flex items-center gap-2"
+                  disabled={loading}
+                >
+                  <FileText size={18} />
+                  Editar
+                </button>
                 <button
                   onClick={() => setShowConfirm('rejeitar')}
                   className="px-6 py-3 bg-red-600 text-white rounded-xl font-medium hover:bg-red-700 transition-colors flex items-center gap-2"

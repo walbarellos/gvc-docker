@@ -106,3 +106,30 @@ export function buildRecebidoEmailHtml(nome: string, espaco: string, data: strin
     </div>
   `;
 }
+
+export function buildEditionEmailHtml(nome: string, espaco: string, data: string, horario: string, resposta: string) {
+  return `
+    <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; color: #333;">
+      <h2 style="color: #2563eb;">Agendamento Atualizado</h2>
+      <p>Olá, <strong>${nome}</strong>.</p>
+      <p>Sua solicitação de agendamento de espaço cultural foi <strong>editada e corrigida</strong> pelo Coordenador do espaço.</p>
+      
+      <div style="background-color: #f8fafc; padding: 15px; border-radius: 8px; margin-bottom: 20px;">
+        <p><strong>Novos Dados do Agendamento:</strong></p>
+        <p><strong>Espaço:</strong> ${espaco}</p>
+        <p><strong>Data:</strong> ${data}</p>
+        <p><strong>Horário:</strong> ${horario}</p>
+      </div>
+
+      ${resposta ? `
+        <div style="border-left: 4px solid #2563eb; padding-left: 15px; margin-bottom: 20px;">
+          <p><strong>Mensagem do Coordenador sobre a correção:</strong></p>
+          <p><em>${resposta}</em></p>
+        </div>
+      ` : ''}
+
+      <p>Atenciosamente,</p>
+      <p>Fundação de Cultura Elias Mansour - FEM</p>
+    </div>
+  `;
+}

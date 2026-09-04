@@ -79,6 +79,11 @@ export const agendamentoService = {
     return { data, error };
   },
 
+  async update(id: string, payload: Partial<Agendamento>) {
+    const { data, error } = await api.put<Agendamento>(`/agendamentos/${id}`, payload);
+    return { data, error };
+  },
+
   async updateStatus(
     id: string,
     status: 'aprovado' | 'rejeitado' | 'cancelado',
