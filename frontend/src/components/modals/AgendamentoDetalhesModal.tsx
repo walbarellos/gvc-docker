@@ -352,8 +352,7 @@ export default function AgendamentoDetalhesModal({
           )}
         </div>
 
-        {agendamento.status === 'pendente' && (
-          <div className="sticky bottom-0 bg-white border-t border-slate-100 px-8 py-6 flex items-center justify-end gap-4 rounded-b-3xl">
+        <div className="sticky bottom-0 bg-white border-t border-slate-100 px-8 py-6 flex items-center justify-end gap-4 rounded-b-3xl">
             {isEditing ? (
               <>
                 <button onClick={() => setIsEditing(false)} className="px-6 py-3 border border-slate-200 rounded-xl font-medium text-slate-600 hover:bg-slate-50 transition-colors">Cancelar</button>
@@ -382,35 +381,39 @@ export default function AgendamentoDetalhesModal({
               </>
             ) : (
               <>
-                <button
-                  onClick={() => { setIsEditing(true); setEditData(agendamento); }}
-                  className="px-6 py-3 bg-blue-600 text-white rounded-xl font-medium hover:bg-blue-700 transition-colors flex items-center gap-2"
-                  disabled={loading}
-                >
-                  <FileText size={18} />
-                  Editar
-                </button>
-                <button
-                  onClick={() => setShowConfirm('rejeitar')}
-                  className="px-6 py-3 bg-red-600 text-white rounded-xl font-medium hover:bg-red-700 transition-colors flex items-center gap-2"
-                  disabled={loading}
-                >
-                  <XCircle size={18} />
-                  Rejeitar
-                </button>
-                <button
-                  onClick={() => setShowConfirm('aprovar')}
-                  className="px-6 py-3 bg-emerald-600 text-white rounded-xl font-medium hover:bg-emerald-700 transition-colors flex items-center gap-2"
-                  disabled={loading}
-                >
-                  <CheckCircle size={18} />
-                  Aprovar
-                </button>
+                {(agendamento.status === 'pendente' || agendamento.status === 'aprovado') && (
+                  <button
+                    onClick={() => { setIsEditing(true); setEditData(agendamento); }}
+                    className="px-6 py-3 bg-blue-600 text-white rounded-xl font-medium hover:bg-blue-700 transition-colors flex items-center gap-2"
+                    disabled={loading}
+                  >
+                    <FileText size={18} />
+                    Editar
+                  </button>
+                )}
+                {agendamento.status === 'pendente' && (
+                  <>
+                    <button
+                      onClick={() => setShowConfirm('rejeitar')}
+                      className="px-6 py-3 bg-red-600 text-white rounded-xl font-medium hover:bg-red-700 transition-colors flex items-center gap-2"
+                      disabled={loading}
+                    >
+                      <XCircle size={18} />
+                      Rejeitar
+                    </button>
+                    <button
+                      onClick={() => setShowConfirm('aprovar')}
+                      className="px-6 py-3 bg-emerald-600 text-white rounded-xl font-medium hover:bg-emerald-700 transition-colors flex items-center gap-2"
+                      disabled={loading}
+                    >
+                      <CheckCircle size={18} />
+                      Aprovar
+                    </button>
+                  </>
+                )}
               </>
             )}
-            
           </div>
-        )}
       </div>
     </div>
   );
