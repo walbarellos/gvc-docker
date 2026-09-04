@@ -13,8 +13,8 @@ export async function assinaturaRoutes(app: FastifyInstance) {
     });
   });
 
-  // Criar
-  app.post('/', { preHandler: [app.authenticate, requireRole('monitor')] }, async (request: any, reply: any) => {
+  // Criar (Público)
+  app.post('/', async (request: any, reply: any) => {
     const parsed = validateBody(createAssinaturaBodySchema, request.body);
     if (!parsed.success) {
       return reply.status(400).send({ error: 'Dados inválidos', details: parsed.error?.details });

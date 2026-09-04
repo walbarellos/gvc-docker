@@ -19,32 +19,32 @@ import {
 interface AgendamentoDetalhesModalProps {
   agendamento: {
     id?: string;
-    solicitante_nome: string;
-    solicitante_email: string;
-    solicitante_telefone: string;
-    solicitante_documento?: string;
-    tipo_solicitante: string;
-    tipo_espaco: string;
-    espaco_solicitado: string;
-    data_pretendida: string;
-    horario_inicio: string;
-    horario_fim: string;
-    numero_participantes: number;
-    descricao_evento: string;
-    natureza_evento: string;
+    // camelCase — como a API retorna após conversão automática
+    solicitanteNome: string;
+    solicitanteEmail: string;
+    solicitanteTelefone: string;
+    solicitanteDocumento?: string;
+    tipoSolicitante: string;
+    tipoEspaco: string;
+    espacoSolicitado: string;
+    dataPretendida: string;
+    horarioInicio: string;
+    horarioFim: string;
+    numeroParticipantes: number;
+    descricaoEvento: string;
+    naturezaEvento: string;
     gratuito: boolean;
-    valor_ingresso?: number | null;
-    necessita_equipamentos?: string;
+    valorIngresso?: number | null;
+    necessitaEquipamentos?: string;
     observacoes?: string;
     status?: string;
-    termo_aceito: boolean;
+    termoAceito: boolean;
     responsabilidadeEvento?: boolean;
-    danos_patrimonio?: boolean;
-    respeito_lotacao?: boolean;
-    autorizo_divulgacao?: boolean;
-    documento_anexo_url?: string;
-    resposta_coordenador?: string;
-    espacos?: { nome: string; municipio: string };
+    danosPatrimonio?: boolean;
+    respeitoLotacao?: boolean;
+    autorizoDivulgacao?: boolean;
+    documentoAnexoUrl?: string;
+    respostaCoordenador?: string;
   };
   onClose: () => void;
   onStatusChange: (id: string, status: 'aprovado' | 'rejeitado', resposta?: string) => void;
@@ -100,7 +100,37 @@ export default function AgendamentoDetalhesModal({
 
   const formatTime = (timeStr: string) => {
     if (!timeStr) return '-';
+    if (timeStr.includes('T')) {
+      const d = new Date(timeStr);
+      return d.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit', timeZone: 'America/Rio_Branco' });
+    }
     return timeStr.slice(0, 5);
+  };
+
+  const formatPhone = (phone: string) => {
+    if (!phone) return '-';
+    const cleaned = phone.replace(/\D/g, '');
+    if (cleaned.length === 11) {
+      return `(${cleaned.substring(0, 2)}) ${cleaned.substring(2, 7)}-${cleaned.substring(7, 11)}`;
+    }
+    if (cleaned.length === 10) {
+      return `(${cleaned.substring(0, 2)}) ${cleaned.substring(2, 6)}-${cleaned.substring(6, 10)}`;
+    }
+    return phone;
+  };
+
+  const formatDoc = (doc: string) => {
+    if (!doc) return '-';
+    const cleaned = doc.replace(/\D/g, '');
+    if (cleaned.length === 11) {
+      // CPF
+      return cleaned.replace(/(\d{3})(\d{3})(\d{3})(\d{2})/, '$1.$2.$3-$4');
+    }
+    if (cleaned.length === 14) {
+      // CNPJ
+      return cleaned.replace(/(\d{2})(\d{3})(\d{3})(\d{4})(\d{2})/, '$1.$2.$3/$4-$5');
+    }
+    return doc;
   };
 
   const handleConfirm = () => {
@@ -147,24 +177,24 @@ export default function AgendamentoDetalhesModal({
               <div className="space-y-3 text-sm">
                 <p>
                   <span className="text-indigo-700 font-medium">Nome:</span>{' '}
-                  <span className="text-slate-700">{agendamento.solicitante_nome}</span>
+                  <span className="text-slate-700">{agendamento.solicitanteNome}</span>
                 </p>
                 <p>
                   <span className="text-indigo-700 font-medium">Tipo:</span>{' '}
-                  <span className="text-slate-700">{tipoSolicitanteLabels[agendamento.tipo_solicitante] || agendamento.tipo_solicitante}</span>
+                  <span className="text-slate-700">{tipoSolicitanteLabels[agendamento.tipoSolicitante] || agendamento.tipoSolicitante}</span>
                 </p>
                 <p className="flex items-center gap-2">
                   <Mail size={14} className="text-indigo-500" />
-                  <span className="text-slate-700">{agendamento.solicitante_email}</span>
+                  <span className="text-slate-700">{agendamento.solicitanteEmail}</span>
                 </p>
                 <p className="flex items-center gap-2">
                   <Phone size={14} className="text-indigo-500" />
-                  <span className="text-slate-700">{agendamento.solicitante_telefone}</span>
+                  <span className="text-slate-700">{formatPhone(agendamento.solicitanteTelefone)}</span>
                 </p>
-                {agendamento.solicitante_documento && (
+                {agendamento.solicitanteDocumento && (
                   <p>
                     <span className="text-indigo-700 font-medium">Doc:</span>{' '}
-                    <span className="text-slate-700">{agendamento.solicitante_documento}</span>
+                    <span className="text-slate-700">{formatDoc(agendamento.solicitanteDocumento)}</span>
                   </p>
                 )}
               </div>
@@ -178,21 +208,15 @@ export default function AgendamentoDetalhesModal({
               <div className="space-y-3 text-sm">
                 <p>
                   <span className="text-emerald-700 font-medium">Espaço:</span>{' '}
-                  <span className="text-slate-700">{agendamento.espaco_solicitado}</span>
+                  <span className="text-slate-700">{agendamento.espacoSolicitado}</span>
                 </p>
                 <p>
                   <span className="text-emerald-700 font-medium">Tipo:</span>{' '}
-                  <span className="text-slate-700">{tipoEspacoLabels[agendamento.tipo_espaco] || agendamento.tipo_espaco}</span>
+                  <span className="text-slate-700">{tipoEspacoLabels[agendamento.tipoEspaco] || agendamento.tipoEspaco}</span>
                 </p>
-                {agendamento.espacos && (
-                  <p>
-                    <span className="text-emerald-700 font-medium">Local:</span>{' '}
-                    <span className="text-slate-700">{agendamento.espacos.nome}</span>
-                  </p>
-                )}
                 <p className="flex items-center gap-2">
                   <Users size={14} className="text-emerald-500" />
-                  <span className="text-slate-700">{agendamento.numero_participantes} participantes</span>
+                  <span className="text-slate-700">{agendamento.numeroParticipantes} participantes</span>
                 </p>
               </div>
             </div>
@@ -206,15 +230,15 @@ export default function AgendamentoDetalhesModal({
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4 text-sm">
               <div className="bg-white rounded-xl p-4">
                 <p className="text-slate-500 mb-1">Data</p>
-                <p className="font-semibold text-slate-900">{formatDate(agendamento.data_pretendida)}</p>
+                <p className="font-semibold text-slate-900">{formatDate(agendamento.dataPretendida)}</p>
               </div>
               <div className="bg-white rounded-xl p-4">
                 <p className="text-slate-500 mb-1">Início</p>
-                <p className="font-semibold text-slate-900">{formatTime(agendamento.horario_inicio)}</p>
+                <p className="font-semibold text-slate-900">{formatTime(agendamento.horarioInicio)}</p>
               </div>
               <div className="bg-white rounded-xl p-4">
                 <p className="text-slate-500 mb-1">Fim</p>
-                <p className="font-semibold text-slate-900">{formatTime(agendamento.horario_fim)}</p>
+                <p className="font-semibold text-slate-900">{formatTime(agendamento.horarioFim)}</p>
               </div>
             </div>
           </div>
@@ -228,23 +252,23 @@ export default function AgendamentoDetalhesModal({
               <div className="grid grid-cols-2 gap-4">
                 <div>
                   <p className="text-slate-500 mb-1">Natureza</p>
-                  <p className="font-medium text-slate-900">{naturezaLabels[agendamento.natureza_evento] || agendamento.natureza_evento}</p>
+                  <p className="font-medium text-slate-900">{naturezaLabels[agendamento.naturezaEvento] || agendamento.naturezaEvento}</p>
                 </div>
                 <div>
                   <p className="text-slate-500 mb-1">Valor</p>
                   <p className="font-medium text-slate-900">
-                    {agendamento.gratuito ? 'Gratuito' : `R$ ${agendamento.valor_ingresso?.toFixed(2)}`}
+                    {agendamento.gratuito ? 'Gratuito' : `R$ ${agendamento.valorIngresso?.toFixed(2)}`}
                   </p>
                 </div>
               </div>
               <div>
                 <p className="text-slate-500 mb-1">Descrição do Evento</p>
-                <p className="text-slate-900">{agendamento.descricao_evento}</p>
+                <p className="text-slate-900">{agendamento.descricaoEvento}</p>
               </div>
-              {agendamento.necessita_equipamentos && (
+              {agendamento.necessitaEquipamentos && (
                 <div>
                   <p className="text-slate-500 mb-1">Equipamentos Necessários</p>
-                  <p className="text-slate-900">{agendamento.necessita_equipamentos}</p>
+                  <p className="text-slate-900">{agendamento.necessitaEquipamentos}</p>
                 </div>
               )}
               {agendamento.observacoes && (
@@ -259,20 +283,20 @@ export default function AgendamentoDetalhesModal({
           <div className="bg-slate-50 rounded-2xl p-6">
             <h3 className="font-semibold text-slate-900 mb-4">Termos Aceitos</h3>
             <div className="grid grid-cols-2 gap-3">
-              <div className={`flex items-center gap-2 p-3 rounded-xl ${agendamento.termo_aceito ? 'bg-emerald-50 text-emerald-700' : 'bg-red-50 text-red-700'}`}>
-                {agendamento.termo_aceito ? <CheckCircle size={16} /> : <XCircle size={16} />}
+              <div className={`flex items-center gap-2 p-3 rounded-xl ${agendamento.termoAceito ? 'bg-emerald-50 text-emerald-700' : 'bg-red-50 text-red-700'}`}>
+                {agendamento.termoAceito ? <CheckCircle size={16} /> : <XCircle size={16} />}
                 <span className="text-sm font-medium">Termo da Portaria 169/2023</span>
               </div>
               <div className={`flex items-center gap-2 p-3 rounded-xl ${agendamento.responsabilidadeEvento ? 'bg-emerald-50 text-emerald-700' : 'bg-red-50 text-red-700'}`}>
                 {agendamento.responsabilidadeEvento ? <CheckCircle size={16} /> : <XCircle size={16} />}
                 <span className="text-sm font-medium">Responsabilidade pelo evento</span>
               </div>
-              <div className={`flex items-center gap-2 p-3 rounded-xl ${agendamento.danos_patrimonio ? 'bg-emerald-50 text-emerald-700' : 'bg-red-50 text-red-700'}`}>
-                {agendamento.danos_patrimonio ? <CheckCircle size={16} /> : <XCircle size={16} />}
+              <div className={`flex items-center gap-2 p-3 rounded-xl ${agendamento.danosPatrimonio ? 'bg-emerald-50 text-emerald-700' : 'bg-red-50 text-red-700'}`}>
+                {agendamento.danosPatrimonio ? <CheckCircle size={16} /> : <XCircle size={16} />}
                 <span className="text-sm font-medium">Responsabilidade por danos</span>
               </div>
-              <div className={`flex items-center gap-2 p-3 rounded-xl ${agendamento.respeito_lotacao ? 'bg-emerald-50 text-emerald-700' : 'bg-red-50 text-red-700'}`}>
-                {agendamento.respeito_lotacao ? <CheckCircle size={16} /> : <XCircle size={16} />}
+              <div className={`flex items-center gap-2 p-3 rounded-xl ${agendamento.respeitoLotacao ? 'bg-emerald-50 text-emerald-700' : 'bg-red-50 text-red-700'}`}>
+                {agendamento.respeitoLotacao ? <CheckCircle size={16} /> : <XCircle size={16} />}
                 <span className="text-sm font-medium">Respeito à lotação máxima</span>
               </div>
             </div>
@@ -293,12 +317,12 @@ export default function AgendamentoDetalhesModal({
             </div>
           )}
 
-          {agendamento.status !== 'pendente' && agendamento.resposta_coordenador && (
+          {agendamento.status !== 'pendente' && agendamento.respostaCoordenador && (
             <div className={`border rounded-2xl p-6 ${agendamento.status === 'aprovado' ? 'bg-emerald-50 border-emerald-200' : 'bg-red-50 border-red-200'}`}>
               <h3 className={`font-semibold mb-2 ${agendamento.status === 'aprovado' ? 'text-emerald-900' : 'text-red-900'}`}>
                 Resposta do Coordenador
               </h3>
-              <p className="text-sm text-slate-700">{agendamento.resposta_coordenador}</p>
+              <p className="text-sm text-slate-700">{agendamento.respostaCoordenador}</p>
             </div>
           )}
         </div>

@@ -15,6 +15,8 @@ import {
   Eye,
   FileText,
   Trash2,
+  Check,
+  X,
 } from 'lucide-react';
 import { useAuth } from '../../contexts/AuthContext';
 import { useAgendamentos, useDashboardAgendamentos } from '../../hooks/useAgendamentos';
@@ -102,6 +104,12 @@ export default function Agendamento() {
   const [statusFilter, setStatusFilter] = useState<string>('');
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedAgendamento, setSelectedAgendamento] = useState<Agendamento | null>(null);
+  const [toastMessage, setToastMessage] = useState<{title: string, desc: string, type: 'success'|'error'} | null>(null);
+
+  const showToast = (title: string, desc: string, type: 'success' | 'error' = 'success') => {
+    setToastMessage({ title, desc, type });
+    setTimeout(() => setToastMessage(null), 5000);
+  };
   const [currentPage, setCurrentPage] = useState(1);
   const [spaces, setSpaces] = useState<Space[]>([]);
   const itemsPerPage = 10;
@@ -157,48 +165,52 @@ export default function Agendamento() {
 
   const formatTime = (timeStr: string) => {
     if (!timeStr) return '-';
+    // Handle ISO datetime (e.g. "2026-09-22T12:00:00.000Z") or plain "HH:MM"
+    if (timeStr.includes('T')) {
+      const d = new Date(timeStr);
+      return d.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit', timeZone: 'America/Rio_Branco' });
+    }
     return timeStr.slice(0, 5);
   };
 
   const handleStatusChange = async (id: string, status: 'aprovado' | 'rejeitado', resposta?: string) => {
     const { error } = await updateStatus(id, status, resposta);
     if (error) {
-      alert('Erro ao atualizar status: ' + error.message);
+      showToast('Erro ao atualizar', error.message, 'error');
       return;
     }
     if (!error) {
+      showToast('Sucesso!', `Agendamento ${status} com sucesso.`, 'success');
       refetch();
       const { error: notifyError } = await api.post('/agendamentos/notificar', {
         tipo: status === 'aprovado' ? 'aprovacao' : 'rejeicao',
         email_destino: selectedAgendamento?.solicitanteEmail,
         nome_destino: selectedAgendamento?.solicitanteNome,
-        agendamento_id: id,
-        dados: {
+        detalhes: {
           espaco: selectedAgendamento?.espacoSolicitado,
           data: formatDate(selectedAgendamento?.dataPretendida || ''),
           horario: `${formatTime(selectedAgendamento?.horarioInicio || '')} - ${formatTime(selectedAgendamento?.horarioFim || '')}`,
-          motivo: resposta,
-        },
+          resposta_coordenador: resposta
+        }
       });
       if (notifyError) {
-        console.error('Erro ao enviar notificação:', notifyError.message);
+        console.error('Erro ao notificar cidadão:', notifyError);
       }
+      setSelectedAgendamento(null);
     }
-    setSelectedAgendamento(null);
   };
 
   const handleDelete = async (id: string) => {
-    if (!confirm('Tem certeza que deseja excluir este agendamento? Esta ação não pode ser desfeita.')) {
-      return;
-    }
+    if (!window.confirm('Tem certeza que deseja excluir este agendamento?')) return;
     
-    const { error } = await api.delete(`/agendamentos/${id}`);
-    
-    if (!error) {
-      refetch();
+    try {
+      const { error } = await api.delete(`/agendamentos/${id}`);
+      if (error) throw error;
+      showToast('Agendamento excluído', 'O agendamento foi removido permanentemente.', 'success');
       setSelectedAgendamento(null);
-    } else {
-      alert('Erro ao excluir agendamento: ' + error.message);
+      refetch();
+    } catch (error: any) {
+      showToast('Erro ao excluir', error.message || 'Erro desconhecido', 'error');
     }
   };
 
@@ -501,9 +513,22 @@ export default function Agendamento() {
           agendamento={selectedAgendamento}
           onClose={() => setSelectedAgendamento(null)}
           onStatusChange={handleStatusChange}
-          onDelete={handleDelete}
           loading={updatingStatus}
         />
+      )}
+
+      {/* Toast Notification (Miro-pop-up) */}
+      {toastMessage && (
+        <div className={`fixed bottom-6 right-6 p-4 rounded-xl shadow-2xl z-50 flex items-start gap-3 transform transition-all duration-300 animate-in slide-in-from-bottom-5 ${toastMessage.type === 'success' ? 'bg-emerald-600 text-white' : 'bg-red-600 text-white'}`}>
+          {toastMessage.type === 'success' ? <CheckCircle className="shrink-0 mt-0.5" size={20} /> : <AlertTriangle className="shrink-0 mt-0.5" size={20} />}
+          <div className="mr-4">
+            <h4 className="font-bold text-sm">{toastMessage.title}</h4>
+            <p className="text-sm opacity-90">{toastMessage.desc}</p>
+          </div>
+          <button onClick={() => setToastMessage(null)} className="p-1 hover:bg-white/20 rounded-lg transition-colors absolute right-2 top-3">
+            <X size={16} />
+          </button>
+        </div>
       )}
     </div>
   );

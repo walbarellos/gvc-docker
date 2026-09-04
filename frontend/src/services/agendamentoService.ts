@@ -87,7 +87,6 @@ export const agendamentoService = {
     const { data, error } = await api.put<Agendamento>(`/agendamentos/${id}/resposta`, {
       status,
       resposta_coordenador: resposta,
-      respondido_em: new Date().toISOString(),
     });
     return { data, error };
   },

@@ -37,6 +37,13 @@ services:
       BRASIL_API_URL: ${BRASIL_API_URL:-https://brasilapi.com.br/api/cpf/v1}
       TZ: America/Rio_Branco
       SENTRY_DSN: ${SENTRY_DSN:-}
+      # E-mail (Zimbra FEM)
+      SMTP_HOST: ${SMTP_HOST}
+      SMTP_PORT: ${SMTP_PORT}
+      SMTP_USER: ${SMTP_USER}
+      SMTP_PASS: ${SMTP_PASS}
+      SMTP_SECURE: ${SMTP_SECURE}
+      SMTP_SENDER_NAME: ${SMTP_SENDER_NAME}
     # API não exposta publicamente — acesso só via proxy do frontend (nginx)
     # ports:
     #   - "${API_PORT:-3001}:3001"

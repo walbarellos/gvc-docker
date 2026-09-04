@@ -433,8 +433,16 @@ if (parsed && (parsed.solicitante_nome || parsed.espaco_id)) {
     
     // Converter horários para minutos para calcular folga de 10min
     const toMinutes = (time: string) => {
-      const [h, m] = time.split(':').map(Number);
-      return (h ?? 0) * 60 + (m ?? 0);
+      if (!time) return 0;
+      let hStr = '';
+      let mStr = '';
+      if (time.includes('T')) {
+        const d = new Date(time);
+        return d.getHours() * 60 + d.getMinutes();
+      } else {
+        [hStr, mStr] = time.split(':');
+      }
+      return Number(hStr || 0) * 60 + Number(mStr || 0);
     };
     
     const inicioMin = toMinutes(formData.horario_inicio);
@@ -454,8 +462,8 @@ if (parsed && (parsed.solicitante_nome || parsed.espaco_id)) {
         return false;
       }
       
-      const agInicio = toMinutes(ag.horario_inicio);
-      const agFim = toMinutes(ag.horario_fim);
+      const agInicio = toMinutes(ag.horarioInicio || ag.horario_inicio);
+      const agFim = toMinutes(ag.horarioFim || ag.horario_fim);
       
       // Verificar sobreposição com 10min de folga
       const novoInicio = inicioMin - intervaloMin;
@@ -753,10 +761,10 @@ try {
           </div>
           
           <h1 className="text-3xl font-display font-bold text-slate-900 mt-6 mb-2">
-            Confirme seu E-mail!
+            Solicitação Recebida com Sucesso!
           </h1>
           <p className="text-slate-600 mb-6">
-            Sua solicitação foi recebida. <strong>Enviamos um link de confirmação para o seu e-mail.</strong> Você precisa clicar neste link para que seu agendamento seja validado e enviado para análise.
+            Sua solicitação foi enviada para a nossa equipe. <strong>Você receberá um e-mail de notificação</strong> assim que seu agendamento for analisado e aprovado.
           </p>
           
           <div className="bg-slate-100 rounded-2xl p-4 mb-6 border border-blue-100">

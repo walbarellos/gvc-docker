@@ -71,6 +71,26 @@ const publicCadastroSchema = z.object({
 });
 
 export async function publicRoutes(app: FastifyInstance) {
+  // Estatísticas públicas de agendamentos (apenas contagens)
+  app.get('/agendamentos/stats', async (request: any) => {
+    const { espaco_id } = request.query as any;
+
+    const where: any = {};
+    if (espaco_id) {
+      where.espacoId = espaco_id;
+    }
+
+    const [total, pendentes, aprovados, rejeitados, cancelados] = await Promise.all([
+      prisma.agendamento.count({ where }),
+      prisma.agendamento.count({ where: { ...where, status: 'pendente' } }),
+      prisma.agendamento.count({ where: { ...where, status: 'aprovado' } }),
+      prisma.agendamento.count({ where: { ...where, status: 'rejeitado' } }),
+      prisma.agendamento.count({ where: { ...where, status: 'cancelado' } }),
+    ]);
+
+    return { total, pendentes, aprovados, rejeitados, cancelados };
+  });
+
   app.get('/agendamentos/disponibilidade', async (request: any, reply: any) => {
     const { espaco_id, data } = request.query;
     if (!espaco_id || !data) return reply.status(400).send({ error: 'Faltam parametros' });

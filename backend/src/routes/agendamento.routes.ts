@@ -59,8 +59,8 @@ const publicAgendamentoSchema = z
       const n = Number(v);
       return isNaN(n) ? null : n;
     }),
-    necessita_equipamentos: z.string().max(1000).optional().nullable().transform(emptyToNull),
-    observacoes: z.string().max(2000).optional().nullable().transform(emptyToNull),
+    necessita_equipamentos: z.string().max(5000).optional().nullable().transform(emptyToNull),
+    observacoes: z.string().max(5000).optional().nullable().transform(emptyToNull),
     termo_aceito: z.boolean().default(false),
     termo_aceito_em: z.string().optional().nullable(),
     responsabilidade_evento: z.boolean().default(false),
@@ -216,8 +216,50 @@ function mapAgendamentoFields(data: any): any {
 
 export async function agendamentoRoutes(app: FastifyInstance) {
   app.post('/notificar', { preHandler: [app.authenticate, requireRole('monitor')] }, async (request: any, reply: any) => {
-    // just a mock endpoint since real email logic is probably elsewhere
-    return { success: true };
+    const { tipo, email_destino, nome_destino, detalhes } = request.body;
+    
+    if (!email_destino || !nome_destino) {
+      return reply.status(400).send({ error: 'E-mail e nome de destino são obrigatórios' });
+    }
+
+    try {
+      const { sendEmail, buildApprovalEmailHtml, buildRejectionEmailHtml } = await import('../services/emailService.js');
+      
+      let subject = '';
+      let html = '';
+
+      if (tipo === 'aprovacao') {
+        subject = 'Seu agendamento foi Aprovado!';
+        html = buildApprovalEmailHtml(
+          nome_destino,
+          detalhes?.espaco || '',
+          detalhes?.data || '',
+          detalhes?.horario || '',
+          detalhes?.resposta_coordenador || ''
+        );
+      } else if (tipo === 'rejeicao') {
+        subject = 'Atualização sobre seu Agendamento';
+        html = buildRejectionEmailHtml(
+          nome_destino,
+          detalhes?.espaco || '',
+          detalhes?.data || '',
+          detalhes?.resposta_coordenador || ''
+        );
+      } else {
+        return reply.status(400).send({ error: 'Tipo de notificação inválido' });
+      }
+
+      await sendEmail({
+        to: email_destino,
+        subject,
+        html
+      });
+
+      return { success: true };
+    } catch (error) {
+      console.error('Erro ao notificar:', error);
+      return reply.status(500).send({ error: 'Falha ao enviar e-mail' });
+    }
   });
 
   // Listar (com filtros)
@@ -284,9 +326,12 @@ export async function agendamentoRoutes(app: FastifyInstance) {
   app.post('/', async (request: any, reply: any) => {
     const parsed = publicAgendamentoSchema.safeParse(request.body);
     if (!parsed.success) {
+      const details = parsed.error.flatten();
+      const firstError = Object.entries(details.fieldErrors).map(([k, v]) => `${k}: ${v}`).join(', ');
+      console.error('Validation error on public agendamento:', JSON.stringify(details, null, 2));
       return reply.status(400).send({
-        error: 'Dados inválidos',
-        details: parsed.error.flatten(),
+        error: `Dados inválidos: ${firstError}`,
+        details: details,
       });
     }
 
@@ -404,6 +449,29 @@ export async function agendamentoRoutes(app: FastifyInstance) {
         createdAt: true,
       },
     });
+
+    // Enviar e-mail de "Solicitação Recebida" assincronamente (não bloqueia a resposta)
+    if (data.solicitante_email) {
+      import('../services/emailService.js').then(({ sendEmail, buildRecebidoEmailHtml }) => {
+        const hInicio = agendamento.horarioInicio ? agendamento.horarioInicio.toISOString().slice(11,16) : '';
+        const hFim = agendamento.horarioFim ? agendamento.horarioFim.toISOString().slice(11,16) : '';
+        const horarioFmt = `${hInicio} - ${hFim}`;
+        const dataFmt = agendamento.dataPretendida ? agendamento.dataPretendida.toISOString().slice(0,10).split('-').reverse().join('/') : '';
+        const protocolo = `GVC-${agendamento.createdAt.toISOString().slice(0,10).replace(/-/g,'')}-${agendamento.id.slice(0,4).toUpperCase()}`;
+
+        sendEmail({
+          to: data.solicitante_email,
+          subject: 'Solicitação de Agendamento Recebida - GVC',
+          html: buildRecebidoEmailHtml(
+            agendamento.solicitanteNome,
+            agendamento.espacoSolicitado,
+            dataFmt,
+            horarioFmt,
+            protocolo
+          )
+        }).catch(err => console.error('Falha ao enviar email de recebimento:', err));
+      });
+    }
 
     return reply.status(201).send(agendamento);
   });
@@ -630,7 +698,7 @@ const toRascunhoSnake = (raw: any): any => {
     if (!/^[a-zA-Z0-9_\-]{5,64}$/i.test(sessionId)) {
       return reply.status(400).send({ error: 'sessionId inválido' });
     }
-    await prisma.agendamentoRascunho.delete({ 
+    await prisma.agendamentoRascunho.deleteMany({ 
       where: { sessionId } 
     });
     return { success: true };
