@@ -335,11 +335,11 @@ export default function AgendamentoDetalhesModal({
             </div>
           </div>
 
-          {agendamento.status === 'pendente' && (
+          {(agendamento.status === 'pendente' || showConfirm) && (
             <div className="bg-amber-50 border border-amber-200 rounded-2xl p-6">
               <h3 className="font-semibold text-amber-900 mb-4 flex items-center gap-2">
                 <AlertTriangle size={18} />
-                Resposta do Coordenador
+                {showConfirm ? (showConfirm === 'aprovar' ? 'Observações da Aprovação' : 'Justificativa da Rejeição') : 'Resposta do Coordenador'}
               </h3>
               <textarea
                 value={resposta}
@@ -350,7 +350,7 @@ export default function AgendamentoDetalhesModal({
             </div>
           )}
 
-          {agendamento.status !== 'pendente' && agendamento.respostaCoordenador && (
+          {agendamento.status !== 'pendente' && agendamento.respostaCoordenador && !showConfirm && (
             <div className={`border rounded-2xl p-6 ${agendamento.status === 'aprovado' ? 'bg-emerald-50 border-emerald-200' : 'bg-red-50 border-red-200'}`}>
               <h3 className={`font-semibold mb-2 ${agendamento.status === 'aprovado' ? 'text-emerald-900' : 'text-red-900'}`}>
                 Resposta do Coordenador
@@ -397,25 +397,25 @@ export default function AgendamentoDetalhesModal({
                   <FileText size={18} />
                   Editar
                 </button>
-                {agendamento.status === 'pendente' && (
-                  <>
-                    <button
-                      onClick={() => setShowConfirm('rejeitar')}
-                      className="px-6 py-3 bg-red-600 text-white rounded-xl font-medium hover:bg-red-700 transition-colors flex items-center gap-2"
-                      disabled={loading}
-                    >
-                      <XCircle size={18} />
-                      Rejeitar
-                    </button>
-                    <button
-                      onClick={() => setShowConfirm('aprovar')}
-                      className="px-6 py-3 bg-emerald-600 text-white rounded-xl font-medium hover:bg-emerald-700 transition-colors flex items-center gap-2"
-                      disabled={loading}
-                    >
-                      <CheckCircle size={18} />
-                      Aprovar
-                    </button>
-                  </>
+                {agendamento.status !== 'rejeitado' && (
+                  <button
+                    onClick={() => setShowConfirm('rejeitar')}
+                    className="px-6 py-3 bg-red-600 text-white rounded-xl font-medium hover:bg-red-700 transition-colors flex items-center gap-2"
+                    disabled={loading}
+                  >
+                    <XCircle size={18} />
+                    Rejeitar
+                  </button>
+                )}
+                {agendamento.status !== 'aprovado' && (
+                  <button
+                    onClick={() => setShowConfirm('aprovar')}
+                    className="px-6 py-3 bg-emerald-600 text-white rounded-xl font-medium hover:bg-emerald-700 transition-colors flex items-center gap-2"
+                    disabled={loading}
+                  >
+                    <CheckCircle size={18} />
+                    Aprovar
+                  </button>
                 )}
               </>
             )}
