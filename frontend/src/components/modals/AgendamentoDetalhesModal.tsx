@@ -165,6 +165,8 @@ export default function AgendamentoDetalhesModal({
       onStatusChange(agendamento.id ?? '', 'aprovado', resposta || undefined);
     } else if (showConfirm === 'rejeitar') {
       onStatusChange(agendamento.id ?? '', 'rejeitado', resposta);
+    } else if (showConfirm === 'cancelar') {
+      onStatusChange(agendamento.id ?? '', 'cancelado', resposta);
     }
     setShowConfirm(null);
   };
