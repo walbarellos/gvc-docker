@@ -209,7 +209,7 @@ export default function Agendamento() {
       showToast('Sucesso!', `Agendamento ${status} com sucesso.`, 'success');
       refetch();
       const { error: notifyError } = await api.post('/agendamentos/notificar', {
-        tipo: status === 'aprovado' ? 'aprovacao' : 'rejeicao',
+        tipo: status === 'aprovado' ? 'aprovacao' : status === 'cancelado' ? 'cancelamento' : 'rejeicao',
         email_destino: selectedAgendamento?.solicitanteEmail,
         nome_destino: selectedAgendamento?.solicitanteNome,
         detalhes: {

@@ -224,7 +224,7 @@ export async function agendamentoRoutes(app: FastifyInstance) {
     }
 
     try {
-      const { sendEmail, buildApprovalEmailHtml, buildRejectionEmailHtml, buildEditionEmailHtml } = await import('../services/emailService.js');
+      const { sendEmail, buildApprovalEmailHtml, buildRejectionEmailHtml, buildEditionEmailHtml, buildCancellationEmailHtml } = await import('../services/emailService.js');
       
       let subject = '';
       let html = '';
@@ -241,6 +241,15 @@ export async function agendamentoRoutes(app: FastifyInstance) {
       } else if (tipo === 'edicao') {
         subject = 'Seu agendamento foi Atualizado e Corrigido';
         html = buildEditionEmailHtml(
+          nome_destino,
+          detalhes?.espaco || '',
+          detalhes?.data || '',
+          detalhes?.horario || '',
+          detalhes?.resposta_coordenador || ''
+        );
+      } else if (tipo === 'cancelamento') {
+        subject = 'Seu agendamento foi Cancelado';
+        html = buildCancellationEmailHtml(
           nome_destino,
           detalhes?.espaco || '',
           detalhes?.data || '',

@@ -84,7 +84,7 @@ export default function AgendamentoDetalhesModal({
   loading,
 }: AgendamentoDetalhesModalProps) {
   const [resposta, setResposta] = useState('');
-  const [showConfirm, setShowConfirm] = useState<'aprovar' | 'rejeitar' | null>(null);
+  const [showConfirm, setShowConfirm] = useState<'aprovar' | 'rejeitar' | 'cancelar' | null>(null);
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const [isEditing, setIsEditing] = useState(false);
   const [editData, setEditData] = useState<any>({});
@@ -401,12 +401,12 @@ export default function AgendamentoDetalhesModal({
             <div className="bg-amber-50 border border-amber-200 rounded-2xl p-6">
               <h3 className="font-semibold text-amber-900 mb-4 flex items-center gap-2">
                 <AlertTriangle size={18} />
-                {showConfirm ? (showConfirm === 'aprovar' ? 'Observações da Aprovação' : 'Justificativa da Rejeição') : 'Resposta do Coordenador'}
+                {showConfirm ? (showConfirm === 'aprovar' ? 'Observações da Aprovação' : showConfirm === 'cancelar' ? 'Motivo do Cancelamento' : 'Justificativa da Rejeição') : 'Resposta do Coordenador'}
               </h3>
               <textarea
                 value={resposta}
                 onChange={(e) => setResposta(e.target.value)}
-                placeholder={showConfirm === 'rejeitar' ? 'Justificativa obrigatória para rejeição...' : 'Observações (opcional)...'}
+                placeholder={showConfirm === 'rejeitar' ? 'Justificativa obrigatória para rejeição...' : showConfirm === 'cancelar' ? 'Justificativa para o cancelamento...' : 'Observações (opcional)...'}
                 className="w-full p-4 border border-amber-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-amber-500 min-h-[100px]"
               />
             </div>
@@ -447,10 +447,12 @@ export default function AgendamentoDetalhesModal({
                   className={`px-6 py-3 rounded-xl font-medium text-white transition-colors disabled:opacity-50 ${
                     showConfirm === 'aprovar'
                       ? 'bg-emerald-600 hover:bg-emerald-700'
+                      : showConfirm === 'cancelar'
+                      ? 'bg-slate-600 hover:bg-slate-700'
                       : 'bg-red-600 hover:bg-red-700'
                   }`}
                 >
-                  {loading ? 'Processando...' : showConfirm === 'aprovar' ? 'Confirmar Aprovação' : 'Confirmar Rejeição'}
+                  {loading ? 'Processando...' : showConfirm === 'aprovar' ? 'Confirmar Aprovação' : showConfirm === 'cancelar' ? 'Confirmar Cancelamento' : 'Confirmar Rejeição'}
                 </button>
               </>
             ) : (
@@ -463,7 +465,7 @@ export default function AgendamentoDetalhesModal({
                   <FileText size={18} />
                   Editar
                 </button>
-                {agendamento.status !== 'rejeitado' && (
+                {agendamento.status !== 'rejeitado' && agendamento.status !== 'cancelado' && (
                   <button
                     onClick={() => setShowConfirm('rejeitar')}
                     className="px-6 py-3 bg-red-600 text-white rounded-xl font-medium hover:bg-red-700 transition-colors flex items-center gap-2"
@@ -481,6 +483,16 @@ export default function AgendamentoDetalhesModal({
                   >
                     <CheckCircle size={18} />
                     Aprovar
+                  </button>
+                )}
+                {agendamento.status === 'aprovado' && (
+                  <button
+                    onClick={() => setShowConfirm('cancelar')}
+                    className="px-6 py-3 bg-slate-600 text-white rounded-xl font-medium hover:bg-slate-700 transition-colors flex items-center gap-2"
+                    disabled={loading}
+                  >
+                    <XCircle size={18} />
+                    Cancelar
                   </button>
                 )}
               </>

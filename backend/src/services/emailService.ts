@@ -133,3 +133,24 @@ export function buildEditionEmailHtml(nome: string, espaco: string, data: string
     </div>
   `;
 }
+
+export function buildCancellationEmailHtml(nome: string, espaco: string, data: string, horario: string, resposta: string) {
+  return `
+    <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; color: #333;">
+      <h2 style="color: #64748b;">Agendamento Cancelado</h2>
+      <p>Olá, <strong>${nome}</strong>.</p>
+      <p>O seu agendamento para o espaço <strong>${espaco}</strong> na data <strong>${data}</strong> foi <strong>cancelado</strong>.</p>
+      
+      ${resposta ? `
+        <div style="background-color: #f1f5f9; border: 1px solid #e2e8f0; padding: 15px; border-radius: 8px; margin-bottom: 20px;">
+          <p><strong>Motivo do cancelamento:</strong></p>
+          <p><em>${resposta}</em></p>
+        </div>
+      ` : ''}
+
+      <p>Em caso de dúvidas, por favor, entre em contato com a administração do espaço.</p>
+      <p>Atenciosamente,</p>
+      <p>Fundação de Cultura Elias Mansour - FEM</p>
+    </div>
+  `;
+}
