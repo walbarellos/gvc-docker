@@ -256,10 +256,15 @@ export default function AgendamentoDetalhesModal({
                   <span className="text-emerald-700 font-medium">Tipo:</span>{' '}
                   <span className="text-slate-700">{tipoEspacoLabels[agendamento.tipoEspaco] || agendamento.tipoEspaco}</span>
                 </p>
-                <p className="flex items-center gap-2">
+                <div className="flex items-center gap-2">
                   <Users size={14} className="text-emerald-500" />
-                  <span className="text-slate-700">{agendamento.numeroParticipantes} participantes</span>
-                </p>
+                  <span className="text-emerald-700 font-medium">Participantes:</span>{' '}
+                  {isEditing ? (
+                    <input type="number" className="border border-emerald-200 rounded p-1 w-20 text-sm ml-2" value={editData.numeroParticipantes || ''} onChange={e => setEditData({...editData, numeroParticipantes: e.target.value})} />
+                  ) : (
+                    <span className="text-slate-700">{agendamento.numeroParticipantes}</span>
+                  )}
+                </div>
               </div>
             </div>
           </div>
