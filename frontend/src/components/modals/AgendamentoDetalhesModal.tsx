@@ -102,6 +102,10 @@ export default function AgendamentoDetalhesModal({
       natureza_evento: editData.naturezaEvento,
       necessita_equipamentos: editData.necessitaEquipamentos,
       observacoes: editData.observacoes,
+      solicitante_nome: editData.solicitanteNome,
+      solicitante_email: editData.solicitanteEmail,
+      solicitante_telefone: editData.solicitanteTelefone,
+      solicitante_documento: editData.solicitanteDocumento,
     };
     onStatusChange(agendamento.id!, 'editar' as any, JSON.stringify(payload));
     setIsEditing(false);
