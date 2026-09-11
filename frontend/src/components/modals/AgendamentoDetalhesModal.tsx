@@ -231,7 +231,7 @@ export default function AgendamentoDetalhesModal({
                 </div>
                 {(agendamento.solicitanteDocumento || isEditing) && (
                   <div>
-                    <span className="text-indigo-700 font-medium">Doc ({agendamento.tipoSolicitante?.toUpperCase()}):</span>{' '}
+                    <span className="text-indigo-700 font-medium">Doc ({agendamento.tipoSolicitante === 'pessoa_fisica' || agendamento.tipoSolicitante === 'cpf' ? 'CPF' : agendamento.tipoSolicitante === 'pessoa_juridica' || agendamento.tipoSolicitante === 'cnpj' ? 'CNPJ' : 'Documento'}):</span>{' '}
                     {isEditing ? (
                       <input type="text" className="border rounded p-1 w-full mt-1" value={editData.solicitanteDocumento || ''} onChange={e => setEditData({...editData, solicitanteDocumento: e.target.value})} />
                     ) : (
