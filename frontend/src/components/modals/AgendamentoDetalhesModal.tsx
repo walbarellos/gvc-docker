@@ -201,27 +201,43 @@ export default function AgendamentoDetalhesModal({
                 Dados do Solicitante
               </h3>
               <div className="space-y-3 text-sm">
-                <p>
+                <div>
                   <span className="text-indigo-700 font-medium">Nome:</span>{' '}
-                  <span className="text-slate-700">{agendamento.solicitanteNome}</span>
-                </p>
+                  {isEditing ? (
+                    <input type="text" className="border rounded p-1 w-full mt-1" value={editData.solicitanteNome || ''} onChange={e => setEditData({...editData, solicitanteNome: e.target.value})} />
+                  ) : (
+                    <span className="text-slate-700">{agendamento.solicitanteNome}</span>
+                  )}
+                </div>
                 <p>
                   <span className="text-indigo-700 font-medium">Tipo:</span>{' '}
                   <span className="text-slate-700">{tipoSolicitanteLabels[agendamento.tipoSolicitante] || agendamento.tipoSolicitante}</span>
                 </p>
-                <p className="flex items-center gap-2">
-                  <Mail size={14} className="text-indigo-500" />
-                  <span className="text-slate-700">{agendamento.solicitanteEmail}</span>
-                </p>
-                <p className="flex items-center gap-2">
-                  <Phone size={14} className="text-indigo-500" />
-                  <span className="text-slate-700">{formatPhone(agendamento.solicitanteTelefone)}</span>
-                </p>
-                {agendamento.solicitanteDocumento && (
-                  <p>
-                    <span className="text-indigo-700 font-medium">Doc:</span>{' '}
-                    <span className="text-slate-700">{formatDoc(agendamento.solicitanteDocumento)}</span>
-                  </p>
+                <div>
+                  <span className="text-indigo-700 font-medium flex items-center gap-2"><Mail size={14} className="inline text-indigo-500" /> E-mail:</span>{' '}
+                  {isEditing ? (
+                    <input type="email" className="border rounded p-1 w-full mt-1" value={editData.solicitanteEmail || ''} onChange={e => setEditData({...editData, solicitanteEmail: e.target.value})} />
+                  ) : (
+                    <span className="text-slate-700">{agendamento.solicitanteEmail}</span>
+                  )}
+                </div>
+                <div>
+                  <span className="text-indigo-700 font-medium flex items-center gap-2"><Phone size={14} className="inline text-indigo-500" /> Telefone:</span>{' '}
+                  {isEditing ? (
+                    <input type="text" className="border rounded p-1 w-full mt-1" value={editData.solicitanteTelefone || ''} onChange={e => setEditData({...editData, solicitanteTelefone: e.target.value})} />
+                  ) : (
+                    <span className="text-slate-700">{formatPhone(agendamento.solicitanteTelefone)}</span>
+                  )}
+                </div>
+                {(agendamento.solicitanteDocumento || isEditing) && (
+                  <div>
+                    <span className="text-indigo-700 font-medium">Doc ({agendamento.tipoSolicitante?.toUpperCase()}):</span>{' '}
+                    {isEditing ? (
+                      <input type="text" className="border rounded p-1 w-full mt-1" value={editData.solicitanteDocumento || ''} onChange={e => setEditData({...editData, solicitanteDocumento: e.target.value})} />
+                    ) : (
+                      <span className="text-slate-700">{formatDoc(agendamento.solicitanteDocumento)}</span>
+                    )}
+                  </div>
                 )}
               </div>
             </div>
