@@ -38,6 +38,8 @@ import { visitService } from '../../services/visitService';
 import { spaceService } from '../../services/spaceService';
 import { computadorService } from '../../services/computadorService';
 import { useAuth } from '../../contexts/AuthContext';
+import { agendamentoService } from '../../services/agendamentoService';
+import type { Agendamento } from '../../services/agendamentoService';
 import ConfirmModal from '../modals/ConfirmModal';
 
 interface Visit {
@@ -79,6 +81,9 @@ export default function Reports() {
   
   // Dados do Telecentro para impressão
   const [telecentroPrintData, setTelecentroPrintData] = useState<any[]>([]);
+  const [activeTab, setActiveTab] = useState<'visitas' | 'agendamentos'>('visitas');
+  const [agendamentos, setAgendamentos] = useState<Agendamento[]>([]);
+  const [loadingAgendamentos, setLoadingAgendamentos] = useState(false);
 
   // Filters State
   const [startDate, setStartDate] = useState(() => {
@@ -519,8 +524,8 @@ export default function Reports() {
        </div>
        <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 mb-8">
         <div>
-          <h1 className="text-4xl font-display font-bold text-gray-900 mb-2">Relatórios de Visitas</h1>
-          <p className="text-gray-500">Logs detalhados e análises de visitas institucionais.</p>
+          <h1 className="text-4xl font-display font-bold text-gray-900 mb-2">Relatórios</h1>
+          <p className="text-gray-500">Logs detalhados e análises de visitas e agendamentos institucionais.</p>
         </div>
         <div className="flex gap-3 no-print">
           <button 
@@ -539,6 +544,87 @@ export default function Reports() {
       </div>
 
       {/* Filters Area */}
+
+      <div className="flex gap-4 mb-6 border-b border-gray-200 no-print">
+        <button
+          onClick={() => setActiveTab('visitas')}
+          className={`pb-3 px-4 text-sm font-medium border-b-2 transition-colors ${activeTab === 'visitas' ? 'border-primary text-primary' : 'border-transparent text-gray-500 hover:text-gray-700'}`}
+        >
+          Visitas e Telecentro
+        </button>
+        <button
+          onClick={() => setActiveTab('agendamentos')}
+          className={`pb-3 px-4 text-sm font-medium border-b-2 transition-colors ${activeTab === 'agendamentos' ? 'border-primary text-primary' : 'border-transparent text-gray-500 hover:text-gray-700'}`}
+        >
+          Agendamentos de Espaços
+        </button>
+      </div>
+      
+      {activeTab === 'agendamentos' && (
+        <div className="bg-white border border-gray-200 rounded-2xl p-6 mb-6 shadow-sm">
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+            <div>
+              <label className="block text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-1.5">Data Inicial</label>
+              <input type="date" value={startDate} onChange={(e) => setStartDate(e.target.value)} className="w-full border-b border-gray-300 py-1.5 focus:outline-none focus:border-primary font-medium text-gray-700" />
+            </div>
+            <div>
+              <label className="block text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-1.5">Data Final</label>
+              <input type="date" value={endDate} onChange={(e) => setEndDate(e.target.value)} className="w-full border-b border-gray-300 py-1.5 focus:outline-none focus:border-primary font-medium text-gray-700" />
+            </div>
+          </div>
+          
+          <div className="mt-6 flex justify-end">
+            <button onClick={loadAgendamentos} className="bg-primary text-white font-bold py-2.5 px-6 rounded-xl text-xs uppercase tracking-widest hover:bg-primary-dark transition-all flex items-center justify-center gap-2">
+              <Filter size={16} /> Aplicar Filtros
+            </button>
+          </div>
+        </div>
+      )}
+      
+      {activeTab === 'agendamentos' && (
+        <div className="bg-white border border-gray-200 rounded-2xl overflow-hidden shadow-sm">
+          <div className="overflow-x-auto">
+            <table className="w-full text-left border-collapse">
+              <thead>
+                <tr className="bg-gray-50 border-b border-gray-200">
+                  <th className="py-4 px-6 text-[10px] font-bold text-gray-500 uppercase tracking-widest">Protocolo</th>
+                  <th className="py-4 px-6 text-[10px] font-bold text-gray-500 uppercase tracking-widest">Espaço</th>
+                  <th className="py-4 px-6 text-[10px] font-bold text-gray-500 uppercase tracking-widest">Data / Hora</th>
+                  <th className="py-4 px-6 text-[10px] font-bold text-gray-500 uppercase tracking-widest">Solicitante</th>
+                  <th className="py-4 px-6 text-[10px] font-bold text-gray-500 uppercase tracking-widest">Status</th>
+                </tr>
+              </thead>
+              <tbody>
+                {loadingAgendamentos ? (
+                  <tr><td colSpan={5} className="py-8 text-center text-gray-500">Carregando agendamentos...</td></tr>
+                ) : agendamentos.length === 0 ? (
+                  <tr><td colSpan={5} className="py-8 text-center text-gray-500">Nenhum agendamento encontrado no período.</td></tr>
+                ) : (
+                  agendamentos.map(ag => (
+                    <tr key={ag.id} className="border-b border-gray-100 hover:bg-gray-50 transition-colors">
+                      <td className="py-4 px-6 text-sm font-medium text-gray-900">{ag.id?.substring(0, 8)}</td>
+                      <td className="py-4 px-6 text-sm text-gray-600">{ag.espacoSolicitado}</td>
+                      <td className="py-4 px-6 text-sm text-gray-600">{formatVisitDateTime(ag.dataPretendida)}<br/><span className="text-xs text-gray-400">{ag.horarioInicio?.substring(11,16)} - {ag.horarioFim?.substring(11,16)}</span></td>
+                      <td className="py-4 px-6 text-sm text-gray-600">{ag.solicitanteNome}</td>
+                      <td className="py-4 px-6">
+                        <span className={`inline-flex px-2 py-1 rounded-full text-[10px] font-bold uppercase tracking-wider ${
+                          ag.status === 'aprovado' ? 'bg-emerald-100 text-emerald-800' :
+                          ag.status === 'rejeitado' ? 'bg-red-100 text-red-800' :
+                          'bg-amber-100 text-amber-800'
+                        }`}>
+                          {ag.status}
+                        </span>
+                      </td>
+                    </tr>
+                  ))
+                )}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      )}
+
+      {activeTab === 'visitas' && (<>
       <div className="bg-white border border-gray-200 rounded-2xl p-6 mb-6 shadow-sm">
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4 text-left">
           <div>
@@ -916,6 +1002,7 @@ export default function Reports() {
         message="Deseja excluir permanentemente este registro de visita?"
         itemText={visitToDelete ? `Visita de ${visitToDelete.nome} em ${visitToDelete.local}` : ''}
       />
-    </div>
+          </>)}
+</div>
   );
 }
