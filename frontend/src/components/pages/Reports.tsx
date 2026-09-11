@@ -126,6 +126,26 @@ export default function Reports() {
     }
   }, [isRestrictedCoord, currentAdmin]);
 
+  const loadAgendamentos = async () => {
+    setLoadingAgendamentos(true);
+    try {
+      const { data } = await agendamentoService.list();
+      if (data) {
+        // Simple filtering by date
+        const filtered = data.filter(ag => {
+          if (!ag.dataPretendida) return true;
+          const d = ag.dataPretendida.substring(0, 10);
+          return d >= startDate && d <= endDate;
+        });
+        setAgendamentos(filtered);
+      }
+    } catch (err) {
+      console.error(err);
+    } finally {
+      setLoadingAgendamentos(false);
+    }
+  };
+
   const fetchVisits = async () => {
     setLoading(true);
     try {
@@ -357,6 +377,7 @@ export default function Reports() {
   // Carregar Telecentro quando filtros mudam
   useEffect(() => {
     loadTelecentroData();
+    loadAgendamentos();
   }, [startDate, endDate, filterLocation]);
 
   const handleExportExcel = async () => {
