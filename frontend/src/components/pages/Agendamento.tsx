@@ -191,7 +191,7 @@ export default function Agendamento() {
             espaco: selectedAgendamento?.espacoSolicitado,
             data: formatDate(payload.data_pretendida ? payload.data_pretendida + 'T00:00:00' : selectedAgendamento?.dataPretendida || ''),
             horario: `${payload.horario_inicio || formatTime(selectedAgendamento?.horarioInicio || '')} - ${payload.horario_fim || formatTime(selectedAgendamento?.horarioFim || '')}`,
-            resposta_coordenador: 'Foram feitas correções administrativas nos dados da sua reserva.'
+            resposta_coordenador: payload.resposta_coordenador ? payload.resposta_coordenador : 'Foram feitas correções administrativas nos dados da sua reserva.'
           }
         });
       } catch (err) {
