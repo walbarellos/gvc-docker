@@ -105,9 +105,9 @@ export default function Agendamento() {
   const [statusFilter, setStatusFilter] = useState<string>('');
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedAgendamento, setSelectedAgendamento] = useState<Agendamento | null>(null);
-  const [toastMessage, setToastMessage] = useState<{title: string, desc: string, type: 'success'|'error'} | null>(null);
+  const [toastMessage, setToastMessage] = useState<{title: string, desc: string, type: 'success'|'error'|'warning'|'neutral'} | null>(null);
 
-  const showToast = (title: string, desc: string, type: 'success' | 'error' = 'success') => {
+  const showToast = (title: string, desc: string, type: 'success' | 'error' | 'warning' | 'neutral' = 'success') => {
     setToastMessage({ title, desc, type });
     setTimeout(() => setToastMessage(null), 5000);
   };
@@ -206,7 +206,9 @@ export default function Agendamento() {
       return;
     }
     if (!error) {
-      showToast('Sucesso!', `Agendamento ${status} com sucesso.`, 'success');
+      const toastType = status === 'rejeitado' ? 'error' : status === 'cancelado' ? 'neutral' : 'success';
+      const toastTitle = status === 'rejeitado' ? 'Agendamento Rejeitado' : status === 'cancelado' ? 'Agendamento Cancelado' : 'Sucesso!';
+      showToast(toastTitle, `Agendamento ${status} com sucesso.`, toastType);
       refetch();
       const { error: notifyError } = await api.post('/agendamentos/notificar', {
         tipo: status === 'aprovado' ? 'aprovacao' : status === 'cancelado' ? 'cancelamento' : 'rejeicao',
@@ -545,8 +547,8 @@ export default function Agendamento() {
 
       {/* Toast Notification (Miro-pop-up) */}
       {toastMessage && (
-        <div className={`fixed bottom-6 right-6 p-4 rounded-xl shadow-2xl z-50 flex items-start gap-3 transform transition-all duration-300 animate-in slide-in-from-bottom-5 ${toastMessage.type === 'success' ? 'bg-emerald-600 text-white' : 'bg-red-600 text-white'}`}>
-          {toastMessage.type === 'success' ? <CheckCircle className="shrink-0 mt-0.5" size={20} /> : <AlertTriangle className="shrink-0 mt-0.5" size={20} />}
+        <div className={`fixed bottom-6 right-6 p-4 rounded-xl shadow-2xl z-50 flex items-start gap-3 transform transition-all duration-300 animate-in slide-in-from-bottom-5 ${toastMessage.type === 'success' ? 'bg-emerald-600' : toastMessage.type === 'error' ? 'bg-red-600' : toastMessage.type === 'warning' ? 'bg-amber-500' : 'bg-slate-700'} text-white`}>
+          {toastMessage.type === 'success' ? <CheckCircle className="shrink-0 mt-0.5" size={20} /> : toastMessage.type === 'neutral' ? <XCircle className="shrink-0 mt-0.5" size={20} /> : <AlertTriangle className="shrink-0 mt-0.5" size={20} />}
           <div className="mr-4">
             <h4 className="font-bold text-sm">{toastMessage.title}</h4>
             <p className="text-sm opacity-90">{toastMessage.desc}</p>
