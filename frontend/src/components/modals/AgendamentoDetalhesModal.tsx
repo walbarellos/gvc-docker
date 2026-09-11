@@ -90,16 +90,23 @@ export default function AgendamentoDetalhesModal({
   const [editData, setEditData] = useState<any>({});
   
 
+
   const handleEditSave = () => {
     // Map from camelCase (state) to snake_case (API format)
     const payload = {
       data_pretendida: editData.dataPretendida ? editData.dataPretendida.substring(0, 10) : undefined,
       horario_inicio: editData.horarioInicio ? editData.horarioInicio.substring(11, 16) : undefined,
       horario_fim: editData.horarioFim ? editData.horarioFim.substring(11, 16) : undefined,
+      numero_participantes: editData.numeroParticipantes ? Number(editData.numeroParticipantes) : undefined,
+      descricao_evento: editData.descricaoEvento,
+      natureza_evento: editData.naturezaEvento,
+      necessita_equipamentos: editData.necessitaEquipamentos,
+      observacoes: editData.observacoes,
     };
     onStatusChange(agendamento.id!, 'editar' as any, JSON.stringify(payload));
     setIsEditing(false);
   };
+
 
 
   const formatDate = (dateStr: string) => {
@@ -285,29 +292,58 @@ export default function AgendamentoDetalhesModal({
               <div className="grid grid-cols-2 gap-4">
                 <div>
                   <p className="text-slate-500 mb-1">Natureza</p>
-                  <p className="font-medium text-slate-900">{naturezaLabels[agendamento.naturezaEvento] || agendamento.naturezaEvento}</p>
+                  {isEditing ? (
+                    <select className="border rounded p-1 w-full text-sm" value={editData.naturezaEvento || ''} onChange={e => setEditData({...editData, naturezaEvento: e.target.value})}>
+                      <option value="cultural">Cultural</option>
+                      <option value="educacional">Educacional</option>
+                      <option value="institucional">Institucional</option>
+                      <option value="corporativo">Corporativo</option>
+                      <option value="outro">Outro</option>
+                    </select>
+                  ) : (
+                    <p className="font-medium text-slate-900">{naturezaLabels[agendamento.naturezaEvento] || agendamento.naturezaEvento}</p>
+                  )}
                 </div>
                 <div>
-                  <p className="text-slate-500 mb-1">Valor</p>
-                  <p className="font-medium text-slate-900">
-                    {agendamento.gratuito ? 'Gratuito' : `R$ ${agendamento.valorIngresso?.toFixed(2)}`}
-                  </p>
+                  <p className="text-slate-500 mb-1">Participantes</p>
+                  {isEditing ? (
+                    <input type="number" className="border rounded p-1 w-full text-sm" value={editData.numeroParticipantes || ''} onChange={e => setEditData({...editData, numeroParticipantes: e.target.value})} />
+                  ) : (
+                    <p className="font-medium text-slate-900 flex items-center gap-1">
+                      <Users size={16} className="text-slate-400 inline" />
+                      {agendamento.numeroParticipantes} pessoas
+                    </p>
+                  )}
                 </div>
               </div>
               <div>
                 <p className="text-slate-500 mb-1">Descrição do Evento</p>
-                <p className="text-slate-900">{agendamento.descricaoEvento}</p>
+                {isEditing ? (
+                  <textarea className="border rounded p-2 w-full text-sm min-h-[60px]" value={editData.descricaoEvento || ''} onChange={e => setEditData({...editData, descricaoEvento: e.target.value})} />
+                ) : (
+                  <p className="text-slate-900">{agendamento.descricaoEvento}</p>
+                )}
               </div>
-              {agendamento.necessitaEquipamentos && (
+              
+              {(agendamento.necessitaEquipamentos || isEditing) && (
                 <div>
                   <p className="text-slate-500 mb-1">Equipamentos Necessários</p>
-                  <p className="text-slate-900">{agendamento.necessitaEquipamentos}</p>
+                  {isEditing ? (
+                    <textarea className="border rounded p-2 w-full text-sm min-h-[40px]" value={editData.necessitaEquipamentos || ''} onChange={e => setEditData({...editData, necessitaEquipamentos: e.target.value})} />
+                  ) : (
+                    <p className="text-slate-900">{agendamento.necessitaEquipamentos}</p>
+                  )}
                 </div>
               )}
-              {agendamento.observacoes && (
+              
+              {(agendamento.observacoes || isEditing) && (
                 <div>
                   <p className="text-slate-500 mb-1">Observações</p>
-                  <p className="text-slate-900">{agendamento.observacoes}</p>
+                  {isEditing ? (
+                    <textarea className="border rounded p-2 w-full text-sm min-h-[40px]" value={editData.observacoes || ''} onChange={e => setEditData({...editData, observacoes: e.target.value})} />
+                  ) : (
+                    <p className="text-slate-900">{agendamento.observacoes}</p>
+                  )}
                 </div>
               )}
             </div>
