@@ -189,8 +189,8 @@ export default function Agendamento() {
           nome_destino: selectedAgendamento?.solicitanteNome,
           detalhes: {
             espaco: selectedAgendamento?.espacoSolicitado,
-            data: formatDate(payload.dataPretendida || selectedAgendamento?.dataPretendida || ''),
-            horario: `${formatTime(payload.horarioInicio || selectedAgendamento?.horarioInicio || '')} - ${formatTime(payload.horarioFim || selectedAgendamento?.horarioFim || '')}`,
+            data: formatDate(payload.data_pretendida ? payload.data_pretendida + 'T00:00:00' : selectedAgendamento?.dataPretendida || ''),
+            horario: `${payload.horario_inicio || formatTime(selectedAgendamento?.horarioInicio || '')} - ${payload.horario_fim || formatTime(selectedAgendamento?.horarioFim || '')}`,
             resposta_coordenador: 'Foram feitas correções administrativas nos dados da sua reserva.'
           }
         });

@@ -89,10 +89,18 @@ export default function AgendamentoDetalhesModal({
   const [isEditing, setIsEditing] = useState(false);
   const [editData, setEditData] = useState<any>({});
   
+
   const handleEditSave = () => {
-    onStatusChange(agendamento.id!, 'editar' as any, JSON.stringify(editData));
+    // Map from camelCase (state) to snake_case (API format)
+    const payload = {
+      data_pretendida: editData.dataPretendida ? editData.dataPretendida.substring(0, 10) : undefined,
+      horario_inicio: editData.horarioInicio ? editData.horarioInicio.substring(11, 16) : undefined,
+      horario_fim: editData.horarioFim ? editData.horarioFim.substring(11, 16) : undefined,
+    };
+    onStatusChange(agendamento.id!, 'editar' as any, JSON.stringify(payload));
     setIsEditing(false);
   };
+
 
   const formatDate = (dateStr: string) => {
     if (!dateStr) return '-';
@@ -381,16 +389,14 @@ export default function AgendamentoDetalhesModal({
               </>
             ) : (
               <>
-                {(agendamento.status === 'pendente' || agendamento.status === 'aprovado') && (
-                  <button
-                    onClick={() => { setIsEditing(true); setEditData(agendamento); }}
-                    className="px-6 py-3 bg-blue-600 text-white rounded-xl font-medium hover:bg-blue-700 transition-colors flex items-center gap-2"
-                    disabled={loading}
-                  >
-                    <FileText size={18} />
-                    Editar
-                  </button>
-                )}
+                <button
+                  onClick={() => { setIsEditing(true); setEditData(agendamento); }}
+                  className="px-6 py-3 bg-blue-600 text-white rounded-xl font-medium hover:bg-blue-700 transition-colors flex items-center gap-2"
+                  disabled={loading}
+                >
+                  <FileText size={18} />
+                  Editar
+                </button>
                 {agendamento.status === 'pendente' && (
                   <>
                     <button
