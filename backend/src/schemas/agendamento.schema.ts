@@ -34,7 +34,7 @@ export const createAgendamentoSchema = z.object({
   termo_compromisso_assinado: z.boolean().optional().nullable(),
   termo_compromisso_data: z.string().optional().nullable(),
   termo_compromisso_ip: z.string().optional().nullable(),
-
+  resposta_coordenador: z.string().optional().nullable(),
 });
 
 export const updateAgendamentoStatusSchema = z.object({

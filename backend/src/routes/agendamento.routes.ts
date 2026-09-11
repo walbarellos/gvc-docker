@@ -216,6 +216,7 @@ function mapAgendamentoFields(data: any): any {
 
 export async function agendamentoRoutes(app: FastifyInstance) {
   app.post('/notificar', { preHandler: [app.authenticate, requireRole('monitor')] }, async (request: any, reply: any) => {
+    console.log("NOTIFICAR BODY:", request.body);
     const { tipo, email_destino, nome_destino, detalhes } = request.body;
     
     if (!email_destino || !nome_destino) {
@@ -512,7 +513,7 @@ export async function agendamentoRoutes(app: FastifyInstance) {
     // Nunca aceitar campos privilegiados do client — status só via /:id/resposta e /:id/approve
     delete data.status;
     delete data.coordenadorId;
-    delete data.respostaCoordenador;
+    // Removido: delete data.respostaCoordenador (permitir edição pelo coordenador)
     delete data.respondidoEm;
     delete data.documentoAnexoUrl;
     delete data.assinaturaId;

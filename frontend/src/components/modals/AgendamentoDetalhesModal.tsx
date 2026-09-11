@@ -106,6 +106,7 @@ export default function AgendamentoDetalhesModal({
       solicitante_email: editData.solicitanteEmail,
       solicitante_telefone: editData.solicitanteTelefone,
       solicitante_documento: editData.solicitanteDocumento,
+      resposta_coordenador: editData.respostaCoordenador,
     };
     onStatusChange(agendamento.id!, 'editar' as any, JSON.stringify(payload));
     setIsEditing(false);
@@ -411,12 +412,16 @@ export default function AgendamentoDetalhesModal({
             </div>
           )}
 
-          {agendamento.status !== 'pendente' && agendamento.respostaCoordenador && !showConfirm && (
+          {(agendamento.status !== 'pendente' && (agendamento.respostaCoordenador || isEditing) && !showConfirm) && (
             <div className={`border rounded-2xl p-6 ${agendamento.status === 'aprovado' ? 'bg-emerald-50 border-emerald-200' : 'bg-red-50 border-red-200'}`}>
               <h3 className={`font-semibold mb-2 ${agendamento.status === 'aprovado' ? 'text-emerald-900' : 'text-red-900'}`}>
                 Resposta do Coordenador
               </h3>
-              <p className="text-sm text-slate-700">{agendamento.respostaCoordenador}</p>
+              {isEditing ? (
+                <textarea className="w-full p-4 border border-slate-300 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 min-h-[100px]" value={editData.respostaCoordenador || ''} onChange={e => setEditData({...editData, respostaCoordenador: e.target.value})} />
+              ) : (
+                <p className="text-sm text-slate-700">{agendamento.respostaCoordenador}</p>
+              )}
             </div>
           )}
         </div>
